@@ -275,6 +275,7 @@
   }
   .deck-icon-btn:hover{border-color:var(--wave)}
   .deck-icon-btn:disabled{opacity:0.4;cursor:default}
+  #pptxBtn, #pdfBtn{width:auto;padding:0 9px;font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:.04em}
   .deck-icon-btn.light{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);color:#fff}
   .deck-icon-btn.light:hover{border-color:rgba(255,255,255,0.5)}
   .editor-note{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft)}
@@ -755,6 +756,8 @@
             <button type="button" class="deck-icon-btn" id="nextSlideBtn" aria-label="Next slide">&rarr;</button>
             <button type="button" class="deck-icon-btn" id="saveDraftBtn" aria-label="Save draft" title="Save this draft">&#9634;</button>
             <button type="button" class="deck-icon-btn" id="draftsBtn" aria-label="Saved drafts" title="Saved drafts">&#9776;</button>
+            <button type="button" class="deck-icon-btn" id="shareBtn" aria-label="Copy a share link" title="Copy a link to this deck">&#128279;</button>
+            <button type="button" class="deck-icon-btn" id="pptxBtn" aria-label="Download as PowerPoint" title="Download as .pptx">PPTX</button>
             <button type="button" class="deck-icon-btn" id="pdfBtn" aria-label="Export as PDF" title="Export as PDF">PDF</button>
             <button type="button" class="btn btn-ghost" id="presentBtn" style="padding:7px 16px;font-size:0.82rem">Present &nbsp;&#9654;</button>
           </div>
@@ -1840,8 +1843,9 @@
     if (!draftsDrawer.hidden) renderDrafts();
   });
 
-  // restore whatever was last being worked on
+  // a shared link wins over whatever was last being worked on locally
   (function restoreWorking(){
+    if (loadSharedDeck()) return;
     var saved = readStore(WORKING_KEY, null);
     if (!saved || !Array.isArray(saved.slides) || saved.slides.length < 2) return;
     deckSlides = saved.slides;
@@ -1854,6 +1858,101 @@
     if (promptInput && saved.topic) promptInput.value = saved.topic;
     if (deckCaption) deckCaption.textContent = 'Picked up where you left off. Generate to start a new one.';
   })();
+
+  // ---- share links ------------------------------------------------------
+  // The whole deck rides in the URL fragment, deflated and base64url'd, so a
+  // link works with no database behind it. Fragments never reach the server,
+  // so the deck stays between the two people holding the link. Images are
+  // stored as their search terms, not as data, which keeps links small.
+  var shareBtn = document.getElementById('shareBtn');
+
+  function bytesToBase64url(bytes){
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function base64urlToBytes(s){
+    var b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    var bin = atob(b64);
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function encodeDeck(){
+    var payload = JSON.stringify({ v: 1, t: deckTopic, th: deckTheme, s: deckSlides });
+    var bytes = new TextEncoder().encode(payload);
+    if (typeof CompressionStream === 'undefined') {
+      return Promise.resolve('j' + bytesToBase64url(bytes));
+    }
+    var cs = new CompressionStream('deflate-raw');
+    var stream = new Blob([bytes]).stream().pipeThrough(cs);
+    return new Response(stream).arrayBuffer().then(function(buf){
+      return 'z' + bytesToBase64url(new Uint8Array(buf));
+    });
+  }
+
+  function decodeDeck(code){
+    var kind = code.charAt(0);
+    var bytes = base64urlToBytes(code.slice(1));
+    if (kind === 'j') {
+      return Promise.resolve(JSON.parse(new TextDecoder().decode(bytes)));
+    }
+    if (typeof DecompressionStream === 'undefined') return Promise.reject(new Error('unsupported'));
+    var ds = new DecompressionStream('deflate-raw');
+    var stream = new Blob([bytes]).stream().pipeThrough(ds);
+    return new Response(stream).arrayBuffer().then(function(buf){
+      return JSON.parse(new TextDecoder().decode(new Uint8Array(buf)));
+    });
+  }
+
+  function shareDeck(){
+    if (!deckSlides.length) return;
+    setStatus('Building a link…', 'info');
+    encodeDeck().then(function(code){
+      var link = location.origin + location.pathname + '#d=' + code;
+      try { history.replaceState(null, '', '#d=' + code); } catch (e) {}
+      if (link.length > 30000) {
+        setStatus('This deck is too long to fit in a link — save it instead.', 'error');
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(function(){
+          setStatus('Link copied — anyone who opens it gets this deck.', 'info');
+        }).catch(function(){
+          setStatus('Link is in the address bar — copy it from there.', 'info');
+        });
+      } else {
+        setStatus('Link is in the address bar — copy it from there.', 'info');
+      }
+    }).catch(function(){
+      setStatus("Couldn't build a link for this deck.", 'error');
+    });
+  }
+  if (shareBtn) shareBtn.addEventListener('click', shareDeck);
+
+  function loadSharedDeck(){
+    var match = (location.hash || '').match(/^#d=(.+)$/);
+    if (!match) return false;
+    decodeDeck(match[1]).then(function(data){
+      if (!data || !Array.isArray(data.s) || data.s.length < 2) throw new Error('bad');
+      deckSlides = data.s;
+      deckTopic = data.t || '';
+      deckTheme = data.th || 'tide';
+      activeIndex = 0;
+      applyTheme();
+      renderThumbs(false);
+      renderStage();
+      prefetchImages();
+      if (promptInput && deckTopic) promptInput.value = deckTopic;
+      if (draftBadge) draftBadge.hidden = false;
+      if (deckCaption) deckCaption.textContent = 'Opened from a shared link. Edit it freely — it is your copy now.';
+    }).catch(function(){
+      if (deckCaption) deckCaption.textContent = "That shared link couldn't be read — showing the example deck.";
+    });
+    return true;
+  }
 
   // ---- PDF export -------------------------------------------------------
   var pdfBtn = document.getElementById('pdfBtn');
@@ -1877,6 +1976,171 @@
     }, pending ? 1500 : 250);
   }
   if (pdfBtn) pdfBtn.addEventListener('click', exportPdf);
+
+  // ---- PowerPoint export ------------------------------------------------
+  // A real .pptx, built in the browser. The library is ~470KB, so it is only
+  // fetched the first time someone actually asks for one.
+  var pptxBtn = document.getElementById('pptxBtn');
+  // 3.12.0's bundle never settles its write() promise in the browser; 4.0.1 does
+  var PPTX_SRC = 'https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js';
+  var pptxLoader = null;
+
+  function loadPptxLib(){
+    if (window.PptxGenJS) return Promise.resolve(window.PptxGenJS);
+    if (pptxLoader) return pptxLoader;
+    pptxLoader = new Promise(function(resolve, reject){
+      var el = document.createElement('script');
+      el.src = PPTX_SRC;
+      el.onload = function(){ window.PptxGenJS ? resolve(window.PptxGenJS) : reject(new Error('missing')); };
+      el.onerror = function(){ reject(new Error('load failed')); };
+      document.head.appendChild(el);
+    });
+    return pptxLoader;
+  }
+
+  // PowerPoint wants image bytes, not a URL — Commons sends
+  // access-control-allow-origin:* so these can be read cross-origin
+  function fetchImageData(url){
+    return fetch(url)
+      .then(function(r){ return r.ok ? r.blob() : null; })
+      .then(function(blob){
+        if (!blob) return null;
+        return new Promise(function(resolve){
+          var reader = new FileReader();
+          reader.onload = function(){ resolve(reader.result); };
+          reader.onerror = function(){ resolve(null); };
+          reader.readAsDataURL(blob);
+        });
+      })
+      .catch(function(){ return null; });
+  }
+
+  var PPTX_THEMES = {
+    tide:     { bg:'FFFFFF', ink:'0E3B3E', muted:'3C5A56', accent:'177F78', cover:'0E3B3E', quote:'E2ECE7' },
+    dune:     { bg:'F7F1E6', ink:'3B2A1C', muted:'6F5844', accent:'C2643C', cover:'2F2418', quote:'EFE4D2' },
+    graphite: { bg:'F3F5F6', ink:'151D21', muted:'4F6068', accent:'4D7180', cover:'131A1D', quote:'E5EAEC' },
+    noir:     { bg:'151A1C', ink:'EEF3F2', muted:'A3B5B4', accent:'63D6BD', cover:'0B0F10', quote:'1C2325' }
+  };
+
+  function exportPptx(){
+    if (generating) return;
+    setBusy(true);
+    setStatus('Building the PowerPoint…', 'info');
+
+    var theme = PPTX_THEMES[deckTheme] || PPTX_THEMES.tide;
+    var display = deckTheme === 'graphite' ? 'Arial' : 'Georgia';
+
+    // resolve every image to bytes first
+    var jobs = deckSlides.map(function(s){
+      if (!s.image) return Promise.resolve(null);
+      return Promise.resolve(resolveImage(s.image)).then(function(found){
+        return found && found.url ? fetchImageData(found.url) : null;
+      }).catch(function(){ return null; });
+    });
+
+    Promise.all([loadPptxLib(), Promise.all(jobs)]).then(function(res){
+      var Lib = res[0];
+      var images = res[1];
+      var pptx = new Lib();
+      pptx.layout = 'LAYOUT_16x9';           // 10in x 5.625in
+      pptx.title = (deckSlides[0] && deckSlides[0].title) || 'Swell deck';
+
+      deckSlides.forEach(function(s, i){
+        var slide = pptx.addSlide();
+        var pic = images[i];
+
+        if (s.type === 'cover') {
+          slide.background = pic ? { data: pic } : { color: theme.cover };
+          // scrim so the title stays legible over a photograph
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: '100%', h: '100%',
+            fill: { color: pic ? '061A1C' : theme.cover, transparency: pic ? 30 : 0 },
+            line: { color: pic ? '061A1C' : theme.cover, width: 0 }
+          });
+          slide.addText(String(s.title || 'Untitled'), {
+            x: 0.8, y: 2.0, w: 8.4, h: 1.2,
+            fontSize: 40, bold: true, color: 'FFFFFF', fontFace: display, align: 'center'
+          });
+          if (s.tagline) {
+            slide.addText(String(s.tagline), {
+              x: 1.2, y: 3.25, w: 7.6, h: 0.7,
+              fontSize: 16, color: 'E8F1EF', fontFace: 'Calibri', align: 'center'
+            });
+          }
+          return;
+        }
+
+        var layout = normalizeLayout(s.layout);
+        var bullets = s.bullets || [];
+
+        if (layout === 'stat') {
+          slide.background = { color: theme.bg };
+          slide.addText(String(s.heading || '').toUpperCase(), {
+            x: 0.8, y: 1.5, w: 8.4, h: 0.4, fontSize: 12, color: theme.accent,
+            fontFace: 'Consolas', charSpacing: 2
+          });
+          slide.addText(String(bullets[0] || ''), {
+            x: 0.8, y: 2.0, w: 8.4, h: 1.3, fontSize: 48, bold: true,
+            color: theme.ink, fontFace: display
+          });
+          slide.addText(String(bullets[1] || ''), {
+            x: 0.8, y: 3.4, w: 8.4, h: 0.8, fontSize: 15, color: theme.muted, fontFace: 'Calibri'
+          });
+          return;
+        }
+
+        if (layout === 'quote') {
+          slide.background = { color: theme.quote };
+          slide.addText(String(bullets[0] || ''), {
+            x: 1.0, y: 1.7, w: 8.0, h: 1.8, fontSize: 26, italic: true,
+            color: theme.ink, fontFace: display, align: 'center'
+          });
+          slide.addText('— ' + String(s.heading || ''), {
+            x: 1.0, y: 3.6, w: 8.0, h: 0.5, fontSize: 12, color: theme.muted,
+            fontFace: 'Consolas', align: 'center'
+          });
+          return;
+        }
+
+        // bullets, with the photograph bleeding off the right edge when present
+        slide.background = { color: theme.bg };
+        var textW = pic ? 5.1 : 8.4;
+        if (pic) {
+          slide.addImage({ data: pic, x: 5.9, y: 0, w: 4.1, h: 5.625, sizing: { type: 'cover', w: 4.1, h: 5.625 } });
+        }
+        slide.addText(String(s.heading || ''), {
+          x: 0.7, y: 0.75, w: textW, h: 0.7, fontSize: 26, bold: true,
+          color: theme.ink, fontFace: display
+        });
+        var cursorY = 1.55;
+        if (s.body) {
+          slide.addText(String(s.body), {
+            x: 0.7, y: cursorY, w: textW, h: 0.9, fontSize: 13,
+            color: theme.muted, fontFace: 'Calibri', valign: 'top'
+          });
+          cursorY += 1.0;
+        }
+        if (bullets.length) {
+          slide.addText(bullets.map(function(b){
+            return { text: String(b), options: { bullet: { code: '2022' }, breakLine: true } };
+          }), {
+            x: 0.7, y: cursorY, w: textW, h: 4.8 - cursorY, fontSize: 13,
+            color: theme.muted, fontFace: 'Calibri', lineSpacingMultiple: 1.3, valign: 'top'
+          });
+        }
+      });
+
+      var name = slugify((deckSlides[0] && deckSlides[0].title) || deckTopic || 'swell-deck');
+      return pptx.writeFile({ fileName: name + '.pptx' });
+    }).then(function(){
+      setStatus('PowerPoint downloaded.', 'info');
+    }).catch(function(e){
+      setStatus("Couldn't build the PowerPoint — try again.", 'error');
+    }).finally(function(){
+      setBusy(false);
+    });
+  }
+  if (pptxBtn) pptxBtn.addEventListener('click', exportPptx);
 
   // ---- outline-first flow ----------------------------------------------
   var outlinePanel = document.getElementById('outlinePanel');
