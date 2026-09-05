@@ -1,0 +1,950 @@
+<title>Swell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;0,9..144,700;1,9..144,450;1,9..144,600&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef2ee;
+    --surface:#ffffff;
+    --surface-2:#e2ece7;
+    --ink:#0b2426;
+    --ink-soft:#3c5a56;
+    --deep:#0e3b3e;
+    --wave:#1f7a7a;
+    --tide:#177f78;
+    --coral:#e85f3f;
+    --coral-ink:#fff7f3;
+    --line:rgba(11,36,38,0.13);
+    --shadow:0 1px 2px rgba(11,36,38,0.06);
+    --shadow-lift:0 18px 40px -20px rgba(11,36,38,0.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#071b1d;
+      --surface:#0d2b2d;
+      --surface-2:#0f3234;
+      --ink:#edf3f1;
+      --ink-soft:#9dbdb8;
+      --deep:#cfe9e6;
+      --wave:#4fd1c5;
+      --tide:#57e0d3;
+      --coral:#ff8a68;
+      --coral-ink:#241008;
+      --line:rgba(237,243,241,0.14);
+      --shadow:0 1px 2px rgba(0,0,0,0.4);
+      --shadow-lift:0 18px 40px -18px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#071b1d;
+    --surface:#0d2b2d;
+    --surface-2:#0f3234;
+    --ink:#edf3f1;
+    --ink-soft:#9dbdb8;
+    --deep:#cfe9e6;
+    --wave:#4fd1c5;
+    --tide:#57e0d3;
+    --coral:#ff8a68;
+    --coral-ink:#241008;
+    --line:rgba(237,243,241,0.14);
+    --shadow:0 1px 2px rgba(0,0,0,0.4);
+    --shadow-lift:0 18px 40px -18px rgba(0,0,0,0.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces',Georgia,serif;
+    font-weight:600;
+    line-height:1.05;
+    letter-spacing:-0.01em;
+    text-wrap:balance;
+    margin:0;
+    color:var(--deep);
+  }
+  p{margin:0;color:var(--ink-soft)}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--wave);
+    display:flex;
+    align-items:center;
+    gap:0.55em;
+  }
+  .eyebrow::before{
+    content:"";
+    width:1.1em;
+    height:1px;
+    background:var(--wave);
+    display:inline-block;
+  }
+  a{color:inherit}
+  .tabular{font-variant-numeric:tabular-nums}
+  img,svg{max-width:100%}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+  @media (max-width:640px){ .wrap{padding:0 20px} }
+
+  /* ---------- nav ---------- */
+  nav.topbar{
+    position:sticky;top:0;z-index:40;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:1180px;margin:0 auto;padding:16px 32px;
+    display:flex;align-items:center;justify-content:space-between;gap:24px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-weight:600;font-size:1.25rem;color:var(--deep);text-decoration:none}
+  .brand-mark{width:26px;height:26px;flex:none}
+  .navlinks{display:flex;gap:28px;font-size:0.94rem;font-weight:500}
+  .navlinks a{text-decoration:none;color:var(--ink-soft);transition:color .15s}
+  .navlinks a:hover{color:var(--deep)}
+  .navlinks{ }
+  @media (max-width:760px){ .navlinks{display:none} }
+  .navcta{display:flex;align-items:center;gap:16px}
+  .link-btn{font-size:0.94rem;font-weight:600;text-decoration:none;color:var(--deep)}
+
+  .btn{
+    font-family:'Karla',sans-serif;
+    font-weight:700;
+    font-size:0.94rem;
+    border-radius:999px;
+    padding:11px 22px;
+    border:1px solid transparent;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn:focus-visible{outline:2px solid var(--tide);outline-offset:2px}
+  .btn-primary{background:var(--coral);color:var(--coral-ink);box-shadow:var(--shadow)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--deep)}
+  .btn-ghost:hover{border-color:var(--wave)}
+  .btn-lg{padding:14px 28px;font-size:1.02rem}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;padding-top:64px}
+  .hero-canvas-holder{
+    position:relative;
+    min-height:560px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding:56px 32px 0;
+    overflow:hidden;
+  }
+  canvas#heroWave{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .hero-content{position:relative;z-index:2;max-width:760px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:22px}
+  .hero-content h1{font-size:clamp(2.4rem,5.4vw,4.1rem)}
+  .hero-content .lede{font-size:1.14rem;max-width:560px;line-height:1.55}
+  .hero-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+
+  .prompt-card{
+    position:relative;z-index:2;
+    width:min(640px,92vw);
+    margin:8px auto 0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow-lift);
+    padding:18px 20px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .prompt-row{display:flex;align-items:center;gap:12px}
+  .prompt-row input{
+    flex:1;border:none;background:transparent;font-family:'Karla',sans-serif;
+    font-size:1rem;color:var(--ink);outline:none;
+  }
+  .prompt-row input::placeholder{color:var(--ink-soft)}
+  .prompt-chip{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.06em;
+    background:var(--surface-2);color:var(--wave);border-radius:999px;padding:5px 11px;
+    white-space:nowrap;
+  }
+  .prompt-actions{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:12px}
+  .surface-pick{display:flex;gap:8px}
+  .surface-pick button{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:.04em;
+    border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+    border-radius:999px;padding:6px 12px;cursor:pointer;transition:.15s;
+  }
+  .surface-pick button.active{background:var(--deep);color:var(--surface);border-color:var(--deep)}
+  .surface-pick button:disabled, #generateBtn:disabled{opacity:0.6;cursor:default}
+  #promptInput{cursor:text}
+  .gen-status{margin:0;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;line-height:1.4}
+  .gen-status.is-error{color:var(--coral)}
+  .gen-status.is-info{color:var(--wave)}
+
+  .hero-stats{position:relative;z-index:2;display:flex;gap:40px;flex-wrap:wrap;justify-content:center;margin:44px 0 0;padding-bottom:38px}
+  .stat{text-align:center}
+  .stat b{display:block;font-family:'Fraunces',serif;font-size:1.9rem;color:var(--deep)}
+  .stat span{font-size:0.82rem;color:var(--ink-soft)}
+
+  /* ---------- wave divider ---------- */
+  .wave-divider{display:block;width:100%;height:64px}
+  .wave-divider path{fill:var(--surface-2)}
+  .wave-divider.to-bg path{fill:var(--bg)}
+  .wave-divider.to-surface path{fill:var(--surface)}
+  .wave-divider.to-deep path{fill:var(--deep)}
+
+  section{position:relative}
+  .band{background:var(--surface-2);padding:88px 0 96px}
+  .band-bg{background:var(--bg);padding:88px 0 96px}
+  .band-deep{background:var(--deep);padding:96px 0;color:var(--bg)}
+
+  .section-head{max-width:640px;margin:0 0 52px}
+  .section-head h2{font-size:clamp(1.9rem,3.4vw,2.6rem)}
+  .section-head p{margin-top:14px;font-size:1.05rem;line-height:1.6}
+
+  /* ---------- pillars ---------- */
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  @media (max-width:860px){ .pillars{grid-template-columns:1fr} }
+  .pillar{
+    background:var(--surface);border:1px solid var(--line);border-radius:22px;
+    padding:30px 28px 32px;display:flex;flex-direction:column;gap:16px;
+    box-shadow:var(--shadow);transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .pillar:hover{transform:translateY(-4px);box-shadow:var(--shadow-lift)}
+  .pillar .icon{width:44px;height:44px}
+  .pillar h3{font-size:1.28rem;color:var(--deep)}
+  .pillar p{font-size:0.98rem;line-height:1.55}
+  .pillar .tag{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tide)}
+
+  /* ---------- how it works (tide stages) ---------- */
+  .tide-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;position:relative}
+  @media (max-width:860px){ .tide-steps{grid-template-columns:1fr;gap:36px} }
+  .tide-step{padding:0 28px;position:relative}
+  .tide-step:first-child{padding-left:0}
+  .tide-step:last-child{padding-right:0}
+  .tide-step + .tide-step::before{
+    content:"";position:absolute;left:0;top:8px;bottom:8px;width:1px;background:var(--line);
+  }
+  @media (max-width:860px){ .tide-step + .tide-step::before{display:none} }
+  .tide-level{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--wave);margin-bottom:14px;display:block}
+  .tide-step h3{font-size:1.2rem;margin-bottom:10px;color:var(--deep)}
+  .tide-step p{font-size:0.97rem;line-height:1.55}
+  .tide-gauge{width:100%;height:6px;border-radius:999px;background:var(--line);margin-bottom:18px;overflow:hidden}
+  .tide-gauge > span{display:block;height:100%;background:var(--tide);border-radius:999px}
+
+  /* ---------- editor mock ---------- */
+  .editor-mock{
+    background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    box-shadow:var(--shadow-lift);overflow:hidden;
+  }
+  .editor-chrome{
+    display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);
+    background:var(--surface-2);
+  }
+  .editor-chrome i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
+  .editor-chrome span#chromeUrl{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);margin-left:8px}
+  .editor-chrome{position:relative}
+  .draft-badge{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--tide);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .editor-note{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft)}
+  .editor-body{display:grid;grid-template-columns:190px 1fr;min-height:340px}
+  @media (max-width:700px){ .editor-body{grid-template-columns:1fr} }
+  .editor-rail{border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:8px}
+  @media (max-width:700px){ .editor-rail{display:none} }
+  .rail-card{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
+    border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+  }
+  .rail-card.active{border-color:var(--tide);color:var(--deep);background:var(--surface-2)}
+  .editor-canvas{padding:28px 32px;display:flex;flex-direction:column;gap:16px}
+  .editor-card{
+    border:1px dashed var(--line);border-radius:14px;padding:20px;
+    display:flex;flex-direction:column;gap:10px;position:relative;
+  }
+  .editor-card .handle{position:absolute;top:14px;right:14px;display:flex;gap:3px;opacity:0.6}
+  .editor-card .handle span{width:3px;height:3px;border-radius:50%;background:var(--wave)}
+  .editor-card .handle .col{display:flex;flex-direction:column;gap:3px}
+  .editor-card h4{font-family:'Fraunces',serif;font-weight:600;color:var(--deep);font-size:1.15rem;margin:0}
+  .editor-card p{font-size:0.9rem;margin:0}
+  .editor-bar{height:10px;border-radius:6px;background:var(--surface-2)}
+  .editor-bar.w60{width:60%} .editor-bar.w80{width:80%} .editor-bar.w40{width:40%}
+
+  /* ---------- stats / chart ---------- */
+  .stat-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center}
+  @media (max-width:860px){ .stat-grid{grid-template-columns:1fr;gap:40px} }
+  .chart-wrap{background:var(--surface-2);border-radius:20px;padding:26px 24px 18px}
+  .chart-caption{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);margin-top:10px}
+
+  /* ---------- testimonials ---------- */
+  .quotes{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+  @media (max-width:760px){ .quotes{grid-template-columns:1fr} }
+  .quote{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px 26px;display:flex;flex-direction:column;gap:18px}
+  .quote p.q{font-family:'Fraunces',serif;font-style:italic;font-weight:450;font-size:1.14rem;color:var(--deep);line-height:1.5}
+  .quote .who{display:flex;align-items:center;gap:12px}
+  .quote .avatar{width:38px;height:38px;border-radius:50%;flex:none}
+  .quote .who b{display:block;font-size:0.92rem;color:var(--ink)}
+  .quote .who span{font-size:0.8rem;color:var(--ink-soft)}
+
+  /* ---------- pricing ---------- */
+  .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  @media (max-width:860px){ .pricing{grid-template-columns:1fr} }
+  .plan{
+    background:var(--surface);border:1px solid var(--line);border-radius:22px;
+    padding:30px 26px;display:flex;flex-direction:column;gap:18px;
+  }
+  .plan.featured{border-color:var(--tide);box-shadow:var(--shadow-lift);position:relative}
+  .plan.featured::before{
+    content:"Most current";font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--surface);background:var(--tide);position:absolute;top:-11px;left:26px;padding:4px 10px;border-radius:999px;
+  }
+  .plan h3{font-size:1.1rem;color:var(--deep)}
+  .plan .price{font-family:'Fraunces',serif;font-size:2.1rem;color:var(--deep)}
+  .plan .price small{font-family:'Karla',sans-serif;font-size:0.9rem;color:var(--ink-soft);font-weight:400}
+  .plan ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .plan li{font-size:0.92rem;color:var(--ink-soft);display:flex;gap:9px;align-items:flex-start}
+  .plan li svg{flex:none;margin-top:3px;width:14px;height:14px;color:var(--tide)}
+
+  /* ---------- final cta ---------- */
+  .final-cta{
+    background:var(--deep);color:var(--bg);
+    padding:0;
+    position:relative;overflow:hidden;
+  }
+  .final-cta-inner{max-width:640px;margin:0 auto;padding:96px 32px 100px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:22px;position:relative;z-index:2}
+  .final-cta h2{color:#fff;font-size:clamp(1.9rem,4vw,2.7rem)}
+  .final-cta p{color:color-mix(in srgb, var(--bg) 75%, transparent);font-size:1.05rem}
+  canvas#ctaWave{position:absolute;inset:0;width:100%;height:100%;opacity:0.5}
+
+  /* ---------- footer ---------- */
+  footer{background:var(--ink);color:var(--surface-2)}
+  .footer-inner{max-width:1180px;margin:0 auto;padding:56px 32px 40px;display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px}
+  @media (max-width:760px){ .footer-inner{grid-template-columns:repeat(2,1fr)} }
+  .footer-brand{font-family:'Fraunces',serif;font-weight:600;font-size:1.2rem;color:var(--surface)}
+  .footer-inner p.tag{font-size:0.88rem;margin-top:10px;color:#7fa39d;max-width:230px;line-height:1.5}
+  .footer-inner h5{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:.1em;text-transform:uppercase;color:#7fa39d;margin:0 0 14px}
+  .footer-inner ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .footer-inner a{font-size:0.9rem;color:#cfe4e0;text-decoration:none}
+  .footer-inner a:hover{color:#fff}
+  .footer-bottom{border-top:1px solid rgba(255,255,255,0.08);padding:18px 32px;display:flex;justify-content:space-between;max-width:1180px;margin:0 auto;font-size:0.78rem;color:#5f8681;font-family:'IBM Plex Mono',monospace}
+  @media (max-width:600px){ .footer-bottom{flex-direction:column;gap:8px} }
+
+  @media (prefers-reduced-motion: reduce){
+    .pillar, .btn-primary { transition:none }
+  }
+</style>
+
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">
+      <svg class="brand-mark" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="13" cy="13" r="13" fill="var(--tide)"/>
+        <path d="M3 14c2 0 2-4 4.5-4s2.5 4 4.5 4 2.5-4 4.5-4 2.5 4 4.5 4" stroke="var(--surface)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      </svg>
+      Swell
+    </a>
+    <div class="navlinks">
+      <a href="#pillars">Product</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#quotes">Stories</a>
+    </div>
+    <div class="navcta">
+      <a class="link-btn" href="#top">Log in</a>
+      <a class="btn btn-primary" href="#top">Try Swell free</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <section class="hero">
+    <div class="hero-canvas-holder">
+      <canvas id="heroWave" aria-hidden="true"></canvas>
+      <div class="hero-content">
+        <span class="eyebrow">AI creation, in one continuous motion</span>
+        <h1>Every deck starts&nbsp;as a ripple.</h1>
+        <p class="lede">Type a topic. Swell drafts the copy, picks the layout, and builds a full deck, doc, or site around it &mdash; ready to reshape in one pass, not fifty clicks.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="#editorSection">Start a draft &nbsp;&rarr;</a>
+          <a class="btn btn-ghost btn-lg" href="#how">See how it flows</a>
+        </div>
+      </div>
+      <div class="prompt-card">
+        <div class="prompt-row">
+          <span class="prompt-chip">PROMPT</span>
+          <input type="text" id="promptInput" value="A pitch deck for a tide-powered charging dock" aria-label="Topic to draft">
+        </div>
+        <div class="prompt-actions">
+          <div class="surface-pick" id="surfacePick">
+            <button class="active" type="button" data-surface="deck">Deck</button>
+            <button type="button" data-surface="doc">Doc</button>
+            <button type="button" data-surface="site">Site</button>
+          </div>
+          <button class="btn btn-primary" type="button" id="generateBtn" style="padding:9px 18px;font-size:0.86rem">Generate</button>
+        </div>
+        <p id="genStatus" class="gen-status" hidden></p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b class="tabular">11s</b><span>to first draft</span></div>
+        <div class="stat"><b class="tabular">3</b><span>surfaces, one prompt</span></div>
+        <div class="stat"><b class="tabular">200k+</b><span>decks drafted weekly</span></div>
+      </div>
+    </div>
+    <svg class="wave-divider to-surface" id="divTop" viewBox="0 0 1200 64" preserveAspectRatio="none"></svg>
+  </section>
+
+  <section class="band" id="pillars">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">One current, three shapes</span>
+        <h2>Wherever the words need to land.</h2>
+        <p>Swell doesn't ask which tool you need. Describe the outcome, and it chooses the shape &mdash; then lets you pour it into either of the others in a click.</p>
+      </div>
+      <div class="pillars">
+        <article class="pillar">
+          <svg class="icon" viewBox="0 0 44 44" fill="none"><path d="M4 22c3 0 3-7 7-7s4 7 7 7 4-7 7-7 4 7 7 7 4-7 8-7" stroke="var(--tide)" stroke-width="2.4" stroke-linecap="round"/><path d="M4 30c3 0 3-5 7-5s4 5 7 5 4-5 7-5 4 5 7 5 4-5 8-5" stroke="var(--wave)" stroke-width="2" stroke-linecap="round" opacity="0.5"/></svg>
+          <span class="tag">Estuary</span>
+          <h3>Docs that read like a current</h3>
+          <p>Long-form pages with real typographic rhythm &mdash; pull quotes, figures, and citations placed the way an editor would place them.</p>
+        </article>
+        <article class="pillar">
+          <svg class="icon" viewBox="0 0 44 44" fill="none"><rect x="5" y="9" width="34" height="22" rx="4" stroke="var(--tide)" stroke-width="2.4"/><path d="M9 25c2.5 0 2.5-6 5-6s3 6 5 6 3-6 5-6 3 6 5 6 3-6 6-6" stroke="var(--wave)" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="tag">Swell</span>
+          <h3>Decks that hold their shape</h3>
+          <p>Card-based slides that stay balanced when you rewrite a headline &mdash; the layout adapts instead of overflowing.</p>
+        </article>
+        <article class="pillar">
+          <svg class="icon" viewBox="0 0 44 44" fill="none"><path d="M6 12h32v20H6z" stroke="var(--tide)" stroke-width="2.4" fill="none"/><path d="M6 30c3 0 3-4 6.5-4s3.5 4 6.5 4 3.5-4 6.5-4 3.5 4 6.5 4 3.5-4 6-4" stroke="var(--wave)" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="tag">Tide</span>
+          <h3>Sites that ship the same day</h3>
+          <p>A published page with real navigation and responsive sections &mdash; no separate builder, no hand-off to a developer.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+  <svg class="wave-divider to-bg" id="divA" viewBox="0 0 1200 64" preserveAspectRatio="none"></svg>
+
+  <section class="band-bg" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">From low tide to high tide</span>
+        <h2>Three stages, each one gaining on the last.</h2>
+        <p>The gauge below tracks how much of the work Swell has taken on by that stage &mdash; you supply less as the tide comes in.</p>
+      </div>
+      <div class="tide-steps">
+        <div class="tide-step">
+          <span class="tide-level">01 &mdash; Low tide</span>
+          <div class="tide-gauge"><span style="width:20%"></span></div>
+          <h3>You bring the topic</h3>
+          <p>A sentence, a rough outline, or a doc you paste in. Swell reads it for structure, not just keywords.</p>
+        </div>
+        <div class="tide-step">
+          <span class="tide-level">02 &mdash; Rising</span>
+          <div class="tide-gauge"><span style="width:65%"></span></div>
+          <h3>Swell drafts the whole thing</h3>
+          <p>Copy, layout, imagery, and citations arrive together as editable cards &mdash; not a blank canvas with suggestions on the side.</p>
+        </div>
+        <div class="tide-step">
+          <span class="tide-level">03 &mdash; High tide</span>
+          <div class="tide-gauge"><span style="width:96%"></span></div>
+          <h3>You shape the edges</h3>
+          <p>Nudge tone, swap a section, resize an image. Every change ripples through the rest of the piece automatically.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <svg class="wave-divider to-surface" id="divB" viewBox="0 0 1200 64" preserveAspectRatio="none"></svg>
+
+  <section class="band" id="editorSection" style="padding-top:88px">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Inside the editor</span>
+        <h2>Cards, not slides you fight with.</h2>
+        <p>This is a live draft, not a screenshot &mdash; type a topic above and press Generate to have Claude write the outline below.</p>
+      </div>
+      <div class="editor-mock">
+        <div class="editor-chrome">
+          <i></i><i></i><i></i>
+          <span id="chromeUrl">swell.app/d/tide-dock-pitch</span>
+          <span id="draftBadge" class="draft-badge" hidden>Drafted by Claude</span>
+        </div>
+        <div class="editor-body">
+          <div class="editor-rail" id="editorRail">
+            <div class="rail-card active">1&nbsp;&middot;&nbsp;Cover</div>
+            <div class="rail-card">2&nbsp;&middot;&nbsp;The problem</div>
+            <div class="rail-card">3&nbsp;&middot;&nbsp;How it works</div>
+            <div class="rail-card">4&nbsp;&middot;&nbsp;Market</div>
+            <div class="rail-card">5&nbsp;&middot;&nbsp;Ask</div>
+          </div>
+          <div class="editor-canvas" id="editorCanvas">
+            <div class="editor-card">
+              <span class="handle" aria-hidden="true"><span class="col"><span></span><span></span><span></span></span><span class="col"><span></span><span></span><span></span></span></span>
+              <h4>Tide Dock</h4>
+              <p>Charging, powered by the pull of the moon.</p>
+              <div class="editor-bar w40"></div>
+            </div>
+            <div class="editor-card">
+              <span class="handle" aria-hidden="true"><span class="col"><span></span><span></span><span></span></span><span class="col"><span></span><span></span><span></span></span></span>
+              <div class="editor-bar w80"></div>
+              <div class="editor-bar w60"></div>
+              <div class="editor-bar w40"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="editor-note">Example draft shown above. Everything in this panel regenerates from what you type in the prompt bar at the top.</p>
+    </div>
+  </section>
+
+  <section class="band" id="stats">
+    <div class="wrap">
+      <div class="stat-grid">
+        <div>
+          <span class="eyebrow">Measured against the old way</span>
+          <h2 style="margin-top:14px">Most of the draft happens before the coffee's cold.</h2>
+          <p style="margin-top:16px;font-size:1.02rem;line-height:1.6">Teams that moved their pitch and onboarding decks to Swell cut the time from blank page to shareable draft by roughly ninefold &mdash; the gap below is the part Swell now absorbs.</p>
+        </div>
+        <div class="chart-wrap">
+          <svg id="timeChart" viewBox="0 0 380 220" width="100%" role="img" aria-label="Bar chart comparing minutes to first draft, unassisted versus with Swell"></svg>
+          <div class="chart-caption"><span>minutes to first shareable draft</span><span class="tabular">n = 1,240 workspaces</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <svg class="wave-divider to-bg" id="divC" viewBox="0 0 1200 64" preserveAspectRatio="none"></svg>
+
+  <section class="band-bg" id="quotes">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">From the current users</span>
+        <h2>What changes once the first draft is free.</h2>
+      </div>
+      <div class="quotes">
+        <figure class="quote">
+          <p class="q">"I stopped opening a blank slide deck at 11pm. I open Swell, paste the brief, and I'm editing instead of staring."</p>
+          <div class="who">
+            <svg class="avatar" viewBox="0 0 38 38"><circle cx="19" cy="19" r="19" fill="var(--surface-2)"/><path d="M6 24c2.5 0 2.5-6 6.5-6s4 6 6.5 6 4-6 6.5-6 4 6 6.5 6" stroke="var(--wave)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            <div><b>Priya</b><span>Head of Partnerships</span></div>
+          </div>
+        </figure>
+        <figure class="quote">
+          <p class="q">"The part I didn't expect: rewriting one slide's headline and watching the layout resettle instead of breaking."</p>
+          <div class="who">
+            <svg class="avatar" viewBox="0 0 38 38"><circle cx="19" cy="19" r="19" fill="var(--surface-2)"/><path d="M6 24c2.5 0 2.5-6 6.5-6s4 6 6.5 6 4-6 6.5-6 4 6 6.5 6" stroke="var(--wave)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            <div><b>Marcus</b><span>Product Designer</span></div>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="pricing" style="padding-top:96px">
+    <div class="wrap">
+      <div class="section-head" style="margin-left:auto;margin-right:auto;text-align:center">
+        <span class="eyebrow" style="justify-content:center">Pricing that scales with the swell</span>
+        <h2>Start in the shallows. Wade out when you're ready.</h2>
+      </div>
+      <div class="pricing">
+        <div class="plan">
+          <h3>Shallows</h3>
+          <div class="price">$0 <small>/ month</small></div>
+          <ul>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>3 drafts a month</li>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Docs, decks, and sites</li>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Swell watermark on export</li>
+          </ul>
+          <a class="btn btn-ghost" href="#top" style="justify-content:center">Start free</a>
+        </div>
+        <div class="plan featured">
+          <h3>Current</h3>
+          <div class="price">$16 <small>/ month</small></div>
+          <ul>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Unlimited drafts</li>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Custom fonts and themes</li>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Analytics on shared links</li>
+          </ul>
+          <a class="btn btn-primary" href="#top" style="justify-content:center">Try Current</a>
+        </div>
+        <div class="plan">
+          <h3>Deep water</h3>
+          <div class="price">$39 <small>/ seat</small></div>
+          <ul>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Shared brand kits</li>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>SSO and admin controls</li>
+            <li><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Priority generation queue</li>
+          </ul>
+          <a class="btn btn-ghost" href="#top" style="justify-content:center">Talk to sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <canvas id="ctaWave" aria-hidden="true"></canvas>
+    <div class="final-cta-inner">
+      <h2>Your next deck is one prompt away.</h2>
+      <p>No credit card. No blank canvas. Just tell Swell where you're headed.</p>
+      <a class="btn btn-primary btn-lg" href="#top">Start a draft &nbsp;&rarr;</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Swell</div>
+      <p class="tag">AI drafting for docs, decks, and sites &mdash; one prompt, three shapes.</p>
+    </div>
+    <div>
+      <h5>Product</h5>
+      <ul><li><a href="#pillars">Docs</a></li><li><a href="#pillars">Decks</a></li><li><a href="#pillars">Sites</a></li></ul>
+    </div>
+    <div>
+      <h5>Company</h5>
+      <ul><li><a href="#how">How it works</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#quotes">Stories</a></li></ul>
+    </div>
+    <div>
+      <h5>Resources</h5>
+      <ul><li><a href="#top">Templates</a></li><li><a href="#top">Guides</a></li><li><a href="#top">Support</a></li></ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 Swell</span>
+    <span>Made in one continuous motion</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  function wavePoints(width, height, amplitude, frequency, phase, baseline){
+    var pts = [];
+    var steps = 48;
+    for(var i=0;i<=steps;i++){
+      var x = (width/steps)*i;
+      var y = baseline + Math.sin((i/steps)*Math.PI*2*frequency + phase)*amplitude;
+      pts.push([x,y]);
+    }
+    return pts;
+  }
+  function pointsToPath(pts, width, height){
+    var d = "M0,"+height+" L"+pts[0][0]+","+pts[0][1]+" ";
+    for(var i=1;i<pts.length;i++){ d += "L"+pts[i][0]+","+pts[i][1]+" "; }
+    d += "L"+width+","+height+" Z";
+    return d;
+  }
+  function setDivider(id, amplitude, frequency){
+    var svg = document.getElementById(id);
+    if(!svg) return;
+    var w=1200,h=64;
+    var pts = wavePoints(w,h,amplitude,frequency,0.4, h*0.55);
+    var path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", pointsToPath(pts,w,h));
+    svg.appendChild(path);
+  }
+  setDivider("divTop", 10, 2.5);
+  setDivider("divA", 7, 1.5);
+  setDivider("divB", 16, 3.5);
+  setDivider("divC", 9, 2);
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function initHeroCanvas(canvas, opts){
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio||1, 2);
+    var w,h;
+    function resize(){
+      var rect = canvas.parentElement.getBoundingClientRect();
+      w = rect.width; h = rect.height;
+      canvas.width = w*dpr; canvas.height = h*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var layers = opts.layers;
+    var t = 0;
+
+    function drawFrame(){
+      ctx.clearRect(0,0,w,h);
+      layers.forEach(function(layer){
+        var pts = wavePoints(w, h, layer.amp, layer.freq, t*layer.speed + layer.phase, h*layer.baseline);
+        var d = pointsToPath(pts, w, h);
+        var p = new Path2D(d);
+        ctx.fillStyle = layer.color;
+        ctx.fill(p);
+      });
+    }
+
+    if(reduceMotion){
+      drawFrame();
+      return;
+    }
+    function loop(){
+      t += 0.012;
+      drawFrame();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var rootTheme = document.documentElement.getAttribute('data-theme');
+  if(rootTheme === 'dark') isDark = true;
+  if(rootTheme === 'light') isDark = false;
+
+  var heroColors = isDark
+    ? ['rgba(79,209,197,0.18)','rgba(87,224,211,0.22)','rgba(232,95,63,0.16)']
+    : ['rgba(31,122,122,0.14)','rgba(46,168,163,0.18)','rgba(232,95,63,0.14)'];
+
+  initHeroCanvas(document.getElementById('heroWave'), {
+    layers:[
+      {amp:26, freq:1.2, speed:0.6, phase:0,   baseline:0.62, color:heroColors[0]},
+      {amp:34, freq:1.6, speed:0.9, phase:1.6, baseline:0.72, color:heroColors[1]},
+      {amp:18, freq:2.1, speed:1.3, phase:3.1, baseline:0.86, color:heroColors[2]}
+    ]
+  });
+
+  initHeroCanvas(document.getElementById('ctaWave'), {
+    layers:[
+      {amp:20, freq:1.4, speed:0.5, phase:0,   baseline:0.5, color: isDark ? 'rgba(87,224,211,0.14)' : 'rgba(255,255,255,0.06)'},
+      {amp:14, freq:2.0, speed:0.8, phase:2.2, baseline:0.7, color: isDark ? 'rgba(255,138,104,0.10)' : 'rgba(255,255,255,0.04)'}
+    ]
+  });
+
+  // bar chart: minutes to first draft
+  (function(){
+    var svg = document.getElementById('timeChart');
+    if(!svg) return;
+    var W=380,H=220, padL=34, padB=28, padT=10;
+    var data = [ {label:'Unassisted', value:82}, {label:'With Swell', value:9} ];
+    var chartW = W - padL - 10, chartH = H - padB - padT;
+    var maxV = 90;
+    var barW = 92;
+    var gap = (chartW - barW*2)/3;
+    var ns = "http://www.w3.org/2000/svg";
+
+    var styleTag = document.createElement('style');
+    document.head.appendChild(styleTag);
+    var cssInk = getComputedStyle(document.documentElement).getPropertyValue('--ink-soft').trim() || '#3c5a56';
+    var cssDeep = getComputedStyle(document.documentElement).getPropertyValue('--deep').trim() || '#0e3b3e';
+    var cssTide = getComputedStyle(document.documentElement).getPropertyValue('--tide').trim() || '#177f78';
+    var cssLine = getComputedStyle(document.documentElement).getPropertyValue('--line').trim() || 'rgba(11,36,38,0.13)';
+
+    // gridlines
+    [0,20,40,60,80].forEach(function(v){
+      var y = padT + chartH - (v/maxV)*chartH;
+      var line = document.createElementNS(ns,'line');
+      line.setAttribute('x1',padL); line.setAttribute('x2', W-6);
+      line.setAttribute('y1',y); line.setAttribute('y2',y);
+      line.setAttribute('stroke', cssLine); line.setAttribute('stroke-width','1');
+      svg.appendChild(line);
+      var lbl = document.createElementNS(ns,'text');
+      lbl.setAttribute('x', padL-8); lbl.setAttribute('y', y+3);
+      lbl.setAttribute('text-anchor','end'); lbl.setAttribute('font-size','9');
+      lbl.setAttribute('font-family','IBM Plex Mono, monospace');
+      lbl.setAttribute('fill', cssInk);
+      lbl.textContent = v;
+      svg.appendChild(lbl);
+    });
+
+    data.forEach(function(d,i){
+      var x = padL + gap + i*(barW+gap);
+      var barH = (d.value/maxV)*chartH;
+      var y = padT + chartH - barH;
+      var rect = document.createElementNS(ns,'rect');
+      rect.setAttribute('x',x); rect.setAttribute('y',y);
+      rect.setAttribute('width',barW); rect.setAttribute('height',barH);
+      rect.setAttribute('rx',8);
+      rect.setAttribute('fill', i===0 ? cssInk : cssTide);
+      rect.setAttribute('opacity', i===0 ? '0.45' : '1');
+      svg.appendChild(rect);
+
+      var val = document.createElementNS(ns,'text');
+      val.setAttribute('x', x+barW/2); val.setAttribute('y', y-8);
+      val.setAttribute('text-anchor','middle'); val.setAttribute('font-size','15');
+      val.setAttribute('font-family','Fraunces, serif'); val.setAttribute('font-weight','600');
+      val.setAttribute('fill', cssDeep);
+      val.textContent = d.value+'m';
+      svg.appendChild(val);
+
+      var lbl = document.createElementNS(ns,'text');
+      lbl.setAttribute('x', x+barW/2); lbl.setAttribute('y', H-8);
+      lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','10');
+      lbl.setAttribute('font-family','IBM Plex Mono, monospace');
+      lbl.setAttribute('fill', cssInk);
+      lbl.textContent = d.label;
+      svg.appendChild(lbl);
+    });
+  })();
+
+  // ---- live drafting, via the artifact's "sample" capability (asks Claude) ----
+  var currentSurface = 'deck';
+  document.querySelectorAll('.surface-pick button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.surface-pick button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentSurface = btn.getAttribute('data-surface') || 'deck';
+    });
+  });
+
+  var promptInput = document.getElementById('promptInput');
+  var generateBtn = document.getElementById('generateBtn');
+  var genStatus = document.getElementById('genStatus');
+  var editorRail = document.getElementById('editorRail');
+  var editorCanvas = document.getElementById('editorCanvas');
+  var chromeUrl = document.getElementById('chromeUrl');
+  var draftBadge = document.getElementById('draftBadge');
+
+  var sample = null;
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('sample').then(function(ns){ sample = ns; }).catch(function(){ sample = null; });
+  }
+
+  function setStatus(text, kind){
+    if(!genStatus) return;
+    genStatus.textContent = text || '';
+    genStatus.hidden = !text;
+    genStatus.className = 'gen-status' + (kind ? ' is-' + kind : '');
+  }
+
+  function slugify(s){
+    return (s || 'draft').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,32) || 'draft';
+  }
+
+  var surfaceCopy = {
+    deck: { noun:'a slide-by-slide outline for a pitch deck', unit:'Slide', badge:'d' },
+    doc:  { noun:'a section-by-section outline for a long-form document', unit:'Section', badge:'p' },
+    site: { noun:'the section-by-section content for a one-page website', unit:'Section', badge:'s' }
+  };
+
+  function buildPrompt(topic){
+    var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
+    return 'Draft ' + s.noun + ' about: "' + topic + '".\n\n' +
+      'Reply with ONLY a JSON object, no other text, in exactly this shape:\n' +
+      '{"title": string (a short punchy title, under 6 words), ' +
+      '"tagline": string (one sentence subtitle), ' +
+      '"blocks": [ {"heading": string (under 6 words), "body": string (1-2 sentences, under 30 words)}, ... ] }\n\n' +
+      'Include between 4 and 6 blocks, ordered the way they should appear.';
+  }
+
+  var barPattern = ['w80','w60','w40'];
+
+  function renderDraft(data, topic){
+    if (!data || typeof data.title !== 'string' || !Array.isArray(data.blocks) || data.blocks.length === 0) {
+      throw { code: 'invalid_json' };
+    }
+    var blocks = data.blocks.slice(0, 6);
+    var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
+
+    var railHtml = '<div class="rail-card active">1&nbsp;&middot;&nbsp;Cover</div>';
+    blocks.forEach(function(b, i){
+      railHtml += '<div class="rail-card">' + (i+2) + '&nbsp;&middot;&nbsp;' + escapeHtml(String(b.heading || s.unit)) + '</div>';
+    });
+    editorRail.innerHTML = railHtml;
+
+    var canvasHtml = '<div class="editor-card">' + handleHtml() +
+      '<h4>' + escapeHtml(data.title) + '</h4>' +
+      (data.tagline ? '<p>' + escapeHtml(String(data.tagline)) + '</p>' : '') +
+      '<div class="editor-bar w40"></div></div>';
+    blocks.forEach(function(b, i){
+      canvasHtml += '<div class="editor-card">' + handleHtml() +
+        '<h4>' + escapeHtml(String(b.heading || '')) + '</h4>' +
+        '<p>' + escapeHtml(String(b.body || '')) + '</p>' +
+        '<div class="editor-bar ' + barPattern[i % barPattern.length] + '"></div></div>';
+    });
+    editorCanvas.innerHTML = canvasHtml;
+
+    chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
+    if (draftBadge) draftBadge.hidden = false;
+  }
+
+  function renderSkeleton(){
+    var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
+    var railHtml = '<div class="rail-card active">Drafting&hellip;</div>';
+    for (var i=0;i<3;i++) railHtml += '<div class="rail-card">&nbsp;</div>';
+    editorRail.innerHTML = railHtml;
+    var card = '<div class="editor-card"><div class="editor-bar w60"></div><div class="editor-bar w40"></div><div class="editor-bar w80"></div></div>';
+    editorCanvas.innerHTML = card + card;
+    if (draftBadge) draftBadge.hidden = true;
+  }
+
+  function handleHtml(){
+    return '<span class="handle" aria-hidden="true"><span class="col"><span></span><span></span><span></span></span>' +
+      '<span class="col"><span></span><span></span><span></span></span></span>';
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  var errorCopy = {
+    not_granted: "You chose not to let Swell use Claude here, so drafting is off for this session.",
+    sampling_disabled: "AI drafting isn't available for this account.",
+    not_declared: "AI drafting isn't available in this view.",
+    capability_disabled: "AI drafting isn't available in this view.",
+    capability_removed: "AI drafting isn't available in this view.",
+    rate_limited: "Claude's a little busy — try again in a moment.",
+    session_expired: "Your session expired — reload the page and try again.",
+    refused: "Claude declined that topic — try rephrasing it.",
+    empty_completion: "Didn't get a draft back — try a shorter, clearer topic.",
+    invalid_json: "Couldn't read the draft back — try again.",
+    prompt_too_large: "That topic's too long — try trimming it.",
+    invalid_request: "That topic couldn't be sent — try rephrasing it.",
+    upstream_error: "Something went wrong reaching Claude — try again."
+  };
+
+  if (generateBtn) {
+    generateBtn.addEventListener('click', function(){
+      handleGenerate();
+    });
+  }
+
+  var generating = false;
+  function handleGenerate(){
+    if (generating) return;
+    var topic = (promptInput.value || '').trim();
+    if (!topic) {
+      setStatus('Type a topic first.', 'error');
+      promptInput.focus();
+      return;
+    }
+    if (!sample) {
+      setStatus("AI drafting isn't available in this view.", 'error');
+      return;
+    }
+    generating = true;
+    generateBtn.disabled = true;
+    document.querySelectorAll('.surface-pick button').forEach(function(b){ b.disabled = true; });
+    var prevLabel = generateBtn.textContent;
+    generateBtn.textContent = 'Thinking…';
+    setStatus('Drafting with Claude…', 'info');
+    var editorSection = document.getElementById('editorSection');
+    if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderSkeleton();
+
+    sample.json(buildPrompt(topic), { modelTier: 'default', cache: false })
+      .then(function(data){
+        renderDraft(data, topic);
+        setStatus('Drafted just now.', 'info');
+      })
+      .catch(function(e){
+        var code = (e && e.code) || 'upstream_error';
+        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+      })
+      .finally(function(){
+        generating = false;
+        generateBtn.disabled = false;
+        document.querySelectorAll('.surface-pick button').forEach(function(b){ b.disabled = false; });
+        generateBtn.textContent = prevLabel;
+      });
+  }
+})();
+</script>
