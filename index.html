@@ -191,6 +191,13 @@
   .surface-pick button:disabled, #generateBtn:disabled{opacity:0.6;cursor:default}
   #promptInput{cursor:text}
   .gen-status{margin:0;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;line-height:1.4}
+  .prompt-examples{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft)}
+  .prompt-examples button{
+    font:inherit;color:var(--wave);background:transparent;border:1px solid var(--line);
+    border-radius:999px;padding:4px 11px;cursor:pointer;transition:border-color .15s,color .15s;
+  }
+  .prompt-examples button:hover{border-color:var(--wave)}
+  .prompt-examples button:focus-visible{outline:2px solid var(--tide);outline-offset:2px}
   .gen-status.is-error{color:var(--coral)}
   .gen-status.is-info{color:var(--wave)}
 
@@ -483,6 +490,12 @@
           <button class="btn btn-primary" type="button" id="generateBtn" style="padding:9px 18px;font-size:0.86rem">Generate</button>
         </div>
         <p id="genStatus" class="gen-status" hidden></p>
+        <div class="prompt-examples" id="promptExamples">
+          <span>Try</span>
+          <button type="button" data-topic="The water cycle, for a 5th grade science class">a science lesson</button>
+          <button type="button" data-topic="Our Q3 customer support review">a quarterly review</button>
+          <button type="button" data-topic="How to train for your first marathon">a how-to</button>
+        </div>
       </div>
       <div class="hero-stats">
         <div class="stat"><b class="tabular">11s</b><span>to first draft</span></div>
@@ -1376,6 +1389,14 @@
   }
 
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
+
+  document.querySelectorAll('#promptExamples button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      promptInput.value = btn.getAttribute('data-topic') || btn.textContent;
+      promptInput.focus();
+      setStatus('', null);
+    });
+  });
 
   // ---- regenerate a single slide ---------------------------------------
   function handleRegenerateSlide(){

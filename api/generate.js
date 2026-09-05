@@ -11,38 +11,49 @@ export const config = { runtime: 'edge' };
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const SURFACE_NOUN = {
-  deck: 'a slide-by-slide outline for a pitch deck',
-  doc: 'a section-by-section outline for a long-form document',
-  site: 'the section-by-section content for a one-page website',
+  deck: 'a slide deck',
+  doc: 'a long-form document',
+  site: 'a one-page website',
 };
 
 function buildPrompt(topic, surface) {
   const noun = SURFACE_NOUN[surface] || SURFACE_NOUN.deck;
   return `Draft ${noun} about: "${topic}".
 
+First work out what kind of thing this subject actually calls for — a lesson, an
+explainer, a report, a status update, a how-to, a retrospective, a travel plan, a
+book summary, a proposal, a pitch — and structure it the way that kind is normally
+structured. Do NOT use pitch slides (problem, solution, market, business model,
+traction, the ask) unless the subject genuinely is a business pitch. A deck about
+photosynthesis should read like a lesson; a deck about last quarter should read
+like a review.
+
 Reply in EXACTLY this plain-text format and nothing else:
 
-TITLE: <short punchy title, under 6 words>
+TITLE: <short title, under 6 words>
 TAGLINE: <one sentence subtitle>
 ===
 LAYOUT: bullets
 HEADING: <heading, under 6 words>
-BULLET: <point, under 14 words>
-BULLET: <point, under 14 words>
+BULLET: <point, under 18 words>
+BULLET: <point, under 18 words>
 ===
 LAYOUT: stat
 HEADING: <heading, under 6 words>
-BULLET: <one striking number or metric, under 8 words>
-BULLET: <supporting point, under 14 words>
+BULLET: <one striking number, under 8 words>
+BULLET: <supporting point, under 18 words>
 
 Rules:
-- Write 4 to 6 slides after the cover. Begin every slide with a line of exactly ===
+- Write 5 to 8 slides after the cover — as many as the subject actually needs.
+  Begin every slide with a line of exactly ===
+- Order the slides the way someone would actually present them, and finish with a
+  closing slide: a summary, a takeaway, or what happens next.
 - LAYOUT is one of: bullets, stat, quote
-- Use stat for a slide built around a single number. Use quote for a slide built
-  around one memorable line, where BULLET is the line and HEADING is who said it.
-  Use bullets for everything else.
-- At most one stat slide and at most one quote slide per deck.
-- bullets: 2 to 4 BULLET lines. stat: exactly 2. quote: exactly 1.
+- Use stat only where a single number genuinely carries the point, and quote only
+  where one memorable line does (BULLET is the line, HEADING is who said it).
+  At most one of each, and skip them entirely when they don't suit the subject.
+- bullets: 2 to 5 BULLET lines. stat: exactly 2. quote: exactly 1.
+- Write real substance specific to the subject — never placeholder filler.
 - No markdown, no blank lines, no commentary before or after.`;
 }
 
@@ -85,7 +96,7 @@ export default async function handler(request) {
         model: 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: buildPrompt(topic, body.surface) }],
         temperature: 0.8,
-        max_tokens: 1200,
+        max_tokens: 1800,
         reasoning_effort: 'low',
         stream: true,
       }),
