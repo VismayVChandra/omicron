@@ -4,12 +4,20 @@
 the hero drafts a real slide deck, streamed live into an editable deck viewer,
 via Vercel Edge Functions backed by Groq.
 
-- `index.html` — the site and the deck viewer (slides, thumbnail rail,
-  present mode, in-place editing, drag-to-reorder)
-- `api/generate.js` — streams a whole deck. Returns a line-based format
-  (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BULLET`) rather than
-  JSON so the client can render each slide as it arrives.
+Drafting is two steps, as in Gamma: a topic produces an editable outline, and
+only once that outline is approved are the slides written.
+
+- `index.html` — the site, the outline editor and the deck viewer (slides,
+  thumbnail rail, present mode, in-place editing, drag-to-reorder, four deck
+  themes, saved drafts in `localStorage`, PDF export via the browser's print)
+- `api/outline.js` — step one: plans the deck, returns `{title, tagline, sections}`
+- `api/generate.js` — step two: streams the slides. Returns a line-based format
+  (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BODY` / `BULLET` /
+  `IMAGE`) rather than JSON so the client can render each slide as it arrives.
+  Accepts an approved outline and follows it exactly.
 - `api/slide.js` — regenerates a single slide, returns JSON.
+- `api/image.js` — finds a slide photograph on Wikimedia Commons, filtering out
+  diagrams and NC/ND-licensed files and widening the query if nothing matches.
 
 Both run on the Edge runtime (streaming) and use `openai/gpt-oss-120b` with
 `reasoning_effort: 'low'` — that model reasons silently before answering, and

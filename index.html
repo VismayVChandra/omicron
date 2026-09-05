@@ -310,9 +310,46 @@
     animation:slideIn .35s ease both;
   }
   @keyframes slideIn{ from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
-  .deck-slide.cover{background:var(--deep);color:#fff;align-items:center;justify-content:center;text-align:center;gap:2cqw}
-  .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.8rem);letter-spacing:.12em;text-transform:uppercase;color:var(--tide);position:relative;z-index:2}
-  .deck-slide.cover h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.3rem,6.2cqw,3rem);color:#fff;text-wrap:balance;margin:0;position:relative;z-index:2}
+  /* Slide palettes are their own token set, separate from the site chrome, so a
+     deck can be themed without touching the page around it. */
+  .deck-slide{
+    --s-bg:var(--surface);
+    --s-ink:var(--deep);
+    --s-muted:var(--ink-soft);
+    --s-accent:var(--tide);
+    --s-quote-bg:var(--surface-2);
+    --s-cover-bg:var(--deep);
+    --s-display:'Fraunces',Georgia,serif;
+  }
+  [data-deck-theme="dune"] .deck-slide{
+    --s-bg:#f7f1e6; --s-ink:#3b2a1c; --s-muted:#6f5844; --s-accent:#c2643c;
+    --s-quote-bg:#efe4d2; --s-cover-bg:#2f2418;
+  }
+  [data-deck-theme="graphite"] .deck-slide{
+    --s-bg:#f3f5f6; --s-ink:#151d21; --s-muted:#4f6068; --s-accent:#4d7180;
+    --s-quote-bg:#e5eaec; --s-cover-bg:#131a1d;
+    --s-display:'Karla',system-ui,sans-serif;
+  }
+  [data-deck-theme="noir"] .deck-slide{
+    --s-bg:#151a1c; --s-ink:#eef3f2; --s-muted:#a3b5b4; --s-accent:#63d6bd;
+    --s-quote-bg:#1c2325; --s-cover-bg:#0b0f10;
+  }
+
+  .theme-pick{display:flex;gap:5px;margin-right:4px}
+  .theme-pick button{
+    width:16px;height:16px;border-radius:50%;cursor:pointer;padding:0;
+    border:1px solid var(--line);transition:transform .12s, box-shadow .12s;
+  }
+  .theme-pick button:hover{transform:scale(1.12)}
+  .theme-pick button.active{box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--tide)}
+  .theme-pick button[data-theme="tide"]{background:linear-gradient(135deg,#177f78,#0e3b3e)}
+  .theme-pick button[data-theme="dune"]{background:linear-gradient(135deg,#c2643c,#2f2418)}
+  .theme-pick button[data-theme="graphite"]{background:linear-gradient(135deg,#4d7180,#131a1d)}
+  .theme-pick button[data-theme="noir"]{background:linear-gradient(135deg,#63d6bd,#0b0f10)}
+
+  .deck-slide.cover{background:var(--s-cover-bg);color:#fff;align-items:center;justify-content:center;text-align:center;gap:2cqw}
+  .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.8rem);letter-spacing:.12em;text-transform:uppercase;color:var(--s-accent);position:relative;z-index:2}
+  .deck-slide.cover h3{font-family:var(--s-display);font-weight:600;font-size:clamp(1.3rem,6.2cqw,3rem);color:#fff;text-wrap:balance;margin:0;position:relative;z-index:2}
   .deck-slide.cover p{color:rgba(255,255,255,0.78);font-size:clamp(0.72rem,2.3cqw,1.2rem);margin:0;max-width:80%;position:relative;z-index:2}
   .deck-slide.cover .cover-media{position:absolute;inset:0;z-index:0}
   .deck-slide.cover .cover-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
@@ -320,12 +357,12 @@
   .deck-slide.cover .cover-scrim{position:absolute;inset:0;z-index:1;
     background:linear-gradient(180deg, rgba(6,26,28,0.55) 0%, rgba(6,26,28,0.86) 100%)}
 
-  .deck-slide.content{background:var(--surface);justify-content:center}
-  .deck-slide.content h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(0.95rem,3.6cqw,1.9rem);color:var(--deep);margin:0 0 1.8cqw}
-  .deck-slide.content .slide-body{font-size:clamp(0.62rem,1.95cqw,1rem);color:var(--ink-soft);line-height:1.5;margin:0 0 2cqw;max-width:62ch}
+  .deck-slide.content{background:var(--s-bg);justify-content:center}
+  .deck-slide.content h3{font-family:var(--s-display);font-weight:600;font-size:clamp(0.95rem,3.6cqw,1.9rem);color:var(--s-ink);margin:0 0 1.8cqw}
+  .deck-slide.content .slide-body{font-size:clamp(0.62rem,1.95cqw,1rem);color:var(--s-muted);line-height:1.5;margin:0 0 2cqw;max-width:62ch}
   .deck-slide.content ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.5cqw}
-  .deck-slide.content li{display:flex;gap:1.4cqw;font-size:clamp(0.6rem,1.95cqw,1rem);color:var(--ink-soft);line-height:1.4}
-  .deck-slide.content li::before{content:"";width:0.7cqw;height:0.7cqw;min-width:4px;min-height:4px;border-radius:50%;background:var(--tide);margin-top:0.62em;flex:none}
+  .deck-slide.content li{display:flex;gap:1.4cqw;font-size:clamp(0.6rem,1.95cqw,1rem);color:var(--s-muted);line-height:1.4}
+  .deck-slide.content li::before{content:"";width:0.7cqw;height:0.7cqw;min-width:4px;min-height:4px;border-radius:50%;background:var(--s-accent);margin-top:0.62em;flex:none}
   .deck-slide .wave-accent{position:absolute;right:-10%;bottom:-18%;width:55%;opacity:0.5;pointer-events:none}
 
   /* split: copy on the left, photograph on the right */
@@ -334,7 +371,7 @@
   .deck-slide.split{display:grid;grid-template-columns:1.1fr 0.9fr;gap:0;align-items:stretch;padding:0}
   .deck-slide.split .slide-text{min-width:0;overflow:hidden;padding:5cqw;display:flex;flex-direction:column;justify-content:center}
   .deck-slide.split .wave-accent{display:none}
-  .slide-media{position:relative;overflow:hidden;background:var(--surface-2);width:100%;height:100%}
+  .slide-media{position:relative;overflow:hidden;background:var(--s-quote-bg);width:100%;height:100%}
   .slide-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
   .slide-media[data-state="ready"] img{opacity:1}
   .slide-media[data-state="loading"]::after{
@@ -342,7 +379,7 @@
     background:linear-gradient(100deg, transparent 20%, rgba(46,168,163,0.16) 50%, transparent 80%);
     background-size:220% 100%;animation:shimmer 1.4s linear infinite;
   }
-  .slide-media[data-state="failed"]{background:linear-gradient(150deg, var(--surface-2), var(--tide))}
+  .slide-media[data-state="failed"]{background:linear-gradient(150deg, var(--s-quote-bg), var(--s-accent))}
   @keyframes shimmer{ from{background-position:180% 0} to{background-position:-80% 0} }
   /* Commons images are CC/public domain — credit the photographer on the slide */
   .media-credit{
@@ -354,26 +391,26 @@
   .slide-media[data-state="failed"] .media-credit{display:none}
 
   /* stat layout: one number carries the slide */
-  .deck-slide.stat{background:var(--surface);justify-content:center;gap:1.6cqw}
+  .deck-slide.stat{background:var(--s-bg);justify-content:center;gap:1.6cqw}
   .deck-slide.stat h3{
     font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:clamp(0.55rem,1.5cqw,0.85rem);
-    letter-spacing:.14em;text-transform:uppercase;color:var(--wave);margin:0;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--s-accent);margin:0;
   }
   .deck-slide.stat .stat-value{
-    font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.6rem,8.5cqw,4.2rem);
-    color:var(--deep);line-height:1;margin:0;font-variant-numeric:tabular-nums;text-wrap:balance;
+    font-family:var(--s-display);font-weight:600;font-size:clamp(1.6rem,8.5cqw,4.2rem);
+    color:var(--s-ink);line-height:1;margin:0;font-variant-numeric:tabular-nums;text-wrap:balance;
   }
-  .deck-slide.stat .stat-support{font-size:clamp(0.62rem,2cqw,1.05rem);color:var(--ink-soft);line-height:1.45;margin:0;max-width:85%}
+  .deck-slide.stat .stat-support{font-size:clamp(0.62rem,2cqw,1.05rem);color:var(--s-muted);line-height:1.45;margin:0;max-width:85%}
 
   /* quote layout: one line, set large */
-  .deck-slide.quote{background:var(--surface-2);justify-content:center;gap:2.4cqw}
+  .deck-slide.quote{background:var(--s-quote-bg);justify-content:center;gap:2.4cqw}
   .deck-slide.quote .quote-text{
-    font-family:'Fraunces',serif;font-style:italic;font-weight:450;
-    font-size:clamp(0.9rem,4.2cqw,2.2rem);color:var(--deep);line-height:1.35;margin:0;text-wrap:balance;
+    font-family:var(--s-display);font-style:italic;font-weight:450;
+    font-size:clamp(0.9rem,4.2cqw,2.2rem);color:var(--s-ink);line-height:1.35;margin:0;text-wrap:balance;
   }
   .deck-slide.quote .quote-attr{
     font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.85rem);
-    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--s-muted);margin:0;
   }
   .deck-slide.quote .quote-attr::before{content:"— "}
 
@@ -404,6 +441,59 @@
     position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
     display:flex;align-items:center;gap:16px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;
   }
+
+  /* ---------- outline (step one) ---------- */
+  .outline-panel{
+    background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    box-shadow:var(--shadow-lift);padding:28px 30px 24px;margin-bottom:22px;
+  }
+  .outline-head h3{
+    font-family:'Fraunces',serif;font-size:clamp(1.3rem,2.6vw,1.8rem);color:var(--deep);
+    margin:12px 0 6px;border-radius:4px;
+  }
+  .outline-head p{font-size:0.98rem;color:var(--ink-soft);margin:0;border-radius:4px}
+  .outline-head [contenteditable]:hover{outline:1px dashed var(--line);outline-offset:4px}
+  .outline-head [contenteditable]:focus{outline:2px solid var(--tide);outline-offset:4px}
+  .outline-list{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:sec}
+  .outline-item{
+    display:flex;align-items:center;gap:12px;padding:11px 14px;
+    border:1px solid var(--line);border-radius:12px;background:var(--bg);
+  }
+  .outline-item.dragging{opacity:0.4}
+  .outline-item.drop-target{border-color:var(--tide);box-shadow:0 -3px 0 var(--tide)}
+  .outline-item .grip{cursor:grab;color:var(--ink-soft);font-size:0.8rem;letter-spacing:-2px;user-select:none}
+  .outline-item .idx{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--wave);
+    min-width:1.4em;text-align:right;
+  }
+  .outline-item .sec-text{flex:1;font-size:0.98rem;color:var(--ink);border-radius:4px;min-width:0}
+  .outline-item .sec-text:hover{outline:1px dashed var(--line);outline-offset:3px}
+  .outline-item .sec-text:focus{outline:2px solid var(--tide);outline-offset:3px}
+  .outline-item .drop-sec{
+    background:transparent;border:none;color:var(--ink-soft);cursor:pointer;
+    font-size:1.05rem;line-height:1;padding:2px 6px;border-radius:6px;
+  }
+  .outline-item .drop-sec:hover{color:var(--coral);background:var(--surface-2)}
+  .outline-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:20px;flex-wrap:wrap}
+  .outline-actions-right{display:flex;align-items:center;gap:16px}
+  .outline-cancel{background:none;border:none;cursor:pointer;font-family:inherit;color:var(--ink-soft)}
+  .outline-cancel:hover{color:var(--deep)}
+
+  /* ---------- saved drafts ---------- */
+  .drafts-drawer{border-bottom:1px solid var(--line);background:var(--bg);padding:14px 18px}
+  .drafts-drawer ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .drafts-drawer li{
+    display:flex;align-items:center;gap:12px;font-size:0.88rem;
+    border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface);
+  }
+  .drafts-drawer .d-name{flex:1;color:var(--deep);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .drafts-drawer .d-meta{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft)}
+  .drafts-drawer button{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;cursor:pointer;
+    border:1px solid var(--line);background:transparent;color:var(--wave);border-radius:999px;padding:4px 11px;
+  }
+  .drafts-drawer button:hover{border-color:var(--wave)}
+  .drafts-empty{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);margin:0}
 
   @media (prefers-reduced-motion: reduce){
     .deck-thumb, .deck-slide{ animation:none }
@@ -470,6 +560,26 @@
 
   @media (prefers-reduced-motion: reduce){
     .pillar, .btn-primary { transition:none }
+  }
+
+  /* ---------- PDF export via the browser's own print-to-PDF ---------- */
+  #printDeck{display:none}
+  @media print{
+    @page{ size:landscape; margin:0 }
+    body > *:not(#printDeck){display:none !important}
+    #printDeck{display:block !important}
+    #printDeck .print-slide{
+      width:100vw;height:100vh;page-break-after:always;break-after:page;
+      display:flex;align-items:stretch;justify-content:center;overflow:hidden;
+    }
+    #printDeck .print-slide:last-child{page-break-after:auto;break-after:auto}
+    #printDeck .deck-slide-frame{width:100%;max-width:none;height:100%}
+    #printDeck .deck-slide{
+      width:100%;height:100%;aspect-ratio:auto;border-radius:0;box-shadow:none;animation:none;
+    }
+    #printDeck .media-credit{background:none;color:rgba(255,255,255,0.9)}
+    .deck-slide [contenteditable="true"]:hover,
+    .deck-slide [contenteditable="true"]:focus{outline:none !important}
   }
 </style>
 </head>
@@ -609,7 +719,23 @@
         <h2>Not a mockup &mdash; an actual deck, drafting.</h2>
         <p>This panel is live. Type a topic above and press Generate: slides write themselves here, one at a time. Then click any line to rewrite it, drag thumbnails to reorder, or redo a single slide.</p>
       </div>
-      <div class="deck-mock">
+      <div class="outline-panel" id="outlinePanel" hidden>
+        <div class="outline-head">
+          <span class="eyebrow">Step one &mdash; the outline</span>
+          <h3 id="outlineTitle" contenteditable="true" spellcheck="false">Untitled</h3>
+          <p id="outlineTagline" contenteditable="true" spellcheck="false"></p>
+        </div>
+        <ol class="outline-list" id="outlineList"></ol>
+        <div class="outline-actions">
+          <button type="button" class="btn btn-ghost" id="addSectionBtn">+ Add slide</button>
+          <div class="outline-actions-right">
+            <button type="button" class="link-btn outline-cancel" id="cancelOutlineBtn">Cancel</button>
+            <button type="button" class="btn btn-primary" id="buildDeckBtn">Write the slides &nbsp;&rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck-mock" id="deckMock">
         <div class="deck-toolbar">
           <div class="deck-toolbar-left">
             <i></i><i></i><i></i>
@@ -617,13 +743,23 @@
             <span id="draftBadge" class="draft-badge" hidden>Drafted by AI</span>
           </div>
           <div class="deck-toolbar-right">
+            <div class="theme-pick" id="themePick" role="group" aria-label="Deck theme">
+              <button type="button" data-theme="tide" class="active" title="Tide" aria-label="Tide theme"></button>
+              <button type="button" data-theme="dune" title="Dune" aria-label="Dune theme"></button>
+              <button type="button" data-theme="graphite" title="Graphite" aria-label="Graphite theme"></button>
+              <button type="button" data-theme="noir" title="Noir" aria-label="Noir theme"></button>
+            </div>
             <span id="slideCounter" class="slide-counter tabular">1 / 5</span>
             <button type="button" class="deck-icon-btn" id="redoSlideBtn" aria-label="Regenerate this slide" title="Regenerate this slide">&#8635;</button>
             <button type="button" class="deck-icon-btn" id="prevSlideBtn" aria-label="Previous slide">&larr;</button>
             <button type="button" class="deck-icon-btn" id="nextSlideBtn" aria-label="Next slide">&rarr;</button>
+            <button type="button" class="deck-icon-btn" id="saveDraftBtn" aria-label="Save draft" title="Save this draft">&#9634;</button>
+            <button type="button" class="deck-icon-btn" id="draftsBtn" aria-label="Saved drafts" title="Saved drafts">&#9776;</button>
+            <button type="button" class="deck-icon-btn" id="pdfBtn" aria-label="Export as PDF" title="Export as PDF">PDF</button>
             <button type="button" class="btn btn-ghost" id="presentBtn" style="padding:7px 16px;font-size:0.82rem">Present &nbsp;&#9654;</button>
           </div>
         </div>
+        <div class="drafts-drawer" id="draftsDrawer" hidden></div>
         <div class="deck-body">
           <div class="deck-rail" id="deckRail"></div>
           <div class="deck-stage-wrap">
@@ -634,6 +770,8 @@
       <p id="genStatus2" class="editor-note">Example deck shown above &mdash; five slides, drafted about a tide-powered charging dock.</p>
     </div>
   </section>
+
+  <div id="printDeck" aria-hidden="true"></div>
 
   <div class="present-overlay" id="presentOverlay" hidden>
     <button type="button" class="present-close" id="presentCloseBtn" aria-label="Close presentation">&times;</button>
@@ -1212,6 +1350,7 @@
     activeIndex = deckSlides.indexOf(activeRef);
     renderThumbs();
     renderStage();
+    saveWorking();
   }
 
   function renderThumbs(animate){
@@ -1283,6 +1422,7 @@
         slide.bullets[idx] = text;
       }
     }
+    saveWorking();
   });
 
   if (prevSlideBtn) prevSlideBtn.addEventListener('click', function(){ setActive(activeIndex - 1); });
@@ -1455,6 +1595,8 @@
 
   var generating = false;
 
+  // Step one: plan the deck and let the outline be edited before any slide
+  // content is written.
   function handleGenerate(){
     if (generating) return;
     var topic = (promptInput.value || '').trim();
@@ -1464,16 +1606,55 @@
       return;
     }
 
+    deckTopic = topic;
     setBusy(true);
-    setStatus('Drafting…', 'info');
-    if (deckCaption) deckCaption.textContent = 'Drafting…';
+    setStatus('Planning the outline…', 'info');
+    if (outlinePanel) outlinePanel.hidden = true;
+
+    var editorSection = document.getElementById('editorSection');
+    if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    fetch('/api/outline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: topic, surface: currentSurface })
+    })
+      .then(function(r){
+        if (r.status === 429) throw { code: 'rate_limited' };
+        if (!r.ok) {
+          return r.json().catch(function(){ return {}; }).then(function(b){
+            throw { code: b.error || 'upstream_error' };
+          });
+        }
+        return r.json();
+      })
+      .then(function(data){
+        if (!data || !Array.isArray(data.sections) || !data.sections.length) throw { code: 'invalid_json' };
+        showOutline(data);
+        setStatus('Edit the outline, then write the slides.', 'info');
+      })
+      .catch(function(e){
+        var code = (e && e.code) || 'network_error';
+        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+      })
+      .finally(function(){ setBusy(false); });
+  }
+
+  // Step two: expand the approved outline into slides, streamed in as written.
+  function streamDeck(topic, plan){
+    if (generating) return;
+    if (!topic) { setStatus('Type a topic first.', 'error'); return; }
+
+    setBusy(true);
+    setStatus('Writing the slides…', 'info');
+    if (deckCaption) deckCaption.textContent = 'Writing the slides…';
     if (draftBadge) draftBadge.hidden = true;
 
     var editorSection = document.getElementById('editorSection');
     if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     deckTopic = topic;
-    deckSlides = [{ type:'cover', title:'Drafting…', tagline:'' }];
+    deckSlides = [{ type:'cover', title: (plan && plan.title) || 'Drafting…', tagline: (plan && plan.tagline) || '' }];
     activeIndex = 0;
     streamPendingRender = false;
     renderThumbs();
@@ -1482,7 +1663,7 @@
     fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: topic, surface: currentSurface })
+      body: JSON.stringify({ topic: topic, surface: currentSurface, plan: plan || null })
     })
       .then(function(r){
         if (r.status === 429) throw { code: 'rate_limited' };
@@ -1500,13 +1681,14 @@
         renderThumbs(false);
         renderStage();
         prefetchImages();
+        saveWorking();
         var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
         chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
         if (draftBadge) draftBadge.hidden = false;
         setStatus('Drafted just now.', 'info');
         if (deckCaption) {
           deckCaption.textContent = deckSlides.length + ' slides on "' + topic +
-            '." Click any line to rewrite it, or drag a thumbnail to reorder.';
+            '." Click any line to rewrite it, drag a thumbnail to reorder, or save it with □.';
         }
       })
       .catch(function(e){
@@ -1522,6 +1704,280 @@
         setBusy(false);
       });
   }
+
+  // ---- themes -----------------------------------------------------------
+  var deckTheme = 'tide';
+
+  function applyTheme(){
+    ['deckStage', 'presentStage', 'printDeck'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        var host = id === 'deckStage' ? el.parentElement : el;
+        (host || el).setAttribute('data-deck-theme', deckTheme);
+      }
+    });
+    var deckMock = document.getElementById('deckMock');
+    if (deckMock) deckMock.setAttribute('data-deck-theme', deckTheme);
+    if (presentOverlay) presentOverlay.setAttribute('data-deck-theme', deckTheme);
+    document.querySelectorAll('#themePick button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-theme') === deckTheme);
+    });
+  }
+
+  document.querySelectorAll('#themePick button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      deckTheme = btn.getAttribute('data-theme') || 'tide';
+      applyTheme();
+      saveWorking();
+    });
+  });
+  applyTheme();
+
+  // ---- saved drafts (localStorage; may throw in private modes) -----------
+  var DRAFTS_KEY = 'swell.drafts';
+  var WORKING_KEY = 'swell.working';
+  var saveDraftBtn = document.getElementById('saveDraftBtn');
+  var draftsBtn = document.getElementById('draftsBtn');
+  var draftsDrawer = document.getElementById('draftsDrawer');
+
+  function readStore(key, fallback){
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function writeStore(key, value){
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch (e) { return false; }
+  }
+
+  function currentDeckState(){
+    return { topic: deckTopic, theme: deckTheme, slides: deckSlides };
+  }
+
+  var workingTimer = null;
+  function saveWorking(){
+    clearTimeout(workingTimer);
+    workingTimer = setTimeout(function(){
+      writeStore(WORKING_KEY, currentDeckState());
+    }, 700);
+  }
+
+  function saveDraft(){
+    var drafts = readStore(DRAFTS_KEY, []);
+    if (!Array.isArray(drafts)) drafts = [];
+    var state = currentDeckState();
+    drafts.unshift({
+      id: String(Date.now()),
+      name: (deckSlides[0] && deckSlides[0].title) || deckTopic || 'Untitled deck',
+      savedAt: Date.now(),
+      topic: state.topic,
+      theme: state.theme,
+      slides: state.slides
+    });
+    drafts = drafts.slice(0, 12);
+    if (writeStore(DRAFTS_KEY, drafts)) setStatus('Draft saved.', 'info');
+    else setStatus("Couldn't save — this browser is blocking storage.", 'error');
+    renderDrafts();
+  }
+
+  function loadDraft(id){
+    var drafts = readStore(DRAFTS_KEY, []);
+    var found = drafts.filter(function(d){ return d.id === id; })[0];
+    if (!found || !Array.isArray(found.slides) || !found.slides.length) return;
+    deckSlides = found.slides;
+    deckTopic = found.topic || '';
+    deckTheme = found.theme || 'tide';
+    activeIndex = 0;
+    applyTheme();
+    renderThumbs(false);
+    renderStage();
+    prefetchImages();
+    if (promptInput && deckTopic) promptInput.value = deckTopic;
+    if (draftBadge) draftBadge.hidden = false;
+    if (deckCaption) deckCaption.textContent = 'Loaded “' + found.name + '”.';
+    draftsDrawer.hidden = true;
+    saveWorking();
+  }
+
+  function deleteDraft(id){
+    var drafts = readStore(DRAFTS_KEY, []).filter(function(d){ return d.id !== id; });
+    writeStore(DRAFTS_KEY, drafts);
+    renderDrafts();
+  }
+
+  function renderDrafts(){
+    var drafts = readStore(DRAFTS_KEY, []);
+    if (!Array.isArray(drafts) || !drafts.length) {
+      draftsDrawer.innerHTML = '<p class="drafts-empty">No saved drafts yet — hit the □ button to keep one.</p>';
+      return;
+    }
+    var html = '<ul>';
+    drafts.forEach(function(d){
+      var when = new Date(d.savedAt || Date.now());
+      html += '<li>' +
+        '<span class="d-name">' + escapeHtml(d.name || 'Untitled') + '</span>' +
+        '<span class="d-meta">' + (d.slides ? d.slides.length : 0) + ' slides · ' +
+          when.toLocaleDateString() + '</span>' +
+        '<button type="button" data-load="' + d.id + '">Open</button>' +
+        '<button type="button" data-del="' + d.id + '">Delete</button>' +
+        '</li>';
+    });
+    draftsDrawer.innerHTML = html + '</ul>';
+  }
+
+  if (draftsDrawer) {
+    draftsDrawer.addEventListener('click', function(e){
+      var el = e.target;
+      if (!el || !el.getAttribute) return;
+      if (el.getAttribute('data-load')) loadDraft(el.getAttribute('data-load'));
+      else if (el.getAttribute('data-del')) deleteDraft(el.getAttribute('data-del'));
+    });
+  }
+  if (saveDraftBtn) saveDraftBtn.addEventListener('click', saveDraft);
+  if (draftsBtn) draftsBtn.addEventListener('click', function(){
+    draftsDrawer.hidden = !draftsDrawer.hidden;
+    if (!draftsDrawer.hidden) renderDrafts();
+  });
+
+  // restore whatever was last being worked on
+  (function restoreWorking(){
+    var saved = readStore(WORKING_KEY, null);
+    if (!saved || !Array.isArray(saved.slides) || saved.slides.length < 2) return;
+    deckSlides = saved.slides;
+    deckTopic = saved.topic || deckTopic;
+    deckTheme = saved.theme || 'tide';
+    activeIndex = 0;
+    applyTheme();
+    renderThumbs(false);
+    renderStage();
+    if (promptInput && saved.topic) promptInput.value = saved.topic;
+    if (deckCaption) deckCaption.textContent = 'Picked up where you left off. Generate to start a new one.';
+  })();
+
+  // ---- PDF export -------------------------------------------------------
+  var pdfBtn = document.getElementById('pdfBtn');
+  var printDeck = document.getElementById('printDeck');
+
+  function exportPdf(){
+    if (!printDeck) return;
+    setStatus('Preparing the PDF…', 'info');
+    printDeck.innerHTML = deckSlides.map(function(s, i){
+      return '<div class="print-slide"><div class="deck-slide-frame">' +
+        slideMarkup(s, i, false) + '</div></div>';
+    }).join('');
+    applyTheme();
+    attachMedia(printDeck);
+
+    // give the pictures a moment to decode, otherwise they print as blanks
+    var pending = deckSlides.filter(function(s){ return s.image; }).length;
+    setTimeout(function(){
+      setStatus('', null);
+      window.print();
+    }, pending ? 1500 : 250);
+  }
+  if (pdfBtn) pdfBtn.addEventListener('click', exportPdf);
+
+  // ---- outline-first flow ----------------------------------------------
+  var outlinePanel = document.getElementById('outlinePanel');
+  var outlineList = document.getElementById('outlineList');
+  var outlineTitle = document.getElementById('outlineTitle');
+  var outlineTagline = document.getElementById('outlineTagline');
+  var addSectionBtn = document.getElementById('addSectionBtn');
+  var buildDeckBtn = document.getElementById('buildDeckBtn');
+  var cancelOutlineBtn = document.getElementById('cancelOutlineBtn');
+  var outlineSections = [];
+  var outlineDragIndex = null;
+
+  function renderOutline(){
+    outlineList.innerHTML = '';
+    outlineSections.forEach(function(text, i){
+      var li = document.createElement('li');
+      li.className = 'outline-item';
+      li.setAttribute('data-index', i);
+      li.setAttribute('draggable', 'true');
+      li.innerHTML =
+        '<span class="grip" aria-hidden="true">⋮⋮</span>' +
+        '<span class="idx">' + (i + 1) + '</span>' +
+        '<span class="sec-text" contenteditable="true" spellcheck="false">' + escapeHtml(text) + '</span>' +
+        '<button type="button" class="drop-sec" aria-label="Remove this slide">&times;</button>';
+
+      li.querySelector('.sec-text').addEventListener('input', function(e){
+        outlineSections[i] = e.target.textContent;
+      });
+      li.querySelector('.drop-sec').addEventListener('click', function(){
+        outlineSections.splice(i, 1);
+        renderOutline();
+      });
+      li.addEventListener('dragstart', function(e){
+        outlineDragIndex = i;
+        li.classList.add('dragging');
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+      });
+      li.addEventListener('dragend', function(){
+        li.classList.remove('dragging');
+        outlineDragIndex = null;
+        Array.prototype.forEach.call(outlineList.children, function(c){ c.classList.remove('drop-target'); });
+      });
+      li.addEventListener('dragover', function(e){
+        if (outlineDragIndex === null) return;
+        e.preventDefault();
+        li.classList.add('drop-target');
+      });
+      li.addEventListener('dragleave', function(){ li.classList.remove('drop-target'); });
+      li.addEventListener('drop', function(e){
+        e.preventDefault();
+        li.classList.remove('drop-target');
+        if (outlineDragIndex === null || outlineDragIndex === i) return;
+        var moved = outlineSections.splice(outlineDragIndex, 1)[0];
+        outlineSections.splice(i, 0, moved);
+        outlineDragIndex = null;
+        renderOutline();
+      });
+
+      outlineList.appendChild(li);
+    });
+  }
+
+  function showOutline(data){
+    outlineSections = data.sections.slice(0, 8);
+    outlineTitle.textContent = data.title || 'Untitled';
+    outlineTagline.textContent = data.tagline || '';
+    renderOutline();
+    outlinePanel.hidden = false;
+    outlinePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  if (addSectionBtn) addSectionBtn.addEventListener('click', function(){
+    outlineSections.push('New slide');
+    renderOutline();
+    var last = outlineList.lastElementChild;
+    if (last) {
+      var field = last.querySelector('.sec-text');
+      field.focus();
+      var range = document.createRange();
+      range.selectNodeContents(field);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
+
+  if (cancelOutlineBtn) cancelOutlineBtn.addEventListener('click', function(){
+    outlinePanel.hidden = true;
+    setStatus('', null);
+  });
+
+  if (buildDeckBtn) buildDeckBtn.addEventListener('click', function(){
+    var sections = outlineSections.map(function(s){ return String(s).trim(); }).filter(Boolean);
+    if (!sections.length) { setStatus('Add at least one slide to the outline.', 'error'); return; }
+    outlinePanel.hidden = true;
+    streamDeck(deckTopic || (promptInput.value || '').trim(), {
+      title: outlineTitle.textContent.trim(),
+      tagline: outlineTagline.textContent.trim(),
+      sections: sections
+    });
+  });
 
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
@@ -1572,6 +2028,7 @@
         target.layout = normalizeLayout(data.layout || target.layout);
         updateThumbTitle(index);
         if (activeIndex === index) renderStage();
+        saveWorking();
         setStatus('Slide redrawn.', 'info');
       })
       .catch(function(e){

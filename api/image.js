@@ -29,24 +29,15 @@ function stripTags(s) {
   return String(s || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 }
 
-export default async function handler(request) {
-  const url = new URL(request.url);
-  const query = (url.searchParams.get('q') || '').trim().slice(0, 120);
-  if (!query) return json({ error: 'invalid_request', message: 'Missing q.' }, 400);
-
+async function search(query) {
   const api =
     `${ENDPOINT}?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}` +
-    '&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=1200' +
+    '&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=1200' +
     '&format=json&origin=*';
 
-  let data;
-  try {
-    const res = await fetch(api, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
-    if (!res.ok) return json({ error: 'upstream_error' }, 502);
-    data = await res.json();
-  } catch (e) {
-    return json({ error: 'upstream_error' }, 502);
-  }
+  const res = await fetch(api, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+  if (!res.ok) throw new Error('upstream');
+  const data = await res.json();
 
   const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
   const candidates = [];
@@ -75,10 +66,34 @@ export default async function handler(request) {
     });
   }
 
-  if (!candidates.length) return json({ error: 'no_image' }, 404, 3600);
-
   candidates.sort((a, b) => a.score - b.score || a.order - b.order);
-  const pick = candidates[0];
+  return candidates[0] || null;
+}
 
-  return json({ url: pick.url, credit: pick.credit, license: pick.license }, 200, 604800);
+export default async function handler(request) {
+  const url = new URL(request.url);
+  const query = (url.searchParams.get('q') || '').trim().slice(0, 120);
+  if (!query) return json({ error: 'invalid_request', message: 'Missing q.' }, 400);
+
+  // Specific three-word queries often return nothing once diagrams and
+  // screenshots are filtered out, so widen the search a step at a time
+  // rather than dropping straight to the placeholder gradient.
+  const words = query.split(/\s+/).filter(Boolean);
+  const attempts = [query];
+  if (words.length > 2) attempts.push(words.slice(0, 2).join(' '));
+  if (words.length > 1) attempts.push(words[0]);
+
+  for (const attempt of attempts) {
+    let pick;
+    try {
+      pick = await search(attempt);
+    } catch (e) {
+      return json({ error: 'upstream_error' }, 502);
+    }
+    if (pick) {
+      return json({ url: pick.url, credit: pick.credit, license: pick.license }, 200, 604800);
+    }
+  }
+
+  return json({ error: 'no_image' }, 404, 3600);
 }

@@ -16,19 +16,7 @@ const SURFACE_NOUN = {
   site: 'a one-page website',
 };
 
-function buildPrompt(topic, surface) {
-  const noun = SURFACE_NOUN[surface] || SURFACE_NOUN.deck;
-  return `Draft ${noun} about: "${topic}".
-
-First work out what kind of thing this subject actually calls for — a lesson, an
-explainer, a report, a status update, a how-to, a retrospective, a travel plan, a
-book summary, a proposal, a pitch — and structure it the way that kind is normally
-structured. Do NOT use pitch slides (problem, solution, market, business model,
-traction, the ask) unless the subject genuinely is a business pitch. A deck about
-photosynthesis should read like a lesson; a deck about last quarter should read
-like a review.
-
-Reply in EXACTLY this plain-text format and nothing else:
+const FORMAT_SPEC = `Reply in EXACTLY this plain-text format and nothing else:
 
 TITLE: <short title, under 6 words>
 TAGLINE: <one sentence subtitle>
@@ -48,10 +36,7 @@ BULLET: <one striking number, under 8 words>
 BULLET: <supporting point, under 18 words>
 
 Rules:
-- Write 5 to 8 slides after the cover — as many as the subject actually needs.
-  Begin every slide with a line of exactly ===
-- Order the slides the way someone would actually present them, and finish with a
-  closing slide: a summary, a takeaway, or what happens next.
+- Begin every slide with a line of exactly ===
 - LAYOUT is one of: bullets, stat, quote
 - Use stat only where a single number genuinely carries the point, and quote only
   where one memorable line does (BULLET is the line, HEADING is who said it).
@@ -65,6 +50,46 @@ Rules:
   no abstractions ("growth", "success"), no diagrams, charts or logos.
 - Write real substance specific to the subject — never placeholder filler.
 - No markdown, no blank lines, no commentary before or after.`;
+
+function buildPrompt(topic, surface, plan) {
+  const noun = SURFACE_NOUN[surface] || SURFACE_NOUN.deck;
+
+  // When the user has approved an outline, follow it exactly rather than
+  // inventing a new structure — the outline is the thing they just edited.
+  if (plan && plan.sections && plan.sections.length) {
+    const list = plan.sections.map((s, i) => `${i + 1}. ${s}`).join('\n');
+    return `Write ${noun} about: "${topic}".
+
+Use EXACTLY these slides, in this order, one slide each:
+
+${list}
+
+${plan.title ? `The deck is titled "${plan.title}".` : ''}
+${plan.tagline ? `Its subtitle is "${plan.tagline}".` : ''}
+
+${FORMAT_SPEC}
+
+- Write one slide per numbered section above — no more, no fewer — keeping each
+  section's wording as its HEADING, exactly as written.
+- Use only the bullets and stat layouts here. Do not use the quote layout: its
+  HEADING is an attribution, which would overwrite the approved section name.`;
+  }
+
+  return `Draft ${noun} about: "${topic}".
+
+First work out what kind of thing this subject actually calls for — a lesson, an
+explainer, a report, a status update, a how-to, a retrospective, a travel plan, a
+book summary, a proposal, a pitch — and structure it the way that kind is normally
+structured. Do NOT use pitch slides (problem, solution, market, business model,
+traction, the ask) unless the subject genuinely is a business pitch. A deck about
+photosynthesis should read like a lesson; a deck about last quarter should read
+like a review.
+
+${FORMAT_SPEC}
+
+- Write 5 to 8 slides after the cover — as many as the subject actually needs.
+- Order the slides the way someone would actually present them, and finish with a
+  closing slide: a summary, a takeaway, or what happens next.`;
 }
 
 function json(obj, status) {
@@ -104,7 +129,7 @@ export default async function handler(request) {
       },
       body: JSON.stringify({
         model: 'openai/gpt-oss-120b',
-        messages: [{ role: 'user', content: buildPrompt(topic, body.surface) }],
+        messages: [{ role: 'user', content: buildPrompt(topic, body.surface, body.plan) }],
         temperature: 0.8,
         max_tokens: 2600,
         reasoning_effort: 'low',
