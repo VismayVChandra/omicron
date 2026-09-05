@@ -15,7 +15,7 @@ function buildPrompt(topic, surface) {
     'Reply with ONLY a JSON object, no other text, in exactly this shape:\n' +
     '{"title": string (a short punchy title, under 6 words), ' +
     '"tagline": string (one sentence subtitle), ' +
-    '"blocks": [ {"heading": string (under 6 words), "body": string (1-2 sentences, under 30 words)}, ... ] }\n\n' +
+    '"blocks": [ {"heading": string (under 6 words), "bullets": [string, string] (2 to 4 bullets, each under 14 words)}, ... ] }\n\n' +
     'Include between 4 and 6 blocks, ordered the way they should appear.'
   );
 }
@@ -92,7 +92,9 @@ module.exports = async function handler(req, res) {
       tagline: typeof parsed.tagline === 'string' ? parsed.tagline : '',
       blocks: parsed.blocks.slice(0, 6).map((b) => ({
         heading: typeof b.heading === 'string' ? b.heading : '',
-        body: typeof b.body === 'string' ? b.body : '',
+        bullets: Array.isArray(b.bullets)
+          ? b.bullets.filter((x) => typeof x === 'string' && x.trim()).slice(0, 4)
+          : [],
       })),
     });
   } catch (e) {

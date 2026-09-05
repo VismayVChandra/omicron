@@ -1,4 +1,10 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Swell</title>
+<meta name="description" content="Swell — a wave-themed AI drafting tool. Draft a deck, doc, or site from one prompt.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;0,9..144,700;1,9..144,450;1,9..144,600&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -239,41 +245,93 @@
   .tide-gauge{width:100%;height:6px;border-radius:999px;background:var(--line);margin-bottom:18px;overflow:hidden}
   .tide-gauge > span{display:block;height:100%;background:var(--tide);border-radius:999px}
 
-  /* ---------- editor mock ---------- */
-  .editor-mock{
+  /* ---------- deck viewer ---------- */
+  .deck-mock{
     background:var(--surface);border:1px solid var(--line);border-radius:20px;
     box-shadow:var(--shadow-lift);overflow:hidden;
   }
-  .editor-chrome{
-    display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);
-    background:var(--surface-2);
+  .deck-toolbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);
+    flex-wrap:wrap;
   }
-  .editor-chrome i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
-  .editor-chrome span#chromeUrl{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);margin-left:8px}
-  .editor-chrome{position:relative}
-  .draft-badge{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--tide);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .deck-toolbar-left{display:flex;align-items:center;gap:8px;min-width:0}
+  .deck-toolbar-left i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block;flex:none}
+  .deck-toolbar-left span#chromeUrl{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .draft-badge{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--tide);border:1px solid var(--line);border-radius:999px;padding:3px 10px;flex:none}
+  .deck-toolbar-right{display:flex;align-items:center;gap:10px}
+  .slide-counter{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft)}
+  .deck-icon-btn{
+    width:30px;height:30px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+    color:var(--deep);cursor:pointer;font-size:0.9rem;line-height:1;display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s, background .15s;
+  }
+  .deck-icon-btn:hover{border-color:var(--wave)}
+  .deck-icon-btn:disabled{opacity:0.4;cursor:default}
+  .deck-icon-btn.light{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);color:#fff}
+  .deck-icon-btn.light:hover{border-color:rgba(255,255,255,0.5)}
   .editor-note{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft)}
-  .editor-body{display:grid;grid-template-columns:190px 1fr;min-height:340px}
-  @media (max-width:700px){ .editor-body{grid-template-columns:1fr} }
-  .editor-rail{border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:8px}
-  @media (max-width:700px){ .editor-rail{display:none} }
-  .rail-card{
-    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
-    border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+
+  .deck-body{display:grid;grid-template-columns:168px 1fr}
+  @media (max-width:700px){ .deck-body{grid-template-columns:1fr} }
+  .deck-rail{
+    border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:10px;
+    max-height:440px;overflow-y:auto;
   }
-  .rail-card.active{border-color:var(--tide);color:var(--deep);background:var(--surface-2)}
-  .editor-canvas{padding:28px 32px;display:flex;flex-direction:column;gap:16px}
-  .editor-card{
-    border:1px dashed var(--line);border-radius:14px;padding:20px;
-    display:flex;flex-direction:column;gap:10px;position:relative;
+  @media (max-width:700px){ .deck-rail{display:none} }
+  .deck-thumb{
+    border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer;background:var(--surface);
+    display:flex;flex-direction:column;gap:5px;aspect-ratio:16/9;justify-content:center;
+    animation:thumbIn .3s ease both;
   }
-  .editor-card .handle{position:absolute;top:14px;right:14px;display:flex;gap:3px;opacity:0.6}
-  .editor-card .handle span{width:3px;height:3px;border-radius:50%;background:var(--wave)}
-  .editor-card .handle .col{display:flex;flex-direction:column;gap:3px}
-  .editor-card h4{font-family:'Fraunces',serif;font-weight:600;color:var(--deep);font-size:1.15rem;margin:0}
-  .editor-card p{font-size:0.9rem;margin:0}
-  .editor-bar{height:10px;border-radius:6px;background:var(--surface-2)}
-  .editor-bar.w60{width:60%} .editor-bar.w80{width:80%} .editor-bar.w40{width:40%}
+  .deck-thumb:hover{border-color:var(--wave)}
+  .deck-thumb.active{border-color:var(--tide);background:var(--surface-2);box-shadow:0 0 0 1px var(--tide) inset}
+  .deck-thumb .num{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--ink-soft)}
+  .deck-thumb .mini-title{
+    font-family:'Fraunces',serif;font-weight:600;font-size:0.74rem;color:var(--deep);line-height:1.25;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  @keyframes thumbIn{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .deck-stage-wrap{padding:28px 32px;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+  .deck-slide-frame{width:100%;max-width:640px}
+  .deck-slide{
+    width:100%;aspect-ratio:16/9;border-radius:14px;box-shadow:var(--shadow-lift);
+    position:relative;overflow:hidden;display:flex;flex-direction:column;padding:clamp(20px,5%,44px);
+    animation:slideIn .35s ease both;
+  }
+  @keyframes slideIn{ from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
+  .deck-slide.cover{background:var(--deep);color:#fff;align-items:center;justify-content:center;text-align:center;gap:12px}
+  .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tide)}
+  .deck-slide.cover h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.5rem,4.4vw,2.3rem);color:#fff;text-wrap:balance;margin:0}
+  .deck-slide.cover p{color:rgba(255,255,255,0.72);font-size:clamp(0.85rem,1.6vw,1.05rem);margin:0;max-width:80%}
+  .deck-slide.content{background:var(--surface);justify-content:center}
+  .deck-slide.content h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.1rem,2.6vw,1.55rem);color:var(--deep);margin:0 0 clamp(10px,2.2vw,20px)}
+  .deck-slide.content ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:clamp(6px,1.6vw,14px)}
+  .deck-slide.content li{display:flex;gap:10px;font-size:clamp(0.78rem,1.6vw,1rem);color:var(--ink-soft);line-height:1.45}
+  .deck-slide.content li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--tide);margin-top:0.5em;flex:none}
+  .deck-slide .wave-accent{position:absolute;right:-10%;bottom:-18%;width:55%;opacity:0.5;pointer-events:none}
+
+  .present-overlay{
+    position:fixed;inset:0;z-index:200;background:rgba(4,16,17,0.94);
+    display:flex;align-items:center;justify-content:center;padding:5vw;
+  }
+  .present-overlay[hidden]{display:none}
+  .present-frame{max-width:min(920px,88vw)}
+  .present-close{
+    position:absolute;top:24px;right:28px;width:38px;height:38px;border-radius:50%;
+    background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;
+    font-size:1.3rem;line-height:1;cursor:pointer;
+  }
+  .present-close:hover{border-color:rgba(255,255,255,0.5)}
+  .present-controls{
+    position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:16px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .deck-thumb, .deck-slide{ animation:none }
+  }
 
   /* ---------- stats / chart ---------- */
   .stat-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center}
@@ -338,6 +396,8 @@
     .pillar, .btn-primary { transition:none }
   }
 </style>
+</head>
+<body>
 
 <nav class="topbar">
   <div class="topbar-inner">
@@ -463,43 +523,44 @@
   <section class="band" id="editorSection" style="padding-top:88px">
     <div class="wrap">
       <div class="section-head">
-        <span class="eyebrow">Inside the editor</span>
-        <h2>Cards, not slides you fight with.</h2>
-        <p>This is a live draft, not a screenshot &mdash; type a topic above and press Generate to have the AI write the outline below.</p>
+        <span class="eyebrow">Watch it build</span>
+        <h2>Not a mockup &mdash; an actual deck, drafting.</h2>
+        <p>This panel is live. Type a topic in the prompt bar above and press Generate: real slides land here, one at a time, ready to click through or present.</p>
       </div>
-      <div class="editor-mock">
-        <div class="editor-chrome">
-          <i></i><i></i><i></i>
-          <span id="chromeUrl">swell.app/d/tide-dock-pitch</span>
-          <span id="draftBadge" class="draft-badge" hidden>Drafted by AI</span>
-        </div>
-        <div class="editor-body">
-          <div class="editor-rail" id="editorRail">
-            <div class="rail-card active">1&nbsp;&middot;&nbsp;Cover</div>
-            <div class="rail-card">2&nbsp;&middot;&nbsp;The problem</div>
-            <div class="rail-card">3&nbsp;&middot;&nbsp;How it works</div>
-            <div class="rail-card">4&nbsp;&middot;&nbsp;Market</div>
-            <div class="rail-card">5&nbsp;&middot;&nbsp;Ask</div>
+      <div class="deck-mock">
+        <div class="deck-toolbar">
+          <div class="deck-toolbar-left">
+            <i></i><i></i><i></i>
+            <span id="chromeUrl">swell.app/d/tide-dock-pitch</span>
+            <span id="draftBadge" class="draft-badge" hidden>Drafted by AI</span>
           </div>
-          <div class="editor-canvas" id="editorCanvas">
-            <div class="editor-card">
-              <span class="handle" aria-hidden="true"><span class="col"><span></span><span></span><span></span></span><span class="col"><span></span><span></span><span></span></span></span>
-              <h4>Tide Dock</h4>
-              <p>Charging, powered by the pull of the moon.</p>
-              <div class="editor-bar w40"></div>
-            </div>
-            <div class="editor-card">
-              <span class="handle" aria-hidden="true"><span class="col"><span></span><span></span><span></span></span><span class="col"><span></span><span></span><span></span></span></span>
-              <div class="editor-bar w80"></div>
-              <div class="editor-bar w60"></div>
-              <div class="editor-bar w40"></div>
-            </div>
+          <div class="deck-toolbar-right">
+            <span id="slideCounter" class="slide-counter tabular">1 / 5</span>
+            <button type="button" class="deck-icon-btn" id="prevSlideBtn" aria-label="Previous slide">&larr;</button>
+            <button type="button" class="deck-icon-btn" id="nextSlideBtn" aria-label="Next slide">&rarr;</button>
+            <button type="button" class="btn btn-ghost" id="presentBtn" style="padding:7px 16px;font-size:0.82rem">Present &nbsp;&#9654;</button>
+          </div>
+        </div>
+        <div class="deck-body">
+          <div class="deck-rail" id="deckRail"></div>
+          <div class="deck-stage-wrap">
+            <div class="deck-slide-frame" id="deckStage"></div>
           </div>
         </div>
       </div>
-      <p class="editor-note">Example draft shown above. Everything in this panel regenerates from what you type in the prompt bar at the top.</p>
+      <p id="genStatus2" class="editor-note">Example deck shown above &mdash; five slides, drafted about a tide-powered charging dock.</p>
     </div>
   </section>
+
+  <div class="present-overlay" id="presentOverlay" hidden>
+    <button type="button" class="present-close" id="presentCloseBtn" aria-label="Close presentation">&times;</button>
+    <div class="deck-slide-frame present-frame" id="presentStage"></div>
+    <div class="present-controls">
+      <button type="button" class="deck-icon-btn light" id="presentPrevBtn" aria-label="Previous slide">&larr;</button>
+      <span id="presentCounter" class="tabular">1 / 5</span>
+      <button type="button" class="deck-icon-btn light" id="presentNextBtn" aria-label="Next slide">&rarr;</button>
+    </div>
+  </div>
 
   <section class="band" id="stats">
     <div class="wrap">
@@ -783,7 +844,7 @@
     });
   })();
 
-  // ---- live drafting, via /api/generate (a Vercel serverless function calling Groq) ----
+  // ---- live deck viewer + drafting, via /api/generate (a Vercel function calling Groq) ----
   var currentSurface = 'deck';
   document.querySelectorAll('.surface-pick button').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -796,10 +857,22 @@
   var promptInput = document.getElementById('promptInput');
   var generateBtn = document.getElementById('generateBtn');
   var genStatus = document.getElementById('genStatus');
-  var editorRail = document.getElementById('editorRail');
-  var editorCanvas = document.getElementById('editorCanvas');
+  var deckCaption = document.getElementById('genStatus2');
   var chromeUrl = document.getElementById('chromeUrl');
   var draftBadge = document.getElementById('draftBadge');
+
+  var deckRail = document.getElementById('deckRail');
+  var deckStage = document.getElementById('deckStage');
+  var slideCounter = document.getElementById('slideCounter');
+  var prevSlideBtn = document.getElementById('prevSlideBtn');
+  var nextSlideBtn = document.getElementById('nextSlideBtn');
+  var presentBtn = document.getElementById('presentBtn');
+  var presentOverlay = document.getElementById('presentOverlay');
+  var presentStage = document.getElementById('presentStage');
+  var presentCounter = document.getElementById('presentCounter');
+  var presentPrevBtn = document.getElementById('presentPrevBtn');
+  var presentNextBtn = document.getElementById('presentNextBtn');
+  var presentCloseBtn = document.getElementById('presentCloseBtn');
 
   function setStatus(text, kind){
     if(!genStatus) return;
@@ -813,61 +886,170 @@
   }
 
   var surfaceCopy = {
-    deck: { unit:'Slide', badge:'d' },
-    doc:  { unit:'Section', badge:'p' },
-    site: { unit:'Section', badge:'s' }
+    deck: { badge:'d' },
+    doc:  { badge:'p' },
+    site: { badge:'s' }
   };
 
-  var barPattern = ['w80','w60','w40'];
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // a small decorative wave, drawn with the same sine-path helpers as the
+  // hero canvas and section dividers, so every slide gets a one-off accent
+  function waveAccentSvg(seed){
+    var w = 220, h = 140;
+    var pts = wavePoints(w, h, 16, 1.5, seed * 1.7, h * 0.5);
+    var d = pointsToPath(pts, w, h);
+    return '<svg class="wave-accent" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<path d="' + d + '" fill="var(--tide)"></path></svg>';
+  }
+
+  function defaultSlides(){
+    return [
+      { type:'cover', title:'Tide Dock', tagline:'Charging, powered by the pull of the moon.' },
+      { type:'content', heading:'The problem', bullets:[
+        'Coastal chargers run on grid power that storms knock out for days.',
+        'Diesel backup generators are loud, costly, and need constant fuel runs.'
+      ]},
+      { type:'content', heading:'How it works', bullets:[
+        'A submerged turbine spins with the rise and fall of the tide.',
+        'It trickle-charges a buffer bank onshore, day and night.',
+        'Docks draw from the bank, not the grid.'
+      ]},
+      { type:'content', heading:'Market', bullets:[
+        '600+ marinas along the Gulf coast alone.',
+        'Coastal campsites already pay for diesel backup today.'
+      ]},
+      { type:'content', heading:'Ask', bullets:[
+        '$600K to build ten pilot docks.',
+        '18-month runway to the first paying marina.'
+      ]}
+    ];
+  }
+
+  var deckSlides = defaultSlides();
+  var activeIndex = 0;
+
+  function slideMarkup(slide, seed){
+    if (slide.type === 'cover') {
+      return '<div class="deck-slide cover">' + waveAccentSvg(seed) +
+        '<span class="eyebrow-mini">Swell draft</span>' +
+        '<h3>' + escapeHtml(slide.title || 'Untitled') + '</h3>' +
+        (slide.tagline ? '<p>' + escapeHtml(slide.tagline) + '</p>' : '') +
+        '</div>';
+    }
+    var bullets = (slide.bullets || []).map(function(b){ return '<li>' + escapeHtml(b) + '</li>'; }).join('');
+    return '<div class="deck-slide content">' + waveAccentSvg(seed) +
+      '<h3>' + escapeHtml(slide.heading || '') + '</h3>' +
+      '<ul>' + bullets + '</ul>' +
+      '</div>';
+  }
+
+  function thumbMarkup(slide, i, active){
+    var title = slide.type === 'cover' ? (slide.title || 'Cover') : (slide.heading || 'Slide ' + (i+1));
+    return '<div class="deck-thumb' + (active ? ' active' : '') + '" data-index="' + i + '" style="animation-delay:' + (i*60) + 'ms">' +
+      '<span class="num">' + (i+1) + '</span>' +
+      '<span class="mini-title">' + escapeHtml(title) + '</span>' +
+      '</div>';
+  }
+
+  function renderThumbs(){
+    deckRail.innerHTML = deckSlides.map(function(s, i){ return thumbMarkup(s, i, i === activeIndex); }).join('');
+    Array.prototype.forEach.call(deckRail.querySelectorAll('.deck-thumb'), function(el){
+      el.addEventListener('click', function(){ setActive(parseInt(el.getAttribute('data-index'), 10)); });
+    });
+  }
+
+  function updateNav(){
+    var count = deckSlides.length;
+    var text = (activeIndex+1) + ' / ' + count;
+    if (slideCounter) slideCounter.textContent = text;
+    if (presentCounter) presentCounter.textContent = text;
+    if (prevSlideBtn) prevSlideBtn.disabled = activeIndex === 0;
+    if (nextSlideBtn) nextSlideBtn.disabled = activeIndex === count - 1;
+    if (presentPrevBtn) presentPrevBtn.disabled = activeIndex === 0;
+    if (presentNextBtn) presentNextBtn.disabled = activeIndex === count - 1;
+    Array.prototype.forEach.call(deckRail.querySelectorAll('.deck-thumb'), function(el){
+      el.classList.toggle('active', parseInt(el.getAttribute('data-index'), 10) === activeIndex);
+    });
+  }
+
+  function renderStage(){
+    var html = slideMarkup(deckSlides[activeIndex], activeIndex);
+    deckStage.innerHTML = html;
+    if (presentOverlay && !presentOverlay.hidden) presentStage.innerHTML = html;
+    updateNav();
+  }
+
+  function setActive(i){
+    activeIndex = Math.max(0, Math.min(deckSlides.length - 1, i));
+    renderStage();
+  }
+
+  if (prevSlideBtn) prevSlideBtn.addEventListener('click', function(){ setActive(activeIndex - 1); });
+  if (nextSlideBtn) nextSlideBtn.addEventListener('click', function(){ setActive(activeIndex + 1); });
+  if (presentPrevBtn) presentPrevBtn.addEventListener('click', function(){ setActive(activeIndex - 1); });
+  if (presentNextBtn) presentNextBtn.addEventListener('click', function(){ setActive(activeIndex + 1); });
+
+  function openPresent(){
+    if (!presentOverlay) return;
+    presentOverlay.hidden = false;
+    presentStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex);
+    updateNav();
+  }
+  function closePresent(){
+    if (presentOverlay) presentOverlay.hidden = true;
+  }
+  if (presentBtn) presentBtn.addEventListener('click', openPresent);
+  if (presentCloseBtn) presentCloseBtn.addEventListener('click', closePresent);
+  document.addEventListener('keydown', function(e){
+    if (!presentOverlay || presentOverlay.hidden) return;
+    if (e.key === 'Escape') closePresent();
+    else if (e.key === 'ArrowLeft') setActive(activeIndex - 1);
+    else if (e.key === 'ArrowRight' || e.key === ' ') { setActive(activeIndex + 1); e.preventDefault(); }
+  });
+
+  // initial paint of the example deck
+  renderThumbs();
+  renderStage();
+
+  function renderSkeletonDeck(){
+    var n = 4;
+    var html = '';
+    for (var i=0;i<n;i++){
+      html += '<div class="deck-thumb" style="animation-delay:' + (i*60) + 'ms">' +
+        '<span class="num">' + (i+1) + '</span><span class="mini-title">Drafting&hellip;</span></div>';
+    }
+    deckRail.innerHTML = html;
+    deckStage.innerHTML = '<div class="deck-slide content"><h3>Drafting&hellip;</h3>' +
+      '<ul><li>Reading the topic and sketching an outline&hellip;</li></ul></div>';
+    if (slideCounter) slideCounter.textContent = '&hellip;';
+    if (draftBadge) draftBadge.hidden = true;
+  }
 
   function renderDraft(data, topic){
     if (!data || typeof data.title !== 'string' || !Array.isArray(data.blocks) || data.blocks.length === 0) {
       throw { code: 'invalid_json' };
     }
     var blocks = data.blocks.slice(0, 6);
+    var next = [{ type:'cover', title: data.title, tagline: data.tagline || '' }];
+    blocks.forEach(function(b){
+      var bullets = Array.isArray(b.bullets) ? b.bullets.filter(function(x){ return typeof x === 'string' && x.trim(); }) : [];
+      if (!bullets.length && typeof b.body === 'string' && b.body.trim()) bullets = [b.body.trim()];
+      next.push({ type:'content', heading: String(b.heading || ''), bullets: bullets.slice(0, 4) });
+    });
+    deckSlides = next;
+    activeIndex = 0;
+    renderThumbs();
+    renderStage();
+
     var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
-
-    var railHtml = '<div class="rail-card active">1&nbsp;&middot;&nbsp;Cover</div>';
-    blocks.forEach(function(b, i){
-      railHtml += '<div class="rail-card">' + (i+2) + '&nbsp;&middot;&nbsp;' + escapeHtml(String(b.heading || s.unit)) + '</div>';
-    });
-    editorRail.innerHTML = railHtml;
-
-    var canvasHtml = '<div class="editor-card">' + handleHtml() +
-      '<h4>' + escapeHtml(data.title) + '</h4>' +
-      (data.tagline ? '<p>' + escapeHtml(String(data.tagline)) + '</p>' : '') +
-      '<div class="editor-bar w40"></div></div>';
-    blocks.forEach(function(b, i){
-      canvasHtml += '<div class="editor-card">' + handleHtml() +
-        '<h4>' + escapeHtml(String(b.heading || '')) + '</h4>' +
-        '<p>' + escapeHtml(String(b.body || '')) + '</p>' +
-        '<div class="editor-bar ' + barPattern[i % barPattern.length] + '"></div></div>';
-    });
-    editorCanvas.innerHTML = canvasHtml;
-
     chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
     if (draftBadge) draftBadge.hidden = false;
-  }
-
-  function renderSkeleton(){
-    var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
-    var railHtml = '<div class="rail-card active">Drafting&hellip;</div>';
-    for (var i=0;i<3;i++) railHtml += '<div class="rail-card">&nbsp;</div>';
-    editorRail.innerHTML = railHtml;
-    var card = '<div class="editor-card"><div class="editor-bar w60"></div><div class="editor-bar w40"></div><div class="editor-bar w80"></div></div>';
-    editorCanvas.innerHTML = card + card;
-    if (draftBadge) draftBadge.hidden = true;
-  }
-
-  function handleHtml(){
-    return '<span class="handle" aria-hidden="true"><span class="col"><span></span><span></span><span></span></span>' +
-      '<span class="col"><span></span><span></span><span></span></span></span>';
-  }
-
-  function escapeHtml(s){
-    return s.replace(/[&<>"']/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
+    if (deckCaption) deckCaption.textContent = 'Freshly drafted — ' + deckSlides.length + ' slides on "' + topic + '."';
   }
 
   var errorCopy = {
@@ -901,9 +1083,10 @@
     var prevLabel = generateBtn.textContent;
     generateBtn.textContent = 'Thinking…';
     setStatus('Drafting…', 'info');
+    if (deckCaption) deckCaption.textContent = 'Drafting…';
     var editorSection = document.getElementById('editorSection');
     if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    renderSkeleton();
+    renderSkeletonDeck();
 
     fetch('/api/generate', {
       method: 'POST',
@@ -922,6 +1105,11 @@
       .catch(function(e){
         var code = (e && e.code) || 'network_error';
         setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+        if (deckCaption) deckCaption.textContent = 'Draft failed — the example deck is shown above.';
+        deckSlides = defaultSlides();
+        activeIndex = 0;
+        renderThumbs();
+        renderStage();
       })
       .finally(function(){
         generating = false;
@@ -932,3 +1120,5 @@
   }
 })();
 </script>
+</body>
+</html>
