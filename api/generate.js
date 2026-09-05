@@ -32,11 +32,15 @@ Reply in EXACTLY this plain-text format and nothing else:
 
 TITLE: <short title, under 6 words>
 TAGLINE: <one sentence subtitle>
+IMAGE: <2 to 5 plain words naming a photographable subject>
 ===
 LAYOUT: bullets
 HEADING: <heading, under 6 words>
+BODY: <1 to 2 full sentences introducing the slide, 20 to 40 words>
 BULLET: <point, under 18 words>
 BULLET: <point, under 18 words>
+BULLET: <point, under 18 words>
+IMAGE: <2 to 5 plain words naming a photographable subject>
 ===
 LAYOUT: stat
 HEADING: <heading, under 6 words>
@@ -52,7 +56,13 @@ Rules:
 - Use stat only where a single number genuinely carries the point, and quote only
   where one memorable line does (BULLET is the line, HEADING is who said it).
   At most one of each, and skip them entirely when they don't suit the subject.
-- bullets: 2 to 5 BULLET lines. stat: exactly 2. quote: exactly 1.
+- bullets: a BODY line then 3 to 5 BULLET lines. stat: exactly 2 BULLET lines and
+  no BODY. quote: exactly 1 BULLET line and no BODY.
+- IMAGE: give one to the cover and to every bullets slide. Never on stat or quote
+  slides. It is used to search a photo library, so write plain searchable nouns
+  for a thing that can be photographed — "coral reef underwater", "marathon
+  runners road", "hospital waiting room". No adjectives about mood or lighting,
+  no abstractions ("growth", "success"), no diagrams, charts or logos.
 - Write real substance specific to the subject — never placeholder filler.
 - No markdown, no blank lines, no commentary before or after.`;
 }
@@ -96,7 +106,7 @@ export default async function handler(request) {
         model: 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: buildPrompt(topic, body.surface) }],
         temperature: 0.8,
-        max_tokens: 1800,
+        max_tokens: 2600,
         reasoning_effort: 'low',
         stream: true,
       }),

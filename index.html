@@ -301,44 +301,78 @@
   @keyframes thumbIn{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
   .deck-stage-wrap{padding:28px 32px;display:flex;align-items:center;justify-content:center;background:var(--bg)}
-  .deck-slide-frame{width:100%;max-width:640px}
+  /* container queries so slide type scales with the slide box, not the viewport
+     — the same markup has to read correctly at 640px and in full-screen present */
+  .deck-slide-frame{width:100%;max-width:640px;container-type:inline-size}
   .deck-slide{
     width:100%;aspect-ratio:16/9;border-radius:14px;box-shadow:var(--shadow-lift);
     position:relative;overflow:hidden;display:flex;flex-direction:column;padding:clamp(20px,5%,44px);
     animation:slideIn .35s ease both;
   }
   @keyframes slideIn{ from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
-  .deck-slide.cover{background:var(--deep);color:#fff;align-items:center;justify-content:center;text-align:center;gap:12px}
-  .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tide)}
-  .deck-slide.cover h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.5rem,4.4vw,2.3rem);color:#fff;text-wrap:balance;margin:0}
-  .deck-slide.cover p{color:rgba(255,255,255,0.72);font-size:clamp(0.85rem,1.6vw,1.05rem);margin:0;max-width:80%}
+  .deck-slide.cover{background:var(--deep);color:#fff;align-items:center;justify-content:center;text-align:center;gap:2cqw}
+  .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.8rem);letter-spacing:.12em;text-transform:uppercase;color:var(--tide);position:relative;z-index:2}
+  .deck-slide.cover h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.3rem,6.2cqw,3rem);color:#fff;text-wrap:balance;margin:0;position:relative;z-index:2}
+  .deck-slide.cover p{color:rgba(255,255,255,0.78);font-size:clamp(0.72rem,2.3cqw,1.2rem);margin:0;max-width:80%;position:relative;z-index:2}
+  .deck-slide.cover .cover-media{position:absolute;inset:0;z-index:0}
+  .deck-slide.cover .cover-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
+  .deck-slide.cover .cover-media[data-state="ready"] img{opacity:1}
+  .deck-slide.cover .cover-scrim{position:absolute;inset:0;z-index:1;
+    background:linear-gradient(180deg, rgba(6,26,28,0.55) 0%, rgba(6,26,28,0.86) 100%)}
+
   .deck-slide.content{background:var(--surface);justify-content:center}
-  .deck-slide.content h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.1rem,2.6vw,1.55rem);color:var(--deep);margin:0 0 clamp(10px,2.2vw,20px)}
-  .deck-slide.content ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:clamp(6px,1.6vw,14px)}
-  .deck-slide.content li{display:flex;gap:10px;font-size:clamp(0.78rem,1.6vw,1rem);color:var(--ink-soft);line-height:1.45}
-  .deck-slide.content li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--tide);margin-top:0.5em;flex:none}
+  .deck-slide.content h3{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(0.95rem,3.6cqw,1.9rem);color:var(--deep);margin:0 0 1.8cqw}
+  .deck-slide.content .slide-body{font-size:clamp(0.62rem,1.95cqw,1rem);color:var(--ink-soft);line-height:1.5;margin:0 0 2cqw;max-width:62ch}
+  .deck-slide.content ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.5cqw}
+  .deck-slide.content li{display:flex;gap:1.4cqw;font-size:clamp(0.6rem,1.95cqw,1rem);color:var(--ink-soft);line-height:1.4}
+  .deck-slide.content li::before{content:"";width:0.7cqw;height:0.7cqw;min-width:4px;min-height:4px;border-radius:50%;background:var(--tide);margin-top:0.62em;flex:none}
   .deck-slide .wave-accent{position:absolute;right:-10%;bottom:-18%;width:55%;opacity:0.5;pointer-events:none}
 
+  /* split: copy on the left, photograph on the right */
+  /* the photograph bleeds to the slide edges — floating it in padding leaves
+     dead space and reads like a placeholder */
+  .deck-slide.split{display:grid;grid-template-columns:1.1fr 0.9fr;gap:0;align-items:stretch;padding:0}
+  .deck-slide.split .slide-text{min-width:0;overflow:hidden;padding:5cqw;display:flex;flex-direction:column;justify-content:center}
+  .deck-slide.split .wave-accent{display:none}
+  .slide-media{position:relative;overflow:hidden;background:var(--surface-2);width:100%;height:100%}
+  .slide-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
+  .slide-media[data-state="ready"] img{opacity:1}
+  .slide-media[data-state="loading"]::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg, transparent 20%, rgba(46,168,163,0.16) 50%, transparent 80%);
+    background-size:220% 100%;animation:shimmer 1.4s linear infinite;
+  }
+  .slide-media[data-state="failed"]{background:linear-gradient(150deg, var(--surface-2), var(--tide))}
+  @keyframes shimmer{ from{background-position:180% 0} to{background-position:-80% 0} }
+  /* Commons images are CC/public domain — credit the photographer on the slide */
+  .media-credit{
+    position:absolute;left:0;right:0;bottom:0;z-index:3;padding:0.9cqw 1.2cqw;
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.36rem,0.95cqw,0.62rem);
+    color:rgba(255,255,255,0.82);background:linear-gradient(transparent, rgba(0,0,0,0.62));
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .slide-media[data-state="failed"] .media-credit{display:none}
+
   /* stat layout: one number carries the slide */
-  .deck-slide.stat{background:var(--surface);justify-content:center;gap:clamp(6px,1.4vw,12px)}
+  .deck-slide.stat{background:var(--surface);justify-content:center;gap:1.6cqw}
   .deck-slide.stat h3{
-    font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:clamp(0.62rem,1.3vw,0.76rem);
+    font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:clamp(0.55rem,1.5cqw,0.85rem);
     letter-spacing:.14em;text-transform:uppercase;color:var(--wave);margin:0;
   }
   .deck-slide.stat .stat-value{
-    font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.9rem,7vw,3.4rem);
+    font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.6rem,8.5cqw,4.2rem);
     color:var(--deep);line-height:1;margin:0;font-variant-numeric:tabular-nums;text-wrap:balance;
   }
-  .deck-slide.stat .stat-support{font-size:clamp(0.78rem,1.6vw,1rem);color:var(--ink-soft);line-height:1.45;margin:0;max-width:85%}
+  .deck-slide.stat .stat-support{font-size:clamp(0.62rem,2cqw,1.05rem);color:var(--ink-soft);line-height:1.45;margin:0;max-width:85%}
 
   /* quote layout: one line, set large */
-  .deck-slide.quote{background:var(--surface-2);justify-content:center;gap:clamp(10px,2vw,18px)}
+  .deck-slide.quote{background:var(--surface-2);justify-content:center;gap:2.4cqw}
   .deck-slide.quote .quote-text{
     font-family:'Fraunces',serif;font-style:italic;font-weight:450;
-    font-size:clamp(1rem,3vw,1.7rem);color:var(--deep);line-height:1.35;margin:0;text-wrap:balance;
+    font-size:clamp(0.9rem,4.2cqw,2.2rem);color:var(--deep);line-height:1.35;margin:0;text-wrap:balance;
   }
   .deck-slide.quote .quote-attr{
-    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.6rem,1.2vw,0.74rem);
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.85rem);
     letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0;
   }
   .deck-slide.quote .quote-attr::before{content:"— "}
@@ -957,14 +991,83 @@
       '<path d="' + d + '" fill="var(--tide)"></path></svg>';
   }
 
+  // Photographs are resolved through /api/image (Wikimedia Commons). Each query
+  // is memoised — including the in-flight promise — because renderStage() runs
+  // on every keystroke of the stream and must not refetch the same picture.
+  var imageCache = {};
+
+  function resolveImage(query){
+    var key = String(query).toLowerCase().trim();
+    if (imageCache[key] !== undefined) return Promise.resolve(imageCache[key]).then(function(v){ return v; });
+    var p = fetch('/api/image?q=' + encodeURIComponent(key))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){
+        var value = data && data.url ? data : null;
+        imageCache[key] = value;
+        return value;
+      })
+      .catch(function(){ imageCache[key] = null; return null; });
+    imageCache[key] = p;
+    return p;
+  }
+
+  function mediaMarkup(query, cls){
+    return '<div class="' + cls + '" data-state="loading" data-query="' + escapeHtml(query) + '">' +
+      '<img alt="">' +
+      '<span class="media-credit" hidden></span>' +
+      '</div>';
+  }
+
+  function attachMedia(root){
+    Array.prototype.forEach.call(root.querySelectorAll('.slide-media, .cover-media'), function(box){
+      var query = box.getAttribute('data-query');
+      var img = box.querySelector('img');
+      if (!query || !img) return;
+
+      Promise.resolve(resolveImage(query)).then(function(data){
+        if (!data || !data.url) { box.setAttribute('data-state', 'failed'); return; }
+        var credit = box.querySelector('.media-credit');
+        if (credit && (data.credit || data.license)) {
+          credit.textContent = [data.credit, data.license].filter(Boolean).join(' · ');
+          credit.hidden = false;
+        }
+        img.addEventListener('load', function(){ box.setAttribute('data-state', 'ready'); });
+        img.addEventListener('error', function(){ box.setAttribute('data-state', 'failed'); });
+        img.src = data.url;
+        if (img.complete && img.naturalWidth) box.setAttribute('data-state', 'ready');
+      });
+    });
+  }
+
+  // warm the lookups one at a time so clicking through a finished deck is instant
+  function prefetchImages(){
+    var queue = deckSlides.filter(function(s){ return s.image; }).map(function(s){ return s.image; });
+    (function next(){
+      var q = queue.shift();
+      if (!q) return;
+      Promise.resolve(resolveImage(q)).then(function(data){
+        if (data && data.url) { var im = new Image(); im.src = data.url; }
+        next();
+      });
+    })();
+  }
+
   function defaultSlides(){
     return [
-      { type:'cover', title:'Tide Dock', tagline:'Charging, powered by the pull of the moon.' },
-      { type:'content', layout:'bullets', heading:'The problem', bullets:[
+      { type:'cover', title:'Tide Dock', tagline:'Charging, powered by the pull of the moon.',
+        image:'tidal turbine ocean' },
+      { type:'content', layout:'bullets', heading:'The problem',
+        body:'Marinas on exposed coastline lose grid power for days at a time, and the backup everyone falls back on is a diesel generator.',
+        image:'marina boats storm',
+        bullets:[
         'Coastal chargers run on grid power that storms knock out for days.',
-        'Diesel backup generators are loud, costly, and need constant fuel runs.'
+        'Diesel backup generators are loud, costly, and need constant fuel runs.',
+        'Operators lose customers every week the power stays down.'
       ]},
-      { type:'content', layout:'bullets', heading:'How it works', bullets:[
+      { type:'content', layout:'bullets', heading:'How it works',
+        body:'A turbine sits below the waterline and turns with the tide, charging a bank onshore that the docks draw from around the clock.',
+        image:'underwater turbine rotor',
+        bullets:[
         'A submerged turbine spins with the rise and fall of the tide.',
         'It trickle-charges a buffer bank onshore, day and night.',
         'Docks draw from the bank, not the grid.'
@@ -976,9 +1079,13 @@
       { type:'content', layout:'quote', heading:'Marina operator, Port Aransas', bullets:[
         'We lost power for nine days after the last storm. The boats stayed, the customers did not.'
       ]},
-      { type:'content', layout:'bullets', heading:'Ask', bullets:[
+      { type:'content', layout:'bullets', heading:'Ask',
+        body:'We are raising a seed round to put ten docks in the water and prove the economics at a working marina.',
+        image:'shipyard dock construction',
+        bullets:[
         '$600K to build ten pilot docks.',
-        '18-month runway to the first paying marina.'
+        '18-month runway to the first paying marina.',
+        'First installation targeted for next spring.'
       ]}
     ];
   }
@@ -997,7 +1104,9 @@
   function slideMarkup(slide, seed, editable){
     var ed = editable ? ' contenteditable="true" spellcheck="false"' : '';
     if (slide.type === 'cover') {
-      return '<div class="deck-slide cover">' + waveAccentSvg(seed) +
+      var coverMedia = slide.image ? mediaMarkup(slide.image, 'cover-media') + '<div class="cover-scrim"></div>' : '';
+      return '<div class="deck-slide cover' + (slide.image ? ' has-image' : '') + '">' +
+        coverMedia + (slide.image ? '' : waveAccentSvg(seed)) +
         '<span class="eyebrow-mini">Swell draft</span>' +
         '<h3 data-field="title"' + ed + '>' + escapeHtml(slide.title || 'Untitled') + '</h3>' +
         '<p data-field="tagline"' + ed + '>' + escapeHtml(slide.tagline || '') + '</p>' +
@@ -1025,10 +1134,18 @@
     var items = bullets.map(function(b, i){
       return '<li data-field="bullet" data-index="' + i + '"' + ed + '>' + escapeHtml(b) + '</li>';
     }).join('');
-    return '<div class="deck-slide content bullets">' + waveAccentSvg(seed) +
+    var text =
       '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
-      '<ul>' + items + '</ul>' +
-      '</div>';
+      (slide.body ? '<p class="slide-body" data-field="body"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+      '<ul>' + items + '</ul>';
+
+    if (slide.image) {
+      return '<div class="deck-slide content bullets split">' +
+        '<div class="slide-text">' + text + '</div>' +
+        mediaMarkup(slide.image, 'slide-media') +
+        '</div>';
+    }
+    return '<div class="deck-slide content bullets">' + waveAccentSvg(seed) + text + '</div>';
   }
 
   function thumbTitle(slide, i){
@@ -1132,8 +1249,10 @@
 
   function renderStage(){
     deckStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, true);
+    attachMedia(deckStage);
     if (presentOverlay && !presentOverlay.hidden) {
       presentStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, false);
+      attachMedia(presentStage);
     }
     updateNav();
   }
@@ -1155,6 +1274,7 @@
     var text = el.textContent;
     if (field === 'title') { slide.title = text; updateThumbTitle(activeIndex); }
     else if (field === 'tagline') { slide.tagline = text; }
+    else if (field === 'body') { slide.body = text; }
     else if (field === 'heading') { slide.heading = text; updateThumbTitle(activeIndex); }
     else if (field === 'bullet') {
       var idx = parseInt(el.getAttribute('data-index'), 10);
@@ -1243,10 +1363,24 @@
       if (activeIndex === 0) renderStage();
       return null;
     }
+    // the cover's IMAGE arrives before the first ===, so it belongs to the cover
+    if (key === 'IMAGE' && deckSlides.length === 1) {
+      cover.image = value;
+      if (activeIndex === 0) renderStage();
+      return null;
+    }
     if (!slide || slide.type !== 'content') return null;
 
     if (key === 'LAYOUT') {
       slide.layout = normalizeLayout(value);
+    } else if (key === 'IMAGE') {
+      slide.image = value;
+      renderStage();
+      return null;
+    } else if (key === 'BODY') {
+      slide.body = value;
+      renderStage();
+      return null;
     } else if (key === 'HEADING') {
       slide.heading = value;
       updateThumbTitle(deckSlides.length - 1);
@@ -1365,6 +1499,7 @@
         activeIndex = 0;
         renderThumbs(false);
         renderStage();
+        prefetchImages();
         var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
         chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
         if (draftBadge) draftBadge.hidden = false;
@@ -1431,7 +1566,9 @@
         var target = deckSlides[index];
         if (!target) return;
         if (data.heading) target.heading = data.heading;
-        if (Array.isArray(data.bullets) && data.bullets.length) target.bullets = data.bullets.slice(0, 4);
+        if (Array.isArray(data.bullets) && data.bullets.length) target.bullets = data.bullets.slice(0, 5);
+        if (typeof data.body === 'string') target.body = data.body;
+        if (data.image) target.image = data.image;
         target.layout = normalizeLayout(data.layout || target.layout);
         updateThumbTitle(index);
         if (activeIndex === index) renderStage();

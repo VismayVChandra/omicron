@@ -13,14 +13,16 @@ function buildPrompt({ topic, title, heading, layout }) {
     stat:
       'LAYOUT: stat\nHEADING: <heading, under 6 words>\n' +
       'BULLET: <one striking number, under 8 words>\n' +
-      'BULLET: <supporting point, under 14 words>',
+      'BULLET: <supporting point, under 18 words>',
     quote:
       'LAYOUT: quote\nHEADING: <who said it, under 8 words>\n' +
       'BULLET: <the quoted line, under 20 words>',
     bullets:
       'LAYOUT: bullets\nHEADING: <heading, under 6 words>\n' +
-      'BULLET: <point, under 14 words>\nBULLET: <point, under 14 words>\n' +
-      'BULLET: <point, under 14 words>',
+      'BODY: <1 to 2 sentences, 20 to 40 words>\n' +
+      'BULLET: <point, under 18 words>\nBULLET: <point, under 18 words>\n' +
+      'BULLET: <point, under 18 words>\n' +
+      'IMAGE: <2 to 5 plain searchable words naming a photographable subject>',
   }[LAYOUTS.includes(layout) ? layout : 'bullets'];
 
   return `Deck: "${title}" — about ${topic}.
@@ -39,10 +41,10 @@ function json(obj, status) {
   });
 }
 
-const MAX_BULLETS = { bullets: 4, stat: 2, quote: 1 };
+const MAX_BULLETS = { bullets: 5, stat: 2, quote: 1 };
 
 function parseSlide(text) {
-  const out = { layout: 'bullets', heading: '', bullets: [] };
+  const out = { layout: 'bullets', heading: '', body: '', image: '', bullets: [] };
   let seenLayout = false;
   for (const raw of String(text).split('\n')) {
     const line = raw.trim();
@@ -56,11 +58,16 @@ function parseSlide(text) {
       if (LAYOUTS.includes(value)) out.layout = value;
     } else if (key === 'HEADING') {
       if (!out.heading) out.heading = value;
+    } else if (key === 'BODY') {
+      if (!out.body) out.body = value;
+    } else if (key === 'IMAGE') {
+      if (!out.image) out.image = value;
     } else if (key === 'BULLET' && value) {
       out.bullets.push(value);
     }
   }
-  out.bullets = out.bullets.slice(0, MAX_BULLETS[out.layout] || 4);
+  out.bullets = out.bullets.slice(0, MAX_BULLETS[out.layout] || 5);
+  if (out.layout !== 'bullets') { out.body = ''; out.image = ''; }
   return out;
 }
 
