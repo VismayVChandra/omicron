@@ -1,6 +1,14 @@
-// Vercel serverless function: drafts deck/doc/site content with Groq's
-// free-tier Llama 3.3 API. The API key lives only in the GROQ_API_KEY
-// environment variable on Vercel — it never reaches the browser.
+// Streaming deck generation. Runs on Vercel's Edge runtime so the response
+// can be piped to the browser as it is written, rather than buffered.
+//
+// Groq returns OpenAI-style SSE. Reasoning models put their hidden thinking
+// on delta.reasoning and the real answer on delta.content, so only content
+// is forwarded. The client parses the line-based format below incrementally,
+// which is why this is plain text rather than one JSON blob.
+
+export const config = { runtime: 'edge' };
+
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const SURFACE_NOUN = {
   deck: 'a slide-by-slide outline for a pitch deck',
@@ -10,39 +18,64 @@ const SURFACE_NOUN = {
 
 function buildPrompt(topic, surface) {
   const noun = SURFACE_NOUN[surface] || SURFACE_NOUN.deck;
-  return (
-    `Draft ${noun} about: "${topic}".\n\n` +
-    'Reply with ONLY a JSON object, no other text, in exactly this shape:\n' +
-    '{"title": string (a short punchy title, under 6 words), ' +
-    '"tagline": string (one sentence subtitle), ' +
-    '"blocks": [ {"heading": string (under 6 words), "bullets": [string, string] (2 to 4 bullets, each under 14 words)}, ... ] }\n\n' +
-    'Include between 4 and 6 blocks, ordered the way they should appear.'
-  );
+  return `Draft ${noun} about: "${topic}".
+
+Reply in EXACTLY this plain-text format and nothing else:
+
+TITLE: <short punchy title, under 6 words>
+TAGLINE: <one sentence subtitle>
+===
+LAYOUT: bullets
+HEADING: <heading, under 6 words>
+BULLET: <point, under 14 words>
+BULLET: <point, under 14 words>
+===
+LAYOUT: stat
+HEADING: <heading, under 6 words>
+BULLET: <one striking number or metric, under 8 words>
+BULLET: <supporting point, under 14 words>
+
+Rules:
+- Write 4 to 6 slides after the cover. Begin every slide with a line of exactly ===
+- LAYOUT is one of: bullets, stat, quote
+- Use stat for a slide built around a single number. Use quote for a slide built
+  around one memorable line, where BULLET is the line and HEADING is who said it.
+  Use bullets for everything else.
+- At most one stat slide and at most one quote slide per deck.
+- bullets: 2 to 4 BULLET lines. stat: exactly 2. quote: exactly 1.
+- No markdown, no blank lines, no commentary before or after.`;
 }
 
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'invalid_request', message: 'Use POST.' });
-    return;
+function json(obj, status) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export default async function handler(request) {
+  if (request.method !== 'POST') {
+    return json({ error: 'invalid_request', message: 'Use POST.' }, 405);
   }
 
-  const { topic, surface } = req.body || {};
-  if (typeof topic !== 'string' || !topic.trim()) {
-    res.status(400).json({ error: 'invalid_request', message: 'Missing topic.' });
-    return;
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: 'invalid_request', message: 'Body must be JSON.' }, 400);
   }
-  if (topic.length > 500) {
-    res.status(400).json({ error: 'prompt_too_large', message: 'Topic is too long.' });
-    return;
-  }
+
+  const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
+  if (!topic) return json({ error: 'invalid_request', message: 'Missing topic.' }, 400);
+  if (topic.length > 500) return json({ error: 'prompt_too_large', message: 'Topic is too long.' }, 400);
 
   if (!process.env.GROQ_API_KEY) {
-    res.status(500).json({ error: 'upstream_error', message: 'GROQ_API_KEY is not configured.' });
-    return;
+    return json({ error: 'upstream_error', message: 'GROQ_API_KEY is not configured.' }, 500);
   }
 
+  let groqRes;
   try {
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    groqRes = await fetch(GROQ_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -50,55 +83,65 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'openai/gpt-oss-120b',
-        messages: [{ role: 'user', content: buildPrompt(topic.trim(), surface) }],
-        temperature: 0.7,
+        messages: [{ role: 'user', content: buildPrompt(topic, body.surface) }],
+        temperature: 0.8,
         max_tokens: 1200,
         reasoning_effort: 'low',
-        response_format: { type: 'json_object' },
+        stream: true,
       }),
     });
-
-    if (groqRes.status === 429) {
-      res.status(429).json({ error: 'rate_limited' });
-      return;
-    }
-    if (!groqRes.ok) {
-      const detail = await groqRes.text().catch(() => '');
-      res.status(502).json({ error: 'upstream_error', message: detail.slice(0, 300) });
-      return;
-    }
-
-    const completion = await groqRes.json();
-    const content = completion.choices && completion.choices[0] && completion.choices[0].message && completion.choices[0].message.content;
-    if (!content) {
-      res.status(502).json({ error: 'empty_completion' });
-      return;
-    }
-
-    let parsed;
-    try {
-      parsed = JSON.parse(content);
-    } catch (e) {
-      res.status(502).json({ error: 'invalid_json' });
-      return;
-    }
-
-    if (typeof parsed.title !== 'string' || !Array.isArray(parsed.blocks) || parsed.blocks.length === 0) {
-      res.status(502).json({ error: 'invalid_json' });
-      return;
-    }
-
-    res.status(200).json({
-      title: parsed.title,
-      tagline: typeof parsed.tagline === 'string' ? parsed.tagline : '',
-      blocks: parsed.blocks.slice(0, 6).map((b) => ({
-        heading: typeof b.heading === 'string' ? b.heading : '',
-        bullets: Array.isArray(b.bullets)
-          ? b.bullets.filter((x) => typeof x === 'string' && x.trim()).slice(0, 4)
-          : [],
-      })),
-    });
   } catch (e) {
-    res.status(500).json({ error: 'upstream_error', message: String(e && e.message || e) });
+    return json({ error: 'upstream_error', message: 'Could not reach the model.' }, 502);
   }
-};
+
+  if (groqRes.status === 429) return json({ error: 'rate_limited' }, 429);
+  if (!groqRes.ok || !groqRes.body) {
+    const detail = await groqRes.text().catch(() => '');
+    return json({ error: 'upstream_error', message: detail.slice(0, 300) }, 502);
+  }
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = groqRes.body.getReader();
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+      let buffer = '';
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const payload = trimmed.slice(5).trim();
+            if (!payload || payload === '[DONE]') continue;
+            let parsed;
+            try {
+              parsed = JSON.parse(payload);
+            } catch (e) {
+              continue;
+            }
+            const delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
+            const text = delta && delta.content;
+            if (text) controller.enqueue(encoder.encode(text));
+          }
+        }
+      } catch (e) {
+        controller.enqueue(new TextEncoder().encode('\nERROR: upstream_error\n'));
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Accel-Buffering': 'no',
+    },
+  });
+}

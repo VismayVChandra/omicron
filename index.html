@@ -312,6 +312,41 @@
   .deck-slide.content li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--tide);margin-top:0.5em;flex:none}
   .deck-slide .wave-accent{position:absolute;right:-10%;bottom:-18%;width:55%;opacity:0.5;pointer-events:none}
 
+  /* stat layout: one number carries the slide */
+  .deck-slide.stat{background:var(--surface);justify-content:center;gap:clamp(6px,1.4vw,12px)}
+  .deck-slide.stat h3{
+    font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:clamp(0.62rem,1.3vw,0.76rem);
+    letter-spacing:.14em;text-transform:uppercase;color:var(--wave);margin:0;
+  }
+  .deck-slide.stat .stat-value{
+    font-family:'Fraunces',serif;font-weight:600;font-size:clamp(1.9rem,7vw,3.4rem);
+    color:var(--deep);line-height:1;margin:0;font-variant-numeric:tabular-nums;text-wrap:balance;
+  }
+  .deck-slide.stat .stat-support{font-size:clamp(0.78rem,1.6vw,1rem);color:var(--ink-soft);line-height:1.45;margin:0;max-width:85%}
+
+  /* quote layout: one line, set large */
+  .deck-slide.quote{background:var(--surface-2);justify-content:center;gap:clamp(10px,2vw,18px)}
+  .deck-slide.quote .quote-text{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:450;
+    font-size:clamp(1rem,3vw,1.7rem);color:var(--deep);line-height:1.35;margin:0;text-wrap:balance;
+  }
+  .deck-slide.quote .quote-attr{
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.6rem,1.2vw,0.74rem);
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0;
+  }
+  .deck-slide.quote .quote-attr::before{content:"— "}
+
+  /* editing affordances */
+  .deck-slide [contenteditable="true"]{border-radius:4px;transition:outline-color .12s}
+  .deck-slide [contenteditable="true"]:hover{outline:1px dashed var(--line);outline-offset:4px}
+  .deck-slide [contenteditable="true"]:focus{outline:2px solid var(--tide);outline-offset:4px}
+  .deck-slide.cover [contenteditable="true"]:hover{outline-color:rgba(255,255,255,0.35)}
+
+  /* drag-to-reorder */
+  .deck-thumb[draggable="true"]{cursor:grab}
+  .deck-thumb.dragging{opacity:0.4;cursor:grabbing}
+  .deck-thumb.drop-target{border-color:var(--tide);box-shadow:0 -3px 0 var(--tide)}
+
   .present-overlay{
     position:fixed;inset:0;z-index:200;background:rgba(4,16,17,0.94);
     display:flex;align-items:center;justify-content:center;padding:5vw;
@@ -525,7 +560,7 @@
       <div class="section-head">
         <span class="eyebrow">Watch it build</span>
         <h2>Not a mockup &mdash; an actual deck, drafting.</h2>
-        <p>This panel is live. Type a topic in the prompt bar above and press Generate: real slides land here, one at a time, ready to click through or present.</p>
+        <p>This panel is live. Type a topic above and press Generate: slides write themselves here, one at a time. Then click any line to rewrite it, drag thumbnails to reorder, or redo a single slide.</p>
       </div>
       <div class="deck-mock">
         <div class="deck-toolbar">
@@ -536,6 +571,7 @@
           </div>
           <div class="deck-toolbar-right">
             <span id="slideCounter" class="slide-counter tabular">1 / 5</span>
+            <button type="button" class="deck-icon-btn" id="redoSlideBtn" aria-label="Regenerate this slide" title="Regenerate this slide">&#8635;</button>
             <button type="button" class="deck-icon-btn" id="prevSlideBtn" aria-label="Previous slide">&larr;</button>
             <button type="button" class="deck-icon-btn" id="nextSlideBtn" aria-label="Next slide">&rarr;</button>
             <button type="button" class="btn btn-ghost" id="presentBtn" style="padding:7px 16px;font-size:0.82rem">Present &nbsp;&#9654;</button>
@@ -864,6 +900,7 @@
   var deckRail = document.getElementById('deckRail');
   var deckStage = document.getElementById('deckStage');
   var slideCounter = document.getElementById('slideCounter');
+  var redoSlideBtn = document.getElementById('redoSlideBtn');
   var prevSlideBtn = document.getElementById('prevSlideBtn');
   var nextSlideBtn = document.getElementById('nextSlideBtn');
   var presentBtn = document.getElementById('presentBtn');
@@ -910,57 +947,155 @@
   function defaultSlides(){
     return [
       { type:'cover', title:'Tide Dock', tagline:'Charging, powered by the pull of the moon.' },
-      { type:'content', heading:'The problem', bullets:[
+      { type:'content', layout:'bullets', heading:'The problem', bullets:[
         'Coastal chargers run on grid power that storms knock out for days.',
         'Diesel backup generators are loud, costly, and need constant fuel runs.'
       ]},
-      { type:'content', heading:'How it works', bullets:[
+      { type:'content', layout:'bullets', heading:'How it works', bullets:[
         'A submerged turbine spins with the rise and fall of the tide.',
         'It trickle-charges a buffer bank onshore, day and night.',
         'Docks draw from the bank, not the grid.'
       ]},
-      { type:'content', heading:'Market', bullets:[
-        '600+ marinas along the Gulf coast alone.',
-        'Coastal campsites already pay for diesel backup today.'
+      { type:'content', layout:'stat', heading:'Market', bullets:[
+        '600+ marinas',
+        'On the Gulf coast alone, all paying for diesel backup today.'
       ]},
-      { type:'content', heading:'Ask', bullets:[
+      { type:'content', layout:'quote', heading:'Marina operator, Port Aransas', bullets:[
+        'We lost power for nine days after the last storm. The boats stayed, the customers did not.'
+      ]},
+      { type:'content', layout:'bullets', heading:'Ask', bullets:[
         '$600K to build ten pilot docks.',
         '18-month runway to the first paying marina.'
       ]}
     ];
   }
 
+  var LAYOUTS = ['bullets','stat','quote'];
+  function normalizeLayout(v){
+    v = String(v || '').trim().toLowerCase();
+    return LAYOUTS.indexOf(v) === -1 ? 'bullets' : v;
+  }
+
   var deckSlides = defaultSlides();
   var activeIndex = 0;
+  var deckTopic = 'A pitch deck for a tide-powered charging dock';
 
-  function slideMarkup(slide, seed){
+  // `editable` is false for the present overlay — presenting is read-only
+  function slideMarkup(slide, seed, editable){
+    var ed = editable ? ' contenteditable="true" spellcheck="false"' : '';
     if (slide.type === 'cover') {
       return '<div class="deck-slide cover">' + waveAccentSvg(seed) +
         '<span class="eyebrow-mini">Swell draft</span>' +
-        '<h3>' + escapeHtml(slide.title || 'Untitled') + '</h3>' +
-        (slide.tagline ? '<p>' + escapeHtml(slide.tagline) + '</p>' : '') +
+        '<h3 data-field="title"' + ed + '>' + escapeHtml(slide.title || 'Untitled') + '</h3>' +
+        '<p data-field="tagline"' + ed + '>' + escapeHtml(slide.tagline || '') + '</p>' +
         '</div>';
     }
-    var bullets = (slide.bullets || []).map(function(b){ return '<li>' + escapeHtml(b) + '</li>'; }).join('');
-    return '<div class="deck-slide content">' + waveAccentSvg(seed) +
-      '<h3>' + escapeHtml(slide.heading || '') + '</h3>' +
-      '<ul>' + bullets + '</ul>' +
+
+    var layout = normalizeLayout(slide.layout);
+    var bullets = slide.bullets || [];
+
+    if (layout === 'stat') {
+      return '<div class="deck-slide content stat">' + waveAccentSvg(seed) +
+        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        '<p class="stat-value" data-field="bullet" data-index="0"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
+        '<p class="stat-support" data-field="bullet" data-index="1"' + ed + '>' + escapeHtml(bullets[1] || '') + '</p>' +
+        '</div>';
+    }
+
+    if (layout === 'quote') {
+      return '<div class="deck-slide content quote">' + waveAccentSvg(seed) +
+        '<p class="quote-text" data-field="bullet" data-index="0"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
+        '<p class="quote-attr" data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</p>' +
+        '</div>';
+    }
+
+    var items = bullets.map(function(b, i){
+      return '<li data-field="bullet" data-index="' + i + '"' + ed + '>' + escapeHtml(b) + '</li>';
+    }).join('');
+    return '<div class="deck-slide content bullets">' + waveAccentSvg(seed) +
+      '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+      '<ul>' + items + '</ul>' +
       '</div>';
   }
 
-  function thumbMarkup(slide, i, active){
-    var title = slide.type === 'cover' ? (slide.title || 'Cover') : (slide.heading || 'Slide ' + (i+1));
-    return '<div class="deck-thumb' + (active ? ' active' : '') + '" data-index="' + i + '" style="animation-delay:' + (i*60) + 'ms">' +
-      '<span class="num">' + (i+1) + '</span>' +
-      '<span class="mini-title">' + escapeHtml(title) + '</span>' +
-      '</div>';
+  function thumbTitle(slide, i){
+    return slide.type === 'cover' ? (slide.title || 'Cover') : (slide.heading || 'Slide ' + (i+1));
   }
 
-  function renderThumbs(){
-    deckRail.innerHTML = deckSlides.map(function(s, i){ return thumbMarkup(s, i, i === activeIndex); }).join('');
-    Array.prototype.forEach.call(deckRail.querySelectorAll('.deck-thumb'), function(el){
-      el.addEventListener('click', function(){ setActive(parseInt(el.getAttribute('data-index'), 10)); });
+  function buildThumb(slide, i, animate){
+    var el = document.createElement('div');
+    el.className = 'deck-thumb' + (i === activeIndex ? ' active' : '');
+    el.setAttribute('data-index', i);
+    if (animate) el.style.animationDelay = (i*60) + 'ms';
+    else el.style.animation = 'none';
+    el.innerHTML = '<span class="num">' + (i+1) + '</span>' +
+      '<span class="mini-title">' + escapeHtml(thumbTitle(slide, i)) + '</span>';
+    wireThumb(el, i);
+    return el;
+  }
+
+  var dragIndex = null;
+
+  function wireThumb(el, i){
+    el.addEventListener('click', function(){
+      setActive(parseInt(el.getAttribute('data-index'), 10));
     });
+    if (i === 0) return; // the cover stays pinned first
+
+    el.setAttribute('draggable', 'true');
+    el.addEventListener('dragstart', function(e){
+      dragIndex = parseInt(el.getAttribute('data-index'), 10);
+      el.classList.add('dragging');
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(dragIndex));
+      }
+    });
+    el.addEventListener('dragend', function(){
+      el.classList.remove('dragging');
+      dragIndex = null;
+      Array.prototype.forEach.call(deckRail.querySelectorAll('.deck-thumb'), function(t){
+        t.classList.remove('drop-target');
+      });
+    });
+    el.addEventListener('dragover', function(e){
+      if (dragIndex === null) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      el.classList.add('drop-target');
+    });
+    el.addEventListener('dragleave', function(){ el.classList.remove('drop-target'); });
+    el.addEventListener('drop', function(e){
+      e.preventDefault();
+      el.classList.remove('drop-target');
+      moveSlide(dragIndex, parseInt(el.getAttribute('data-index'), 10));
+      dragIndex = null;
+    });
+  }
+
+  function moveSlide(from, to){
+    if (from === null || to === null || from === to) return;
+    if (from === 0 || to === 0) return; // never displace the cover
+    var activeRef = deckSlides[activeIndex];
+    var moved = deckSlides.splice(from, 1)[0];
+    deckSlides.splice(to, 0, moved);
+    activeIndex = deckSlides.indexOf(activeRef);
+    renderThumbs();
+    renderStage();
+  }
+
+  function renderThumbs(animate){
+    deckRail.innerHTML = '';
+    deckSlides.forEach(function(s, i){ deckRail.appendChild(buildThumb(s, i, animate !== false)); });
+  }
+
+  function appendThumb(i){
+    deckRail.appendChild(buildThumb(deckSlides[i], i, true));
+  }
+
+  function updateThumbTitle(i){
+    var el = deckRail.querySelector('.deck-thumb[data-index="' + i + '"] .mini-title');
+    if (el) el.textContent = thumbTitle(deckSlides[i], i);
   }
 
   function updateNav(){
@@ -972,15 +1107,21 @@
     if (nextSlideBtn) nextSlideBtn.disabled = activeIndex === count - 1;
     if (presentPrevBtn) presentPrevBtn.disabled = activeIndex === 0;
     if (presentNextBtn) presentNextBtn.disabled = activeIndex === count - 1;
+    if (redoSlideBtn) {
+      var isCover = deckSlides[activeIndex] && deckSlides[activeIndex].type === 'cover';
+      redoSlideBtn.disabled = isCover || generating;
+      redoSlideBtn.title = isCover ? 'Regenerate works on content slides' : 'Regenerate this slide';
+    }
     Array.prototype.forEach.call(deckRail.querySelectorAll('.deck-thumb'), function(el){
       el.classList.toggle('active', parseInt(el.getAttribute('data-index'), 10) === activeIndex);
     });
   }
 
   function renderStage(){
-    var html = slideMarkup(deckSlides[activeIndex], activeIndex);
-    deckStage.innerHTML = html;
-    if (presentOverlay && !presentOverlay.hidden) presentStage.innerHTML = html;
+    deckStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, true);
+    if (presentOverlay && !presentOverlay.hidden) {
+      presentStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, false);
+    }
     updateNav();
   }
 
@@ -988,6 +1129,28 @@
     activeIndex = Math.max(0, Math.min(deckSlides.length - 1, i));
     renderStage();
   }
+
+  // in-place editing: write straight back to state, never re-render the stage
+  // while typing or the caret jumps
+  deckStage.addEventListener('input', function(e){
+    var el = e.target;
+    if (!el || !el.getAttribute) return;
+    var field = el.getAttribute('data-field');
+    if (!field) return;
+    var slide = deckSlides[activeIndex];
+    if (!slide) return;
+    var text = el.textContent;
+    if (field === 'title') { slide.title = text; updateThumbTitle(activeIndex); }
+    else if (field === 'tagline') { slide.tagline = text; }
+    else if (field === 'heading') { slide.heading = text; updateThumbTitle(activeIndex); }
+    else if (field === 'bullet') {
+      var idx = parseInt(el.getAttribute('data-index'), 10);
+      if (!isNaN(idx)) {
+        if (!slide.bullets) slide.bullets = [];
+        slide.bullets[idx] = text;
+      }
+    }
+  });
 
   if (prevSlideBtn) prevSlideBtn.addEventListener('click', function(){ setActive(activeIndex - 1); });
   if (nextSlideBtn) nextSlideBtn.addEventListener('click', function(){ setActive(activeIndex + 1); });
@@ -997,7 +1160,7 @@
   function openPresent(){
     if (!presentOverlay) return;
     presentOverlay.hidden = false;
-    presentStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex);
+    presentStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, false);
     updateNav();
   }
   function closePresent(){
@@ -1016,42 +1179,6 @@
   renderThumbs();
   renderStage();
 
-  function renderSkeletonDeck(){
-    var n = 4;
-    var html = '';
-    for (var i=0;i<n;i++){
-      html += '<div class="deck-thumb" style="animation-delay:' + (i*60) + 'ms">' +
-        '<span class="num">' + (i+1) + '</span><span class="mini-title">Drafting&hellip;</span></div>';
-    }
-    deckRail.innerHTML = html;
-    deckStage.innerHTML = '<div class="deck-slide content"><h3>Drafting&hellip;</h3>' +
-      '<ul><li>Reading the topic and sketching an outline&hellip;</li></ul></div>';
-    if (slideCounter) slideCounter.textContent = '&hellip;';
-    if (draftBadge) draftBadge.hidden = true;
-  }
-
-  function renderDraft(data, topic){
-    if (!data || typeof data.title !== 'string' || !Array.isArray(data.blocks) || data.blocks.length === 0) {
-      throw { code: 'invalid_json' };
-    }
-    var blocks = data.blocks.slice(0, 6);
-    var next = [{ type:'cover', title: data.title, tagline: data.tagline || '' }];
-    blocks.forEach(function(b){
-      var bullets = Array.isArray(b.bullets) ? b.bullets.filter(function(x){ return typeof x === 'string' && x.trim(); }) : [];
-      if (!bullets.length && typeof b.body === 'string' && b.body.trim()) bullets = [b.body.trim()];
-      next.push({ type:'content', heading: String(b.heading || ''), bullets: bullets.slice(0, 4) });
-    });
-    deckSlides = next;
-    activeIndex = 0;
-    renderThumbs();
-    renderStage();
-
-    var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
-    chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
-    if (draftBadge) draftBadge.hidden = false;
-    if (deckCaption) deckCaption.textContent = 'Freshly drafted — ' + deckSlides.length + ' slides on "' + topic + '."';
-  }
-
   var errorCopy = {
     invalid_request: "That topic couldn't be sent — try rephrasing it.",
     empty_completion: "Didn't get a draft back — try a shorter, clearer topic.",
@@ -1062,13 +1189,125 @@
     network_error: "Couldn't reach the server — check your connection and try again."
   };
 
-  if (generateBtn) {
-    generateBtn.addEventListener('click', function(){
-      handleGenerate();
-    });
+  // ---- streaming parser -------------------------------------------------
+  // The API streams a line-based format (TITLE / TAGLINE / === / LAYOUT /
+  // HEADING / BULLET). Each completed line is applied to state as it lands,
+  // so slides appear and fill in while the model is still writing.
+  var streamPendingRender = false;
+
+  function applyStreamLine(raw){
+    var line = raw.trim();
+    if (!line) return null;
+
+    if (line.indexOf('ERROR:') === 0) {
+      return line.slice(6).trim() || 'upstream_error';
+    }
+
+    if (line === '===') {
+      deckSlides.push({ type:'content', layout:'bullets', heading:'', bullets:[] });
+      activeIndex = deckSlides.length - 1;
+      appendThumb(activeIndex);
+      streamPendingRender = true;
+      updateNav();
+      return null;
+    }
+
+    var m = line.match(/^([A-Z]+):\s*(.*)$/);
+    if (!m) return null;
+    var key = m[1];
+    var value = m[2].trim();
+    var cover = deckSlides[0];
+    var slide = deckSlides[deckSlides.length - 1];
+
+    if (key === 'TITLE') {
+      cover.title = value;
+      updateThumbTitle(0);
+      if (activeIndex === 0) renderStage();
+      return null;
+    }
+    if (key === 'TAGLINE') {
+      cover.tagline = value;
+      if (activeIndex === 0) renderStage();
+      return null;
+    }
+    if (!slide || slide.type !== 'content') return null;
+
+    if (key === 'LAYOUT') {
+      slide.layout = normalizeLayout(value);
+    } else if (key === 'HEADING') {
+      slide.heading = value;
+      updateThumbTitle(deckSlides.length - 1);
+    } else if (key === 'BULLET') {
+      slide.bullets.push(value);
+      // patch the list in place so the existing slide doesn't re-animate
+      if (!streamPendingRender && normalizeLayout(slide.layout) === 'bullets') {
+        var ul = deckStage.querySelector('.deck-slide ul');
+        if (ul) {
+          var li = document.createElement('li');
+          li.setAttribute('data-field', 'bullet');
+          li.setAttribute('data-index', slide.bullets.length - 1);
+          li.setAttribute('contenteditable', 'true');
+          li.setAttribute('spellcheck', 'false');
+          li.textContent = value;
+          ul.appendChild(li);
+          return null;
+        }
+      }
+      renderStage();
+      return null;
+    }
+
+    if (streamPendingRender) {
+      renderStage();
+      streamPendingRender = false;
+    } else if (key === 'HEADING') {
+      var h = deckStage.querySelector('[data-field="heading"]');
+      if (h) h.textContent = value; else renderStage();
+    }
+    return null;
+  }
+
+  function readStream(body){
+    var reader = body.getReader();
+    var decoder = new TextDecoder();
+    var buffer = '';
+    var streamError = null;
+
+    function pump(){
+      return reader.read().then(function(res){
+        if (res.done) {
+          if (buffer.trim()) {
+            var last = applyStreamLine(buffer);
+            if (last) streamError = last;
+          }
+          if (streamError) throw { code: streamError };
+          return;
+        }
+        buffer += decoder.decode(res.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (var i = 0; i < lines.length; i++) {
+          var err = applyStreamLine(lines[i]);
+          if (err) streamError = err;
+        }
+        return pump();
+      });
+    }
+    return pump();
+  }
+
+  function setBusy(on){
+    generating = on;
+    if (generateBtn) {
+      generateBtn.disabled = on;
+      generateBtn.textContent = on ? 'Drafting…' : 'Generate';
+    }
+    document.querySelectorAll('.surface-pick button').forEach(function(b){ b.disabled = on; });
+    updateNav();
   }
 
   var generating = false;
+
   function handleGenerate(){
     if (generating) return;
     var topic = (promptInput.value || '').trim();
@@ -1077,16 +1316,21 @@
       promptInput.focus();
       return;
     }
-    generating = true;
-    generateBtn.disabled = true;
-    document.querySelectorAll('.surface-pick button').forEach(function(b){ b.disabled = true; });
-    var prevLabel = generateBtn.textContent;
-    generateBtn.textContent = 'Thinking…';
+
+    setBusy(true);
     setStatus('Drafting…', 'info');
     if (deckCaption) deckCaption.textContent = 'Drafting…';
+    if (draftBadge) draftBadge.hidden = true;
+
     var editorSection = document.getElementById('editorSection');
     if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    renderSkeletonDeck();
+
+    deckTopic = topic;
+    deckSlides = [{ type:'cover', title:'Drafting…', tagline:'' }];
+    activeIndex = 0;
+    streamPendingRender = false;
+    renderThumbs();
+    renderStage();
 
     fetch('/api/generate', {
       method: 'POST',
@@ -1094,13 +1338,28 @@
       body: JSON.stringify({ topic: topic, surface: currentSurface })
     })
       .then(function(r){
-        if (r.status === 429) return r.json().catch(function(){ return {}; }).then(function(){ throw { code: 'rate_limited' }; });
-        if (!r.ok) return r.json().catch(function(){ return {}; }).then(function(body){ throw { code: body.error || 'upstream_error' }; });
-        return r.json();
+        if (r.status === 429) throw { code: 'rate_limited' };
+        if (!r.ok) {
+          return r.json().catch(function(){ return {}; }).then(function(b){
+            throw { code: b.error || 'upstream_error' };
+          });
+        }
+        if (!r.body) throw { code: 'upstream_error' };
+        return readStream(r.body);
       })
-      .then(function(data){
-        renderDraft(data, topic);
+      .then(function(){
+        if (deckSlides.length < 2) throw { code: 'empty_completion' };
+        activeIndex = 0;
+        renderThumbs(false);
+        renderStage();
+        var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
+        chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
+        if (draftBadge) draftBadge.hidden = false;
         setStatus('Drafted just now.', 'info');
+        if (deckCaption) {
+          deckCaption.textContent = deckSlides.length + ' slides on "' + topic +
+            '." Click any line to rewrite it, or drag a thumbnail to reorder.';
+        }
       })
       .catch(function(e){
         var code = (e && e.code) || 'network_error';
@@ -1108,16 +1367,65 @@
         if (deckCaption) deckCaption.textContent = 'Draft failed — the example deck is shown above.';
         deckSlides = defaultSlides();
         activeIndex = 0;
-        renderThumbs();
+        renderThumbs(false);
         renderStage();
       })
       .finally(function(){
-        generating = false;
-        generateBtn.disabled = false;
-        document.querySelectorAll('.surface-pick button').forEach(function(b){ b.disabled = false; });
-        generateBtn.textContent = prevLabel;
+        setBusy(false);
       });
   }
+
+  if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
+
+  // ---- regenerate a single slide ---------------------------------------
+  function handleRegenerateSlide(){
+    if (generating) return;
+    var slide = deckSlides[activeIndex];
+    if (!slide || slide.type !== 'content') return;
+
+    var index = activeIndex;
+    setBusy(true);
+    setStatus('Redrawing this slide…', 'info');
+
+    fetch('/api/slide', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: deckTopic || (promptInput.value || '').trim(),
+        title: deckSlides[0] ? deckSlides[0].title : '',
+        heading: slide.heading,
+        layout: slide.layout
+      })
+    })
+      .then(function(r){
+        if (r.status === 429) throw { code: 'rate_limited' };
+        if (!r.ok) {
+          return r.json().catch(function(){ return {}; }).then(function(b){
+            throw { code: b.error || 'upstream_error' };
+          });
+        }
+        return r.json();
+      })
+      .then(function(data){
+        var target = deckSlides[index];
+        if (!target) return;
+        if (data.heading) target.heading = data.heading;
+        if (Array.isArray(data.bullets) && data.bullets.length) target.bullets = data.bullets.slice(0, 4);
+        target.layout = normalizeLayout(data.layout || target.layout);
+        updateThumbTitle(index);
+        if (activeIndex === index) renderStage();
+        setStatus('Slide redrawn.', 'info');
+      })
+      .catch(function(e){
+        var code = (e && e.code) || 'network_error';
+        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+      })
+      .finally(function(){
+        setBusy(false);
+      });
+  }
+
+  if (redoSlideBtn) redoSlideBtn.addEventListener('click', handleRegenerateSlide);
 })();
 </script>
 </body>

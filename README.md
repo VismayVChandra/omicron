@@ -1,8 +1,20 @@
 # omicron
 
-**Swell** — a wave-themed AI drafting landing page. The "Generate" button
-in the hero drafts a real deck/doc/site outline via a Vercel serverless
-function backed by Groq's free Llama 3.3 API.
+**Swell** — a wave-themed AI drafting landing page. The "Generate" button in
+the hero drafts a real slide deck, streamed live into an editable deck viewer,
+via Vercel Edge Functions backed by Groq.
+
+- `index.html` — the site and the deck viewer (slides, thumbnail rail,
+  present mode, in-place editing, drag-to-reorder)
+- `api/generate.js` — streams a whole deck. Returns a line-based format
+  (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BULLET`) rather than
+  JSON so the client can render each slide as it arrives.
+- `api/slide.js` — regenerates a single slide, returns JSON.
+
+Both run on the Edge runtime (streaming) and use `openai/gpt-oss-120b` with
+`reasoning_effort: 'low'` — that model reasons silently before answering, and
+without that setting it spends its whole token budget thinking and returns
+nothing.
 
 ## Deploy on Vercel
 
