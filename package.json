@@ -1,0 +1,6 @@
+{
+  "name": "swell",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Swell — a wave-themed AI drafting landing page, with a live demo backed by Groq's free Llama 3.3 API."
+}

@@ -465,13 +465,13 @@
       <div class="section-head">
         <span class="eyebrow">Inside the editor</span>
         <h2>Cards, not slides you fight with.</h2>
-        <p>This is a live draft, not a screenshot &mdash; type a topic above and press Generate to have Claude write the outline below.</p>
+        <p>This is a live draft, not a screenshot &mdash; type a topic above and press Generate to have the AI write the outline below.</p>
       </div>
       <div class="editor-mock">
         <div class="editor-chrome">
           <i></i><i></i><i></i>
           <span id="chromeUrl">swell.app/d/tide-dock-pitch</span>
-          <span id="draftBadge" class="draft-badge" hidden>Drafted by Claude</span>
+          <span id="draftBadge" class="draft-badge" hidden>Drafted by AI</span>
         </div>
         <div class="editor-body">
           <div class="editor-rail" id="editorRail">
@@ -783,7 +783,7 @@
     });
   })();
 
-  // ---- live drafting, via the artifact's "sample" capability (asks Claude) ----
+  // ---- live drafting, via /api/generate (a Vercel serverless function calling Groq) ----
   var currentSurface = 'deck';
   document.querySelectorAll('.surface-pick button').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -801,11 +801,6 @@
   var chromeUrl = document.getElementById('chromeUrl');
   var draftBadge = document.getElementById('draftBadge');
 
-  var sample = null;
-  if (window.claude && typeof window.claude.use === 'function') {
-    window.claude.use('sample').then(function(ns){ sample = ns; }).catch(function(){ sample = null; });
-  }
-
   function setStatus(text, kind){
     if(!genStatus) return;
     genStatus.textContent = text || '';
@@ -818,20 +813,10 @@
   }
 
   var surfaceCopy = {
-    deck: { noun:'a slide-by-slide outline for a pitch deck', unit:'Slide', badge:'d' },
-    doc:  { noun:'a section-by-section outline for a long-form document', unit:'Section', badge:'p' },
-    site: { noun:'the section-by-section content for a one-page website', unit:'Section', badge:'s' }
+    deck: { unit:'Slide', badge:'d' },
+    doc:  { unit:'Section', badge:'p' },
+    site: { unit:'Section', badge:'s' }
   };
-
-  function buildPrompt(topic){
-    var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
-    return 'Draft ' + s.noun + ' about: "' + topic + '".\n\n' +
-      'Reply with ONLY a JSON object, no other text, in exactly this shape:\n' +
-      '{"title": string (a short punchy title, under 6 words), ' +
-      '"tagline": string (one sentence subtitle), ' +
-      '"blocks": [ {"heading": string (under 6 words), "body": string (1-2 sentences, under 30 words)}, ... ] }\n\n' +
-      'Include between 4 and 6 blocks, ordered the way they should appear.';
-  }
 
   var barPattern = ['w80','w60','w40'];
 
@@ -886,19 +871,13 @@
   }
 
   var errorCopy = {
-    not_granted: "You chose not to let Swell use Claude here, so drafting is off for this session.",
-    sampling_disabled: "AI drafting isn't available for this account.",
-    not_declared: "AI drafting isn't available in this view.",
-    capability_disabled: "AI drafting isn't available in this view.",
-    capability_removed: "AI drafting isn't available in this view.",
-    rate_limited: "Claude's a little busy — try again in a moment.",
-    session_expired: "Your session expired — reload the page and try again.",
-    refused: "Claude declined that topic — try rephrasing it.",
+    invalid_request: "That topic couldn't be sent — try rephrasing it.",
     empty_completion: "Didn't get a draft back — try a shorter, clearer topic.",
     invalid_json: "Couldn't read the draft back — try again.",
     prompt_too_large: "That topic's too long — try trimming it.",
-    invalid_request: "That topic couldn't be sent — try rephrasing it.",
-    upstream_error: "Something went wrong reaching Claude — try again."
+    rate_limited: "The model's a little busy — try again in a moment.",
+    upstream_error: "Something went wrong reaching the model — try again.",
+    network_error: "Couldn't reach the server — check your connection and try again."
   };
 
   if (generateBtn) {
@@ -916,27 +895,32 @@
       promptInput.focus();
       return;
     }
-    if (!sample) {
-      setStatus("AI drafting isn't available in this view.", 'error');
-      return;
-    }
     generating = true;
     generateBtn.disabled = true;
     document.querySelectorAll('.surface-pick button').forEach(function(b){ b.disabled = true; });
     var prevLabel = generateBtn.textContent;
     generateBtn.textContent = 'Thinking…';
-    setStatus('Drafting with Claude…', 'info');
+    setStatus('Drafting…', 'info');
     var editorSection = document.getElementById('editorSection');
     if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     renderSkeleton();
 
-    sample.json(buildPrompt(topic), { modelTier: 'default', cache: false })
+    fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: topic, surface: currentSurface })
+    })
+      .then(function(r){
+        if (r.status === 429) return r.json().catch(function(){ return {}; }).then(function(){ throw { code: 'rate_limited' }; });
+        if (!r.ok) return r.json().catch(function(){ return {}; }).then(function(body){ throw { code: body.error || 'upstream_error' }; });
+        return r.json();
+      })
       .then(function(data){
         renderDraft(data, topic);
         setStatus('Drafted just now.', 'info');
       })
       .catch(function(e){
-        var code = (e && e.code) || 'upstream_error';
+        var code = (e && e.code) || 'network_error';
         setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
       })
       .finally(function(){
