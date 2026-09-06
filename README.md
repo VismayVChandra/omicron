@@ -16,9 +16,9 @@ length are selectable and feed every request.
 
 - `index.html` — the landing page plus a full-screen editor (slides, thumbnail
   rail, present mode, in-place editing, undo and redo, adding and deleting
-  slides, changing a slide's layout, choosing its photograph, drag-to-reorder,
-  ten deck themes, saved drafts, PDF export via the browser's print, `.pptx`
-  export, and share links). Generating switches to the editor rather than
+  slides, changing a slide's layout, choosing its photograph, rewriting a
+  selection with AI, speaker notes, drag-to-reorder, ten deck themes, saved
+  drafts, PDF export via the browser's print, `.pptx` export, and share links). Generating switches to the editor rather than
   scrolling; the shared elements are moved between the two rather than
   duplicated.
 - `api/outline.js` — step one: plans the deck, returns `{title, tagline, sections}`
@@ -26,7 +26,13 @@ length are selectable and feed every request.
   (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BODY` / `BULLET` /
   `IMAGE`) rather than JSON so the client can render each slide as it arrives.
   Accepts an approved outline and follows it exactly.
-- `api/slide.js` — regenerates a single slide, returns JSON.
+- `api/slide.js` — regenerates a single slide, returns JSON. Given an
+  instruction it revises the slide it is handed instead of redrawing it, so
+  "cut this to two points" edits what is there rather than starting again.
+- `api/rewrite.js` — rewrites one piece of text: a whole line, or just the words
+  you highlighted inside one. Shorter, longer, plainer, punchier, or whatever
+  you type. It may not introduce facts.
+- `api/notes.js` — writes speaker notes for the whole deck in one request.
 - `api/critique.js` — reads a finished deck back as its toughest audience and
   returns what will get challenged, tied to the slides it is about.
 - `api/voice.js` — reads samples of your own writing and returns your habits as
@@ -76,6 +82,33 @@ taken back:
 Saving updates the deck that is open rather than filing another copy of it, and
 saved decks can be renamed in place. A deck opened from a share link is a copy,
 so saving it makes a new one — the sender's deck is not yours to overwrite.
+
+## Editing with the model
+
+Three ways, all of them narrow on purpose. None may introduce a fact.
+
+**Highlight anything and a bar appears** — shorter, longer, plainer, punchier,
+or *Ask…* and type what you want. It acts on what you highlighted, not the whole
+line: pick three words in the middle of a sentence and those three words change.
+
+The fragment goes to the model marked inside its own line rather than quoted on
+its own, because on its own it gets rewritten as if it stood alone — "generators
+are *loud, costly*" came back as "generators are *blare, drain money*", which is
+not a sentence. Marked in place, the replacement joins up.
+
+**Rework this slide** takes an instruction — *drop the jargon*, *lead with the
+number*, *cut this to three points* — and revises the slide it already has,
+leaving alone whatever the instruction did not mention. Regenerating without an
+instruction still redraws from scratch, as before.
+
+**Speaker notes** are what you say while a slide is up, not what is on it. They
+can be typed or written for you, and the whole deck goes to the model in one
+request rather than one call per slide — notes written independently repeat each
+other, and a presenter noticing the same sentence three times stops trusting
+them. A slide carrying notes is marked on its thumbnail, and the notes travel
+into the PowerPoint as real notes pages.
+
+Everything here is one Ctrl+Z from being undone.
 
 ## Slide layouts
 
@@ -170,11 +203,12 @@ beyond the database above and are not built. AI-generated slide images need a
 paid image API; the free generators cannot sustain a deck's worth of requests.
 
 Editing has no rich text: a line is a line, with no bold, italic, links or
-inline notes, and there is no way to edit a selection with AI ("make this
-shorter"). There are no speaker notes, no tables and no embeds, and a deck
-cannot be started from an existing PDF, `.pptx` or URL. The ten themes
-above are the whole set — there is no way to build one from your own colours,
-fonts and logo.
+inline formatting, and there are no tables and no embeds. A deck cannot be
+started from an existing PDF, `.pptx` or URL. Speaker notes are written and
+exported but there is no presenter view — seeing them while you present needs a
+second screen, which one browser page cannot give you. The ten themes above are
+the whole set; there is no way to build one from your own colours, fonts and
+logo.
 
 ## Deploy on Vercel
 

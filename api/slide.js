@@ -1,5 +1,11 @@
 // Regenerates one slide in place. Small and fast, so unlike /api/generate
 // this returns a single JSON object rather than streaming.
+//
+// Two ways in. With no instruction it redraws the slide from its heading —
+// same subject, fresh wording. With one, it revises the slide it is given:
+// "cut this to three points", "make the second one concrete". Revising has to
+// see the current slide, or "make the second one concrete" has nothing to act
+// on and the model quietly writes a new slide instead.
 
 export const config = { runtime: 'edge' };
 
@@ -35,7 +41,54 @@ function voiceLine(opts) {
   ].join('\n');
 }
 
-function buildPrompt({ topic, title, heading, layout, audience, tone, source, voice }) {
+// The shape template spells out three BULLET lines and the model counts them:
+// "cut this to two points" came back with three, every time, whatever the
+// instruction said. When revising, a run of repeated lines collapses into one
+// that says the count belongs to the instruction.
+function flexibleShape(shape) {
+  const note = '   <- one line per point, as many as the instruction asks for';
+  const out = [];
+  let run = 0;
+  for (const line of String(shape).split('\n')) {
+    if (line.startsWith('BULLET:')) {
+      run += 1;
+      if (run === 1) out.push(line);
+      continue;
+    }
+    if (run > 1) out[out.length - 1] += note;
+    run = 0;
+    out.push(line);
+  }
+  if (run > 1) out[out.length - 1] += note;
+  return out.join('\n');
+}
+
+// The existing slide, in the same line format the model is asked to answer in,
+// so revising is an edit of something it can see rather than a fresh draft.
+function slideToLines(slide) {
+  if (!slide || typeof slide !== 'object') return '';
+  const out = [];
+  if (slide.layout) out.push(`LAYOUT: ${String(slide.layout).slice(0, 20)}`);
+  if (slide.heading) out.push(`HEADING: ${String(slide.heading).slice(0, 200)}`);
+  if (slide.body) out.push(`BODY: ${String(slide.body).slice(0, 600)}`);
+  for (const side of ['left', 'right']) {
+    const col = slide[side];
+    if (!col) continue;
+    out.push(`${side.toUpperCase()}: ${String(col.label || '').slice(0, 80)}`);
+    for (const p of (Array.isArray(col.points) ? col.points : []).slice(0, 6)) {
+      if (p) out.push(`BULLET: ${String(p).slice(0, 250)}`);
+    }
+  }
+  if (!slide.left && !slide.right) {
+    for (const b of (Array.isArray(slide.bullets) ? slide.bullets : []).slice(0, 8)) {
+      if (b) out.push(`BULLET: ${String(b).slice(0, 250)}`);
+    }
+  }
+  if (slide.image) out.push(`IMAGE: ${String(slide.image).slice(0, 80)}`);
+  return out.join('\n');
+}
+
+function buildPrompt({ topic, title, heading, layout, audience, tone, source, voice, instruction, current }) {
   const shape = {
     stat:
       'LAYOUT: stat\nHEADING: <heading, under 6 words>\n' +
@@ -74,11 +127,33 @@ function buildPrompt({ topic, title, heading, layout, audience, tone, source, vo
     ? `Take the facts from this material and nothing else:\n\n"""\n${source}\n"""\n\n`
     : 'Do not invent precise statistics, market sizes or dated forecasts.\n\n';
 
+  const style = voiceLine({ voice: voice }) ||
+    `Write for ${AUDIENCE[audience] || AUDIENCE.general}, in a ${TONE[tone] || TONE.plain} register.`;
+
+  if (instruction && current) {
+    return `Deck: "${title}" — about ${topic}.
+
+The "${heading}" slide currently reads:
+
+${current}
+
+Revise it: ${instruction}
+
+${grounding}${style}
+
+Change what the instruction asks for and leave the rest of the slide alone.
+Do not invent facts, figures or names that are not there already.
+
+Output these lines and nothing else:
+
+${flexibleShape(shape)}`;
+  }
+
   return `Deck: "${title}" — about ${topic}.
 
 Rewrite the "${heading}" slide. Same subject, fresh wording.
 
-${grounding}${voiceLine({ voice: voice }) || `Write for ${AUDIENCE[audience] || AUDIENCE.general}, in a ${TONE[tone] || TONE.plain} register.`}
+${grounding}${style}
 
 Output exactly these lines and nothing else:
 
@@ -170,6 +245,8 @@ export default async function handler(request) {
     return json({ error: 'upstream_error', message: 'GROQ_API_KEY is not configured.' }, 500);
   }
 
+  const instruction = typeof body.instruction === 'string' ? body.instruction.trim().slice(0, 300) : '';
+
   const prompt = buildPrompt({
     topic,
     title: typeof body.title === 'string' ? body.title.slice(0, 120) : topic,
@@ -179,6 +256,8 @@ export default async function handler(request) {
     tone: body.tone,
     source: typeof body.source === 'string' ? body.source.trim().slice(0, 6000) : '',
     voice: body.voice,
+    instruction,
+    current: instruction ? slideToLines(body.current) : '',
   });
 
   let groqRes;
@@ -192,7 +271,7 @@ export default async function handler(request) {
       body: JSON.stringify({
         model: 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.9,
+        temperature: instruction ? 0.5 : 0.9,
         max_tokens: 900,
         reasoning_effort: 'low',
       }),

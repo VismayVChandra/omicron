@@ -345,6 +345,50 @@
   .slide-tool:disabled{opacity:0.35;cursor:default}
   .slide-tool.danger:hover:not(:disabled){border-color:#c0524a;color:#c0524a}
 
+  /* The bar that appears over a selection. Body level and fixed, because the
+     editor screen hides <main>, and anything living in there goes with it. */
+  /* Site tokens, not fixed colours: the bar floats over a slide whose theme may
+     be light or dark, on a page that may itself be either, and a hardcoded dark
+     panel came out as pale text on a pale strip in dark mode. */
+  .sel-bar{
+    position:fixed;z-index:140;display:flex;align-items:center;gap:3px;
+    background:var(--surface);border:1px solid var(--line);border-radius:11px;
+    padding:5px;box-shadow:var(--shadow-lift);
+  }
+  .sel-bar button{
+    cursor:pointer;background:transparent;border:1px solid transparent;border-radius:7px;
+    padding:6px 10px;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;
+    color:var(--ink-soft);white-space:nowrap;
+  }
+  .sel-bar button:hover:not(:disabled){background:var(--surface-2);color:var(--deep)}
+  .sel-bar button:disabled{opacity:0.4;cursor:default}
+  .sel-bar .sel-sep{width:1px;height:16px;background:var(--line);flex:none}
+  .sel-ask{display:flex;gap:4px;align-items:center;padding:0 2px}
+  .sel-ask input{
+    width:200px;padding:6px 9px;border:1px solid var(--wave);border-radius:7px;
+    background:var(--surface-2);color:var(--deep);font:inherit;font-size:0.75rem;
+  }
+
+  /* a slide carrying speaker notes says so on its thumbnail */
+  .deck-thumb .has-notes{
+    position:absolute;right:9px;bottom:9px;width:5px;height:5px;border-radius:50%;
+    background:var(--tide);opacity:0.85;
+  }
+
+  .notes-area{
+    width:100%;min-height:120px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;
+    background:var(--surface);color:var(--deep);font:inherit;font-size:0.9rem;line-height:1.6;
+    resize:vertical;
+  }
+  .notes-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .notes-count{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft)}
+  .rework-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .rework-row input{
+    flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface);color:var(--deep);font:inherit;font-size:0.86rem;
+  }
+  .rework-eg{margin:12px 0 0;font-size:0.8rem;color:var(--ink-soft)}
+
   .layout-pick{grid-template-columns:repeat(2,minmax(158px,1fr))}
   .layout-pick button{display:block}
   .layout-pick .lp-name{display:block;color:var(--deep);font-size:0.74rem}
@@ -390,7 +434,7 @@
   .deck-thumb{
     border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer;background:var(--surface);
     display:flex;flex-direction:column;gap:5px;aspect-ratio:16/9;justify-content:center;
-    animation:thumbIn .3s ease both;
+    animation:thumbIn .3s ease both;position:relative;
   }
   .deck-thumb:hover{border-color:var(--wave)}
   .deck-thumb.active{border-color:var(--tide);background:var(--surface-2);box-shadow:0 0 0 1px var(--tide) inset}
@@ -1399,9 +1443,12 @@
     .present-controls{bottom:16px}
     .present-close{top:12px;right:12px}
     .theme-pick{grid-template-columns:1fr}
-    /* match the 40px touch targets the rest of the phone layout uses */
-    .slide-tool{min-height:40px;padding:6px 13px}
-    .slide-tools{padding:10px 12px}
+    /* match the 40px touch targets the rest of the phone layout uses, and let
+       the row scroll sideways like the filmstrip below it — wrapped, seven
+       tools took 157px of a phone screen before the slide even started */
+    .slide-tool{min-height:40px;padding:6px 13px;flex:none}
+    .slide-tools{padding:10px 12px;flex-wrap:nowrap;overflow-x:auto}
+    .slide-tools .st-label{flex:none}
   }
 
   /* ---------- accounts ---------- */
@@ -1729,6 +1776,8 @@
           <button type="button" class="slide-tool" id="addSlideBtn" title="Add a slide after this one">+ Add</button>
           <button type="button" class="slide-tool" id="layoutBtn" title="Change this slide&#39;s layout">Layout</button>
           <button type="button" class="slide-tool" id="imageBtn" title="Choose or clear the photograph">Image</button>
+          <button type="button" class="slide-tool" id="notesBtn" title="Speaker notes for this slide">Notes</button>
+          <button type="button" class="slide-tool" id="reworkBtn" title="Tell it what to change on this slide">Rework</button>
           <button type="button" class="slide-tool" id="dupSlideBtn" title="Duplicate this slide">Duplicate</button>
           <button type="button" class="slide-tool danger" id="delSlideBtn" title="Delete this slide">Delete</button>
         </div>
@@ -1773,6 +1822,32 @@ Q4,4390"></textarea>
           <button type="button" class="btn btn-primary" id="addChartBtn">Add the slide</button>
         </div>
       </div>
+      <div class="critique-panel" id="notesPanel" hidden>
+        <h4>Speaker notes</h4>
+        <p class="lede">What you say while this slide is up &mdash; not what is on it.
+          They travel into the PowerPoint as real notes.</p>
+        <textarea class="notes-area" id="notesText" spellcheck="true"
+          placeholder="Type what you want to say here, or have them written for you."></textarea>
+        <div class="notes-actions">
+          <button type="button" class="btn btn-primary" id="notesOneBtn">Write these for me</button>
+          <button type="button" class="btn btn-ghost" id="notesAllBtn">Write them for every slide</button>
+          <span class="notes-count" id="notesCount"></span>
+        </div>
+      </div>
+
+      <div class="critique-panel" id="reworkPanel" hidden>
+        <h4>Rework this slide</h4>
+        <p class="lede">Say what should change. The rest of the slide stays as it is,
+          and nothing gets invented that was not already here.</p>
+        <div class="rework-row">
+          <input type="text" id="reworkInput" spellcheck="false"
+            placeholder="cut this to three points, and make the last one concrete">
+          <button type="button" class="btn btn-primary" id="reworkGoBtn">Rework it</button>
+        </div>
+        <p class="rework-eg">Try: <em>drop the jargon</em> &middot; <em>lead with the number</em> &middot;
+          <em>make this about cost, not speed</em> &middot; <em>turn these into two columns</em></p>
+      </div>
+
       <div class="critique-panel" id="imagePanel" hidden>
         <h4>The photograph on this slide</h4>
         <p class="lede">Search Wikimedia Commons and pick one, or clear it. Everything here is
@@ -1900,6 +1975,15 @@ Q4,4390"></textarea>
     </form>
     <p class="auth-note" id="authNote" hidden></p>
   </div>
+</div>
+
+<div class="sel-bar" id="selBar" hidden>
+  <button type="button" data-move="shorter">Shorter</button>
+  <button type="button" data-move="longer">Longer</button>
+  <button type="button" data-move="plainer">Plainer</button>
+  <button type="button" data-move="punchier">Punchier</button>
+  <span class="sel-sep"></span>
+  <button type="button" id="selAskBtn" title="Say what to change">Ask&hellip;</button>
 </div>
 
 <div id="printDeck" aria-hidden="true"></div>
@@ -2427,7 +2511,8 @@ Q4,4390"></textarea>
     if (animate) el.style.animationDelay = (i*60) + 'ms';
     else el.style.animation = 'none';
     el.innerHTML = '<span class="num">' + (i+1) + '</span>' +
-      '<span class="mini-title">' + escapeHtml(thumbTitle(slide, i)) + '</span>';
+      '<span class="mini-title">' + escapeHtml(thumbTitle(slide, i)) + '</span>' +
+      (slide.notes && String(slide.notes).trim() ? '<span class="has-notes" title="Has speaker notes"></span>' : '');
     wireThumb(el, i);
     return el;
   }
@@ -2533,6 +2618,35 @@ Q4,4390"></textarea>
     renderStage();
   }
 
+  // Writing one edited field back into the deck. Shared, because typing and an
+  // AI rewrite need the same mapping, and two copies of it would drift apart
+  // the first time a layout gained a field. Returns whether the thumbnail's
+  // title just changed.
+  function setField(slide, field, index, text){
+    var i = parseInt(index, 10);
+    if (field === 'title') { slide.title = text; return true; }
+    if (field === 'heading') { slide.heading = text; return true; }
+    if (field === 'tagline') { slide.tagline = text; return false; }
+    if (field === 'body') { slide.body = text; return false; }
+    if (field === 'leftLabel' || field === 'rightLabel') {
+      var lk = field === 'leftLabel' ? 'left' : 'right';
+      if (!slide[lk]) slide[lk] = { label: '', points: [] };
+      slide[lk].label = text;
+      return false;
+    }
+    if (field === 'leftPoint' || field === 'rightPoint') {
+      var pk = field === 'leftPoint' ? 'left' : 'right';
+      if (slide[pk] && !isNaN(i)) slide[pk].points[i] = text;
+      return false;
+    }
+    if (field === 'bullet' && !isNaN(i)) {
+      if (!slide.bullets) slide.bullets = [];
+      slide.bullets[i] = text;
+      return false;
+    }
+    return false;
+  }
+
   // in-place editing: write straight back to state, never re-render the stage
   // while typing or the caret jumps
   deckStage.addEventListener('input', function(e){
@@ -2543,27 +2657,7 @@ Q4,4390"></textarea>
     var slide = deckSlides[activeIndex];
     if (!slide) return;
     var text = el.textContent;
-    if (field === 'title') { slide.title = text; updateThumbTitle(activeIndex); }
-    else if (field === 'tagline') { slide.tagline = text; }
-    else if (field === 'body') { slide.body = text; }
-    else if (field === 'leftLabel' || field === 'rightLabel') {
-      var lk = field === 'leftLabel' ? 'left' : 'right';
-      if (!slide[lk]) slide[lk] = { label: '', points: [] };
-      slide[lk].label = text;
-    }
-    else if (field === 'leftPoint' || field === 'rightPoint') {
-      var pk = field === 'leftPoint' ? 'left' : 'right';
-      var pi = parseInt(el.getAttribute('data-index'), 10);
-      if (slide[pk] && !isNaN(pi)) slide[pk].points[pi] = text;
-    }
-    else if (field === 'heading') { slide.heading = text; updateThumbTitle(activeIndex); }
-    else if (field === 'bullet') {
-      var idx = parseInt(el.getAttribute('data-index'), 10);
-      if (!isNaN(idx)) {
-        if (!slide.bullets) slide.bullets = [];
-        slide.bullets[idx] = text;
-      }
-    }
+    if (setField(slide, field, el.getAttribute('data-index'), text)) updateThumbTitle(activeIndex);
     // an emptied field keeps a stray <br>, which defeats :empty and its label
     if (!text && el.innerHTML !== '') el.innerHTML = '';
     saveWorking();
@@ -3666,8 +3760,10 @@ Q4,4390"></textarea>
 
   if (chartToggle) {
     chartToggle.addEventListener('click', function(){
-      chartPanel.hidden = !chartPanel.hidden;
-      if (!chartPanel.hidden) { csvInput.focus(); chartPanel.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+      if (!chartPanel.hidden) { chartPanel.hidden = true; return; }
+      showPanel(chartPanel);
+      csvInput.focus();
+      chartPanel.scrollIntoView({ behavior:'smooth', block:'nearest' });
     });
   }
 
@@ -3719,7 +3815,10 @@ Q4,4390"></textarea>
   var activeVariant = '__original';
 
   function deckToText(slides){
-    return slides.map(function(s, i){
+    return slides.map(slideToText).join('\n\n');
+  }
+
+  function slideToText(s, i){
       if (i === 0 || s.type === 'cover') {
         return 'COVER: ' + (s.title || '') + (s.tagline ? ' — ' + s.tagline : '');
       }
@@ -3738,7 +3837,6 @@ Q4,4390"></textarea>
           s.chart.labels.map(function(l, i){ return l + ' ' + s.chart.values[i]; }).join(', '));
       }
       return out.join('\n');
-    }).join('\n\n');
   }
 
   function markVariant(){
@@ -4323,6 +4421,7 @@ Q4,4390"></textarea>
 
       deckSlides.forEach(function(s, i){
         var slide = pptx.addSlide();
+        if (s.notes && String(s.notes).trim()) slide.addNotes(String(s.notes).trim());
         var pic = images[i];
         themeFurniture(slide, i, s.type === 'cover' ? 'cover' : normalizeLayout(s.layout));
 
@@ -5137,6 +5236,11 @@ Q4,4390"></textarea>
     if (layoutBtn) layoutBtn.disabled = isCover || generating;
     if (dupSlideBtn) dupSlideBtn.disabled = isCover || generating;
     if (delSlideBtn) delSlideBtn.disabled = isCover || generating || deckSlides.length <= 2;
+    if (notesBtn) notesBtn.disabled = generating;
+    if (reworkBtn) reworkBtn.disabled = isCover || generating;
+    // the notes panel is per-slide, so it follows the deck — unless it is being
+    // typed into, in which case repainting it would eat the sentence in progress
+    if (notesPanel && !notesPanel.hidden && document.activeElement !== notesText) paintNotes();
   }
 
   // ---- bullets are a list, so Enter and Backspace should behave ---------
@@ -5263,7 +5367,7 @@ Q4,4390"></textarea>
   function openImagePanel(){
     var slide = deckSlides[activeIndex];
     if (!slide || !imagePanel) return;
-    imagePanel.hidden = false;
+    showPanel(imagePanel);
     imageResults.innerHTML = '';
     imageHits = [];
     imageQuery.value = slide.image || '';
@@ -5276,6 +5380,19 @@ Q4,4390"></textarea>
     if (imagePanel.hidden) openImagePanel();
     else imagePanel.hidden = true;
   });
+
+  // ---- panels take turns ------------------------------------------------
+  // Six of them share the strip under the deck. Opening one used to leave the
+  // last still sitting there, so the answer to a question you had forgotten
+  // asking stayed on screen under the one you just asked.
+  function showPanel(panel){
+    ['chartPanel', 'imagePanel', 'notesPanel', 'reworkPanel', 'critiquePanel', 'verifyPanel']
+      .forEach(function(id){
+        var el = document.getElementById(id);
+        if (el && el !== panel) el.hidden = true;
+      });
+    if (panel) panel.hidden = false;
+  }
   if (imageSearchBtn) imageSearchBtn.addEventListener('click', function(){ searchImages(imageQuery.value); });
   if (imageQuery) imageQuery.addEventListener('keydown', function(e){
     if (e.key === 'Enter') { e.preventDefault(); searchImages(imageQuery.value); }
@@ -5311,15 +5428,367 @@ Q4,4390"></textarea>
     setStatus('Photograph cleared — Ctrl+Z brings it back.', 'info');
   });
 
+  // ---- rewriting the words you highlighted ------------------------------
+  // The bar acts on the selection, not the whole line, so "shorter" on three
+  // words in the middle of a sentence changes those three words. The line
+  // around them goes to the model as context and comes back unchanged.
+  var selBar = document.getElementById('selBar');
+  var selAskBtn = document.getElementById('selAskBtn');
+  var selTarget = null;
+  var selBusy = false;
+  var selTimer = null;
+
+  function fieldKind(el, slide){
+    var field = el.getAttribute('data-field');
+    var lay = normalizeLayout(slide.layout);
+    if (field === 'title') return 'heading';
+    if (field === 'tagline') return 'body';
+    if (field === 'body') return 'body';
+    if (field === 'heading') return lay === 'quote' ? 'attribution' : 'heading';
+    if (field === 'leftLabel' || field === 'rightLabel') return 'label';
+    if (field === 'leftPoint' || field === 'rightPoint') return 'bullet';
+    if (field === 'bullet') {
+      if (lay === 'statement') return 'statement';
+      if (lay === 'quote') return 'quote';
+      if (lay === 'stat') return el.getAttribute('data-index') === '0' ? 'stat' : 'support';
+      return 'bullet';
+    }
+    return 'bullet';
+  }
+
+  // where a range boundary falls in the field's own text, counted in characters
+  function charOffset(el, node, offset){
+    var probe = document.createRange();
+    probe.selectNodeContents(el);
+    try { probe.setEnd(node, offset); } catch (err) { return 0; }
+    return probe.toString().length;
+  }
+
+  function readSelection(){
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+    var range = sel.getRangeAt(0);
+    var node = range.commonAncestorContainer;
+    var host = node.nodeType === 1 ? node : node.parentNode;
+    host = host && host.closest ? host.closest('[data-field]') : null;
+    if (!host || !deckStage.contains(host)) return null;
+    if (!String(sel.toString()).trim()) return null;
+
+    var start = charOffset(host, range.startContainer, range.startOffset);
+    var end = charOffset(host, range.endContainer, range.endOffset);
+    if (end <= start) return null;
+    var full = host.textContent;
+    // slice the field's own text rather than trusting the selection's string:
+    // the offsets are what gets spliced back, so they have to agree
+    return {
+      el: host,
+      field: host.getAttribute('data-field'),
+      index: host.getAttribute('data-index'),
+      full: full,
+      text: full.slice(start, end),
+      start: start,
+      end: end,
+      rect: range.getBoundingClientRect()
+    };
+  }
+
+  function closeSelAsk(){
+    var ask = selBar ? selBar.querySelector('.sel-ask') : null;
+    if (ask && ask.parentNode) ask.parentNode.removeChild(ask);
+  }
+
+  function hideSelBar(){
+    if (!selBar || selBar.hidden) return;
+    closeSelAsk();
+    selBar.hidden = true;
+    selTarget = null;
+  }
+
+  function placeSelBar(rect){
+    selBar.hidden = false;
+    var w = selBar.offsetWidth || 300;
+    var h = selBar.offsetHeight || 34;
+    var top = rect.top - h - 8;
+    if (top < 8) top = Math.min(rect.bottom + 8, window.innerHeight - h - 8);
+    var left = Math.min(Math.max(8, rect.left + rect.width / 2 - w / 2), window.innerWidth - w - 8);
+    selBar.style.top = Math.round(top) + 'px';
+    selBar.style.left = Math.round(left) + 'px';
+  }
+
+  function refreshSelBar(){
+    if (selBusy) return;
+    // typing into Ask… moves the selection into the bar's own input
+    if (selBar && selBar.contains(document.activeElement)) return;
+    var found = readSelection();
+    if (!found) { hideSelBar(); return; }
+    selTarget = found;
+    placeSelBar(found.rect);
+  }
+
+  document.addEventListener('selectionchange', function(){
+    clearTimeout(selTimer);
+    selTimer = setTimeout(refreshSelBar, 180);
+  });
+
+  // the bar is fixed and the selection is not, so it has to follow
+  window.addEventListener('scroll', function(){
+    if (selBar && !selBar.hidden) refreshSelBar();
+  }, true);
+
+  function setSelBusy(on){
+    selBusy = on;
+    if (!selBar) return;
+    Array.prototype.forEach.call(selBar.querySelectorAll('button'), function(b){ b.disabled = on; });
+  }
+
+  function openSelAsk(){
+    if (!selBar || !selTarget || selBar.querySelector('.sel-ask')) return;
+    var keep = selTarget;
+    var wrap = document.createElement('span');
+    wrap.className = 'sel-ask';
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'say what to change';
+    wrap.appendChild(input);
+    selBar.appendChild(wrap);
+    input.focus();
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var value = input.value.trim();
+        if (value) rewriteSelection('', value, keep);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeSelAsk();
+      }
+    });
+  }
+
+  function rewriteSelection(move, custom, target){
+    target = target || selTarget;
+    if (!target || selBusy || generating) return;
+    var index = activeIndex;
+    var slide = deckSlides[index];
+    if (!slide) return;
+
+    setSelBusy(true);
+    setStatus('Rewriting…', 'info');
+
+    fetch('/api/rewrite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({
+        text: target.text,
+        before: target.full.slice(0, target.start),
+        after: target.full.slice(target.end),
+        kind: fieldKind(target.el, slide),
+        move: move || '',
+        custom: custom || '',
+        topic: deckTopic || (promptInput.value || '').trim(),
+        title: (deckSlides[0] && deckSlides[0].title) || '',
+        heading: slide.heading || ''
+      }, draftOptions()))
+    })
+      .then(function(r){
+        if (r.status === 429) throw { code: 'rate_limited' };
+        if (!r.ok) {
+          return r.json().catch(function(){ return {}; }).then(function(b){
+            throw { code: b.error || 'upstream_error' };
+          });
+        }
+        return r.json();
+      })
+      .then(function(data){
+        var next = String((data && data.text) || '').trim();
+        if (!next) throw { code: 'empty_completion' };
+        // the slide may have been navigated away from while this was in flight
+        if (index !== activeIndex) {
+          setStatus('You moved on before that came back — rewrite dropped.', 'info');
+          return;
+        }
+        flushHistory();
+        var whole = target.full.slice(0, target.start) + next + target.full.slice(target.end);
+        if (setField(deckSlides[index], target.field, target.index, whole)) updateThumbTitle(index);
+        renderStage();
+        saveWorking();
+        pushHistory();
+        setStatus('Rewritten — Ctrl+Z puts it back.', 'info');
+      })
+      .catch(function(e){
+        var code = (e && e.code) || 'network_error';
+        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+      })
+      .finally(function(){
+        setSelBusy(false);
+        hideSelBar();
+      });
+  }
+
+  if (selBar) {
+    // clicking the bar must not collapse the selection it acts on
+    selBar.addEventListener('mousedown', function(e){
+      if (e.target && e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+    });
+    selBar.addEventListener('click', function(e){
+      var btn = e.target.closest ? e.target.closest('button[data-move]') : null;
+      if (btn) { rewriteSelection(btn.getAttribute('data-move'), '', selTarget); return; }
+      if (selAskBtn && (e.target === selAskBtn || selAskBtn.contains(e.target))) openSelAsk();
+    });
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && selBar && !selBar.hidden) hideSelBar();
+  });
+
+  // ---- speaker notes ----------------------------------------------------
+  var notesBtn = document.getElementById('notesBtn');
+  var notesPanel = document.getElementById('notesPanel');
+  var notesText = document.getElementById('notesText');
+  var notesOneBtn = document.getElementById('notesOneBtn');
+  var notesAllBtn = document.getElementById('notesAllBtn');
+  var notesCount = document.getElementById('notesCount');
+
+  function updateThumbNotes(i){
+    var thumb = deckRail.querySelector('.deck-thumb[data-index="' + i + '"]');
+    if (!thumb) return;
+    var dot = thumb.querySelector('.has-notes');
+    var slide = deckSlides[i];
+    var wanted = !!(slide && slide.notes && String(slide.notes).trim());
+    if (wanted && !dot) {
+      var mark = document.createElement('span');
+      mark.className = 'has-notes';
+      mark.title = 'Has speaker notes';
+      thumb.appendChild(mark);
+    } else if (!wanted && dot && dot.parentNode) {
+      dot.parentNode.removeChild(dot);
+    }
+  }
+
+  function paintNotesCount(){
+    if (!notesCount || !notesText) return;
+    var withNotes = deckSlides.filter(function(s){ return s.notes && String(s.notes).trim(); }).length;
+    var words = (notesText.value.trim().match(/\S+/g) || []).length;
+    notesCount.textContent = words + (words === 1 ? ' word' : ' words') + ' · ' +
+      withNotes + ' of ' + deckSlides.length + ' slides have notes';
+  }
+
+  function paintNotes(){
+    if (!notesText) return;
+    var slide = deckSlides[activeIndex];
+    notesText.value = (slide && slide.notes) || '';
+    paintNotesCount();
+  }
+
+  if (notesText) {
+    notesText.addEventListener('input', function(){
+      var slide = deckSlides[activeIndex];
+      if (!slide) return;
+      slide.notes = notesText.value;
+      updateThumbNotes(activeIndex);
+      paintNotesCount();
+      saveWorking();
+      pushHistorySoon();
+    });
+  }
+
+  function writeNotes(all){
+    if (generating || !deckSlides.length) return;
+    var targets = all ? deckSlides.map(function(s, i){ return i; }) : [activeIndex];
+    setBusy(true);
+    setStatus(all ? 'Writing notes for the whole deck…' : 'Writing notes…', 'info');
+
+    fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({
+        topic: deckTopic || (promptInput.value || '').trim(),
+        title: (deckSlides[0] && deckSlides[0].title) || '',
+        slides: targets.map(function(i){ return slideToText(deckSlides[i], i); })
+      }, draftOptions()))
+    })
+      .then(function(r){
+        if (r.status === 429) throw { code: 'rate_limited' };
+        if (!r.ok) {
+          return r.json().catch(function(){ return {}; }).then(function(b){
+            throw { code: b.error || 'upstream_error' };
+          });
+        }
+        return r.json();
+      })
+      .then(function(data){
+        var notes = (data && data.notes) || [];
+        var written = 0;
+        flushHistory();
+        targets.forEach(function(slideIndex, n){
+          var value = String(notes[n] || '').trim();
+          if (!value || !deckSlides[slideIndex]) return;
+          deckSlides[slideIndex].notes = value;
+          updateThumbNotes(slideIndex);
+          written++;
+        });
+        if (!written) throw { code: 'empty_completion' };
+        paintNotes();
+        saveWorking();
+        pushHistory();
+        setStatus(written === 1
+          ? 'Notes written — edit them like anything else.'
+          : 'Notes written for ' + written + ' slides.', 'info');
+      })
+      .catch(function(e){
+        var code = (e && e.code) || 'network_error';
+        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+      })
+      .finally(function(){ setBusy(false); });
+  }
+
+  if (notesBtn) notesBtn.addEventListener('click', function(){
+    if (!notesPanel.hidden) { notesPanel.hidden = true; return; }
+    paintNotes();
+    showPanel(notesPanel);
+    notesPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    notesText.focus();
+  });
+  if (notesOneBtn) notesOneBtn.addEventListener('click', function(){ writeNotes(false); });
+  if (notesAllBtn) notesAllBtn.addEventListener('click', function(){ writeNotes(true); });
+
+  // ---- rework this slide, in words --------------------------------------
+  var reworkBtn = document.getElementById('reworkBtn');
+  var reworkPanel = document.getElementById('reworkPanel');
+  var reworkInput = document.getElementById('reworkInput');
+  var reworkGoBtn = document.getElementById('reworkGoBtn');
+
+  function runRework(){
+    var value = (reworkInput.value || '').trim();
+    if (!value) {
+      setStatus('Say what should change first.', 'error');
+      reworkInput.focus();
+      return;
+    }
+    handleRegenerateSlide(value);
+  }
+
+  if (reworkBtn) reworkBtn.addEventListener('click', function(){
+    if (!reworkPanel.hidden) { reworkPanel.hidden = true; return; }
+    showPanel(reworkPanel);
+    reworkPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    reworkInput.focus();
+  });
+  if (reworkGoBtn) reworkGoBtn.addEventListener('click', runRework);
+  if (reworkInput) reworkInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); runRework(); }
+  });
+
   // ---- regenerate a single slide ---------------------------------------
-  function handleRegenerateSlide(){
+  function handleRegenerateSlide(instruction){
     if (generating) return;
     var slide = deckSlides[activeIndex];
     if (!slide || slide.type !== 'content') return;
 
+    // the ↻ button passes a click event, so only a real string counts
+    var ask = typeof instruction === 'string' ? instruction.trim() : '';
     var index = activeIndex;
     setBusy(true);
-    setStatus('Redrawing this slide…', 'info');
+    setStatus(ask ? 'Reworking this slide…' : 'Redrawing this slide…', 'info');
 
     fetch('/api/slide', {
       method: 'POST',
@@ -5328,7 +5797,9 @@ Q4,4390"></textarea>
         topic: deckTopic || (promptInput.value || '').trim(),
         title: deckSlides[0] ? deckSlides[0].title : '',
         heading: slide.heading,
-        layout: slide.layout
+        layout: slide.layout,
+        instruction: ask,
+        current: ask ? slide : null
       }, draftOptions()))
     })
       .then(function(r){
@@ -5343,6 +5814,7 @@ Q4,4390"></textarea>
       .then(function(data){
         var target = deckSlides[index];
         if (!target) return;
+        flushHistory();
         if (data.heading) target.heading = data.heading;
         if (data.left) target.left = data.left;
         if (data.right) target.right = data.right;
@@ -5354,7 +5826,7 @@ Q4,4390"></textarea>
         if (activeIndex === index) renderStage();
         saveWorking();
         pushHistory();
-        setStatus('Slide redrawn.', 'info');
+        setStatus(ask ? 'Slide reworked — Ctrl+Z puts it back.' : 'Slide redrawn.', 'info');
       })
       .catch(function(e){
         var code = (e && e.code) || 'network_error';
