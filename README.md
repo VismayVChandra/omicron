@@ -52,12 +52,25 @@ from your own data. The model picks per slide and is told to keep at least half
 of them `bullets` — cycling through every layout for its own sake is as bad as
 using one for everything.
 
-Ten deck themes: Tide, Dune, Orchard, Plum, Azure, Mist, Graphite, Press, Noir
-and Amber — warm and cool, light and dark, one editorial and one high-contrast
-keynote. They are token sets on `.deck-slide`, separate from the site's own
-palette, and travel with a deck into saved drafts, share links and both exports.
-Each carries its own scrim colour for full-bleed photographs, and every one was
-checked for contrast: headings 10.9:1 or better, body text 5.2:1 or better.
+Ten deck themes, and they are not all the same kind of thing.
+
+**Press is a full theme**: its own geometry, not just its own colours. An accent
+rule across the head of every content slide, a rule under each heading, em-dash
+bullets instead of dots, photographs inset behind a keyline rather than bleeding
+off the edge, a cover with a keyline border and the title set hard to the bottom
+left, section numerals over a rule, statements left-aligned under a rule, and a
+running foot carrying the deck title and folio. The furniture is exported to
+PowerPoint too, so the theme survives the file.
+
+The other nine — Tide, Dune, Orchard, Plum, Azure, Mist, Graphite, Noir and
+Amber — are palette sets: `--s-bg`, `--s-ink`, `--s-accent`, the scrim over
+photographs, and in two cases a sans display face. Honest description: they
+recolour the default geometry rather than redesign it. Press is the pattern for
+converting the rest.
+
+Every theme travels with a deck into saved drafts, share links and both exports,
+and each was checked for contrast on a real slide: headings 10.9:1 or better,
+body text 5.2:1 or better.
 
 ## Charts
 
