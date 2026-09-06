@@ -520,6 +520,54 @@
   .outline-cancel{background:none;border:none;cursor:pointer;font-family:inherit;color:var(--ink-soft)}
   .outline-cancel:hover{color:var(--deep)}
 
+  /* ---------- pressure test + variants ---------- */
+  .deck-extras{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:18px;flex-wrap:wrap}
+  .variant-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft)}
+  .variant-row button{
+    font:inherit;color:var(--wave);background:transparent;border:1px solid var(--line);
+    border-radius:999px;padding:5px 12px;cursor:pointer;transition:border-color .15s,color .15s;
+  }
+  .variant-row button:hover{border-color:var(--wave)}
+  .variant-row button.active{background:var(--deep);color:var(--surface);border-color:var(--deep)}
+  .variant-row button:disabled{opacity:0.45;cursor:default}
+  .variant-row .variant-original{color:var(--ink-soft)}
+
+  .critique-panel{
+    margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:24px 26px;box-shadow:var(--shadow);
+  }
+  .critique-panel h4{
+    font-family:'Fraunces',serif;font-weight:600;font-size:1.15rem;color:var(--deep);margin:0 0 4px;
+  }
+  .critique-panel .lede{font-size:0.9rem;color:var(--ink-soft);margin:0 0 18px}
+  .critique-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+  .critique-list li{
+    display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:start;
+    border-left:2px solid var(--coral);padding:2px 0 2px 16px;
+  }
+  .critique-list .kind{
+    grid-column:1;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--coral);border:1px solid var(--line);border-radius:999px;
+    padding:3px 9px;white-space:nowrap;
+  }
+  .critique-list .where{
+    grid-column:1;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--wave);
+    background:none;border:none;padding:0;cursor:pointer;text-align:left;text-decoration:underline;
+  }
+  .critique-list .where:hover{color:var(--deep)}
+  .critique-list .detail{grid-column:2;grid-row:1 / span 2}
+  .critique-list .issue{margin:0 0 6px;font-size:0.95rem;color:var(--ink);line-height:1.45}
+  .critique-list .ask{
+    margin:0;font-family:'Fraunces',serif;font-style:italic;font-size:0.98rem;
+    color:var(--deep);line-height:1.4;
+  }
+  .critique-list .ask::before{content:"“"}
+  .critique-list .ask::after{content:"”"}
+  @media (max-width:620px){
+    .critique-list li{grid-template-columns:1fr}
+    .critique-list .detail{grid-column:1;grid-row:auto}
+  }
+
   /* ---------- saved drafts ---------- */
   .drafts-drawer{border-bottom:1px solid var(--line);background:var(--bg);padding:14px 18px}
   .drafts-drawer ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -845,6 +893,19 @@
         </div>
       </div>
       <p id="genStatus2" class="editor-note">Example deck shown above &mdash; five slides, drafted about a tide-powered charging dock.</p>
+
+      <div class="deck-extras">
+        <button type="button" class="btn btn-ghost" id="critiqueBtn">Pressure-test this deck</button>
+        <div class="variant-row" id="variantRow">
+          <span>Rewrite for</span>
+          <button type="button" data-variant="executives" data-length="brief">a board</button>
+          <button type="button" data-variant="engineers" data-length="detailed">the team</button>
+          <button type="button" data-variant="customers" data-length="standard">customers</button>
+          <button type="button" data-variant="students" data-length="standard">newcomers</button>
+          <button type="button" data-variant="__original" class="variant-original" hidden>&larr; original</button>
+        </div>
+      </div>
+      <div class="critique-panel" id="critiquePanel" hidden></div>
     </div>
   </section>
 
@@ -1525,7 +1586,7 @@
     else if (e.key === 'ArrowRight' || e.key === ' ') { setActive(activeIndex + 1); e.preventDefault(); }
   });
 
-  // initial paint of the example deck
+  // initial paint of the example deck; bootDeck() below may replace it
   renderThumbs();
   renderStage();
 
@@ -1718,13 +1779,14 @@
   }
 
   // Step two: expand the approved outline into slides, streamed in as written.
-  function streamDeck(topic, plan){
+  function streamDeck(topic, plan, overrides){
     if (generating) return;
     if (!topic) { setStatus('Type a topic first.', 'error'); return; }
+    var opts = Object.assign(draftOptions(), overrides || {});
 
     setBusy(true);
-    setStatus('Writing the slides…', 'info');
-    if (deckCaption) deckCaption.textContent = 'Writing the slides…';
+    setStatus(opts.variantOf ? 'Rewriting for ' + opts.label + '…' : 'Writing the slides…', 'info');
+    if (deckCaption) deckCaption.textContent = opts.variantOf ? 'Rewriting for ' + opts.label + '…' : 'Writing the slides…';
     if (draftBadge) draftBadge.hidden = true;
 
     var editorSection = document.getElementById('editorSection');
@@ -1740,10 +1802,10 @@
     fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.assign(
-        { topic: topic, surface: currentSurface, plan: plan || null },
-        draftOptions()
-      ))
+      body: JSON.stringify({
+        topic: topic, surface: currentSurface, plan: plan || null,
+        source: opts.source, audience: opts.audience, tone: opts.tone, length: opts.length
+      })
     })
       .then(function(r){
         if (r.status === 429) throw { code: 'rate_limited' };
@@ -1766,9 +1828,20 @@
         chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
         if (draftBadge) draftBadge.hidden = false;
         setStatus('Drafted just now.', 'info');
-        if (deckCaption) {
-          deckCaption.textContent = deckSlides.length + ' slides on "' + topic +
-            '." Click any line to rewrite it, drag a thumbnail to reorder, or save it with □.';
+        if (opts.variantOf) {
+          variantCache[opts.variantOf] = deckSlides.slice();
+          markVariant();
+          if (deckCaption) {
+            deckCaption.textContent = 'Rewritten for ' + opts.label + ' — ' + deckSlides.length +
+              ' slides, built from the original deck.';
+          }
+        } else {
+          resetVariants();
+          if (critiquePanel) critiquePanel.hidden = true;
+          if (deckCaption) {
+            deckCaption.textContent = deckSlides.length + ' slides on "' + topic +
+              '." Click any line to rewrite it, drag a thumbnail to reorder, or save it with □.';
+          }
         }
       })
       .catch(function(e){
@@ -1832,7 +1905,10 @@
   }
 
   function currentDeckState(){
-    return { topic: deckTopic, theme: deckTheme, slides: deckSlides };
+    return {
+      topic: deckTopic, theme: deckTheme, slides: deckSlides,
+      original: originalDeck || deckSlides, variant: activeVariant
+    };
   }
 
   var workingTimer = null;
@@ -1877,6 +1953,7 @@
     if (draftBadge) draftBadge.hidden = false;
     if (deckCaption) deckCaption.textContent = 'Loaded “' + found.name + '”.';
     draftsDrawer.hidden = true;
+    resetVariants();
     saveWorking();
   }
 
@@ -1920,21 +1997,190 @@
     if (!draftsDrawer.hidden) renderDrafts();
   });
 
-  // a shared link wins over whatever was last being worked on locally
-  (function restoreWorking(){
+  // Runs at the very end of this script, not here: it needs the variant state
+  // below to exist, or a restored variant loses track of its original.
+  function bootDeck(){
     if (loadSharedDeck()) return;
     var saved = readStore(WORKING_KEY, null);
-    if (!saved || !Array.isArray(saved.slides) || saved.slides.length < 2) return;
+    if (!saved || !Array.isArray(saved.slides) || saved.slides.length < 2) {
+      originalDeck = deckSlides.slice();
+      markVariant();
+      return;
+    }
     deckSlides = saved.slides;
     deckTopic = saved.topic || deckTopic;
     deckTheme = saved.theme || 'tide';
+    originalDeck = Array.isArray(saved.original) && saved.original.length ? saved.original : saved.slides.slice();
+    activeVariant = saved.variant || '__original';
     activeIndex = 0;
     applyTheme();
     renderThumbs(false);
     renderStage();
+    markVariant();
     if (promptInput && saved.topic) promptInput.value = saved.topic;
-    if (deckCaption) deckCaption.textContent = 'Picked up where you left off. Generate to start a new one.';
-  })();
+    if (deckCaption) {
+      deckCaption.textContent = activeVariant === '__original'
+        ? 'Picked up where you left off. Generate to start a new one.'
+        : 'Picked up where you left off — showing a rewritten version.';
+    }
+  }
+
+  // ---- audience variants ------------------------------------------------
+  // A variant is not a fresh draft: the deck you already have becomes the
+  // source material, so the board version and the team version say the same
+  // true things at different depth, rather than inventing two sets of facts.
+  var variantRow = document.getElementById('variantRow');
+  var variantCache = {};
+  var originalDeck = null;
+  var activeVariant = '__original';
+
+  function deckToText(slides){
+    return slides.map(function(s, i){
+      if (i === 0 || s.type === 'cover') {
+        return 'COVER: ' + (s.title || '') + (s.tagline ? ' — ' + s.tagline : '');
+      }
+      var out = [(s.heading || '')];
+      if (s.body) out.push(s.body);
+      (s.bullets || []).forEach(function(b){ out.push('- ' + b); });
+      return out.join('\n');
+    }).join('\n\n');
+  }
+
+  function markVariant(){
+    if (!variantRow) return;
+    variantRow.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-variant') === activeVariant);
+    });
+    var back = variantRow.querySelector('.variant-original');
+    if (back) back.hidden = activeVariant === '__original';
+  }
+
+  function resetVariants(){
+    variantCache = {};
+    originalDeck = deckSlides.slice();
+    activeVariant = '__original';
+    markVariant();
+  }
+
+  function showVariant(slides, label){
+    deckSlides = slides;
+    activeIndex = 0;
+    renderThumbs(false);
+    renderStage();
+    prefetchImages();
+    saveWorking();
+    markVariant();
+    if (deckCaption) deckCaption.textContent = label;
+  }
+
+  if (variantRow) {
+    variantRow.addEventListener('click', function(e){
+      var btn = e.target.closest ? e.target.closest('button') : null;
+      if (!btn || generating) return;
+      var which = btn.getAttribute('data-variant');
+      if (!which) return;
+      if (!originalDeck) originalDeck = deckSlides.slice();
+
+      if (which === '__original') {
+        activeVariant = '__original';
+        showVariant(originalDeck.slice(), 'Back to the original deck.');
+        return;
+      }
+      if (variantCache[which]) {
+        activeVariant = which;
+        showVariant(variantCache[which].slice(), 'Rewritten for ' + btn.textContent + '.');
+        return;
+      }
+      activeVariant = which;
+      markVariant();
+      streamDeck(deckTopic || (promptInput.value || '').trim(), null, {
+        source: deckToText(originalDeck),
+        audience: which,
+        length: btn.getAttribute('data-length') || 'standard',
+        variantOf: which,
+        label: btn.textContent
+      });
+    });
+  }
+
+  // ---- pressure test ----------------------------------------------------
+  var critiqueBtn = document.getElementById('critiqueBtn');
+  var critiquePanel = document.getElementById('critiquePanel');
+
+  var KIND_LABEL = {
+    'unsupported': 'no evidence',
+    'gap': 'gap',
+    'weak-number': 'shaky number',
+    'logic': 'logic jump',
+    'missing-answer': 'unanswered'
+  };
+
+  function renderCritique(findings){
+    var html = '<h4>What they will push back on</h4>' +
+      '<p class="lede">Five minutes of scrutiny before someone else gives it to you.</p>' +
+      '<ul class="critique-list">';
+    findings.forEach(function(f){
+      var n = parseInt(f.slide, 10);
+      var where = (n >= 1 && n <= deckSlides.length)
+        ? '<button type="button" class="where" data-slide="' + (n - 1) + '">slide ' + n + '</button>'
+        : '<span class="where" style="text-decoration:none;cursor:default">whole deck</span>';
+      html += '<li>' +
+        '<span class="kind">' + escapeHtml(KIND_LABEL[f.kind] || f.kind) + '</span>' +
+        where +
+        '<div class="detail">' +
+          '<p class="issue">' + escapeHtml(f.issue || '') + '</p>' +
+          (f.ask ? '<p class="ask">' + escapeHtml(f.ask) + '</p>' : '') +
+        '</div>' +
+        '</li>';
+    });
+    critiquePanel.innerHTML = html + '</ul>';
+    critiquePanel.hidden = false;
+
+    critiquePanel.querySelectorAll('.where[data-slide]').forEach(function(b){
+      b.addEventListener('click', function(){
+        setActive(parseInt(b.getAttribute('data-slide'), 10));
+        document.getElementById('editorSection').scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+    });
+  }
+
+  function runCritique(){
+    if (generating || deckSlides.length < 2) return;
+    setBusy(true);
+    critiqueBtn.textContent = 'Reading it back…';
+    setStatus('Looking for the weak points…', 'info');
+
+    fetch('/api/critique', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slides: deckSlides,
+        topic: deckTopic,
+        audience: draftOptions().audience,
+        hasSource: !!draftOptions().source
+      })
+    })
+      .then(function(r){
+        if (r.status === 429) throw { code: 'rate_limited' };
+        if (!r.ok) return r.json().catch(function(){ return {}; }).then(function(b){ throw { code: b.error || 'upstream_error' }; });
+        return r.json();
+      })
+      .then(function(data){
+        if (!data || !Array.isArray(data.findings) || !data.findings.length) throw { code: 'invalid_json' };
+        renderCritique(data.findings);
+        setStatus(data.findings.length + ' things worth fixing before you present.', 'info');
+        critiquePanel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      })
+      .catch(function(e){
+        var code = (e && e.code) || 'network_error';
+        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+      })
+      .finally(function(){
+        setBusy(false);
+        critiqueBtn.textContent = 'Pressure-test this deck';
+      });
+  }
+  if (critiqueBtn) critiqueBtn.addEventListener('click', runCritique);
 
   // ---- share links ------------------------------------------------------
   // The whole deck rides in the URL fragment, deflated and base64url'd, so a
@@ -2024,6 +2270,7 @@
       prefetchImages();
       if (promptInput && deckTopic) promptInput.value = deckTopic;
       if (draftBadge) draftBadge.hidden = false;
+      resetVariants();
       if (deckCaption) deckCaption.textContent = 'Opened from a shared link. Edit it freely — it is your copy now.';
     }).catch(function(){
       if (deckCaption) deckCaption.textContent = "That shared link couldn't be read — showing the example deck.";
@@ -2340,6 +2587,8 @@
   });
 
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
+
+  bootDeck();   // last: every feature block above is initialised by now
 
   // ---- optional source material + style controls ------------------------
   var sourceToggle = document.getElementById('sourceToggle');
