@@ -47,12 +47,31 @@ function voiceLine(opts) {
 
 function styleLine(opts) {
   const audience = AUDIENCE[opts.audience] || AUDIENCE.general;
-  const voice = voiceLine(opts);
-  if (voice) return `Write for ${audience}.
-
-${voice}`;
+  if (voiceLine(opts)) return `Write for ${audience}.`;
   const tone = TONE[opts.tone] || TONE.plain;
   return `Write for ${audience}, in a ${tone} register.`;
+}
+
+// Goes last, after the format rules. Placed before them it gets buried: the
+// model reads a long list of formatting constraints afterwards and writes in
+// its own default register.
+function voiceCoda(opts) {
+  const voice = voiceLine(opts);
+  if (!voice) return '';
+  return `
+
+${voice}
+
+This matters more than anything above about length or register. Where a habit
+here conflicts with the formatting guidance, follow the habit. Do not fall back
+into neutral corporate phrasing — no "leverage", "align", "future-proof",
+"culture of", "seamless" or "robust" unless the samples used those words.
+
+These are tendencies, not a template. Hard limit: no signature opener,
+catchphrase or sentence pattern from the habits above may appear on more than
+ONE slide in the whole deck. If a habit names an opening word or phrase, use it
+once at most and open every other slide differently. A tic on every slide reads
+as parody, not as someone's voice.`;
 }
 
 // With pasted material every fact must come from it. Without it, the model has
@@ -75,6 +94,16 @@ people. Prefer qualitative claims you are confident are true, and use the stat
 layout only for a figure that is genuinely well known.`;
 }
 
+// The BODY word count is relaxed when a voice is in play: "20 to 40 words"
+// is a specific, format-level instruction that quietly beats a general request
+// for short sentences, and the deck comes out in house style regardless.
+function formatSpec(opts) {
+  const bodyLine = voiceLine(opts)
+    ? 'BODY: <1 to 2 sentences introducing the slide, in the voice described below>'
+    : 'BODY: <1 to 2 full sentences introducing the slide, 20 to 40 words>';
+  return FORMAT_SPEC.replace('__BODY__', bodyLine);
+}
+
 const FORMAT_SPEC = `Reply in EXACTLY this plain-text format and nothing else:
 
 TITLE: <short title, under 6 words>
@@ -83,7 +112,7 @@ IMAGE: <2 to 5 plain words naming a photographable subject>
 ===
 LAYOUT: bullets
 HEADING: <heading, under 6 words>
-BODY: <1 to 2 full sentences introducing the slide, 20 to 40 words>
+__BODY__
 BULLET: <point, under 18 words>
 BULLET: <point, under 18 words>
 BULLET: <point, under 18 words>
@@ -130,12 +159,12 @@ ${groundingLine(opts)}
 
 ${styleLine(opts)}
 
-${FORMAT_SPEC}
+${formatSpec(opts)}
 
 - Write one slide per numbered section above — no more, no fewer — keeping each
   section's wording as its HEADING, exactly as written.
 - Use only the bullets and stat layouts here. Do not use the quote layout: its
-  HEADING is an attribution, which would overwrite the approved section name.`;
+  HEADING is an attribution, which would overwrite the approved section name.${voiceCoda(opts)}`;
   }
 
   return `Draft ${noun} about: "${topic}".
@@ -152,11 +181,11 @@ ${groundingLine(opts)}
 
 ${styleLine(opts)}
 
-${FORMAT_SPEC}
+${formatSpec(opts)}
 
 - Write ${LENGTH[opts.length] || LENGTH.standard} slides after the cover — as many as the subject needs.
 - Order the slides the way someone would actually present them, and finish with a
-  closing slide: a summary, a takeaway, or what happens next.`;
+  closing slide: a summary, a takeaway, or what happens next.${voiceCoda(opts)}`;
 }
 
 function json(obj, status) {
