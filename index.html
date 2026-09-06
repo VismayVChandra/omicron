@@ -367,44 +367,87 @@
     --s-accent:var(--tide);
     --s-quote-bg:var(--surface-2);
     --s-cover-bg:var(--deep);
+    /* the wash over a full-bleed photograph, per theme: one fixed cold teal
+       put a blue cast on every warm deck */
+    --s-scrim:6,26,28;
     --s-display:'Fraunces',Georgia,serif;
   }
   [data-deck-theme="dune"] .deck-slide{
     --s-bg:#f7f1e6; --s-ink:#3b2a1c; --s-muted:#6f5844; --s-accent:#c2643c;
-    --s-quote-bg:#efe4d2; --s-cover-bg:#2f2418;
+    --s-quote-bg:#efe4d2; --s-cover-bg:#2f2418; --s-scrim:34,24,14;
   }
   [data-deck-theme="graphite"] .deck-slide{
     --s-bg:#f3f5f6; --s-ink:#151d21; --s-muted:#4f6068; --s-accent:#4d7180;
-    --s-quote-bg:#e5eaec; --s-cover-bg:#131a1d;
+    --s-quote-bg:#e5eaec; --s-cover-bg:#131a1d; --s-scrim:12,16,18;
     --s-display:'Karla',system-ui,sans-serif;
   }
   [data-deck-theme="noir"] .deck-slide{
     --s-bg:#151a1c; --s-ink:#eef3f2; --s-muted:#a3b5b4; --s-accent:#63d6bd;
-    --s-quote-bg:#1c2325; --s-cover-bg:#0b0f10;
+    --s-quote-bg:#1c2325; --s-cover-bg:#0b0f10; --s-scrim:5,8,9;
   }
   [data-deck-theme="press"] .deck-slide{
     --s-bg:#fbfaf8; --s-ink:#111111; --s-muted:#4a4a48; --s-accent:#c8102e;
-    --s-quote-bg:#efece7; --s-cover-bg:#111111;
-    --s-display:'Fraunces',Georgia,serif;
+    --s-quote-bg:#efece7; --s-cover-bg:#111111; --s-scrim:12,12,12;
   }
   [data-deck-theme="orchard"] .deck-slide{
     --s-bg:#f6f4ef; --s-ink:#2f3a24; --s-muted:#5f6b4f; --s-accent:#7a9a4e;
-    --s-quote-bg:#e8ebdf; --s-cover-bg:#26301d;
+    --s-quote-bg:#e8ebdf; --s-cover-bg:#26301d; --s-scrim:24,32,18;
+  }
+  [data-deck-theme="azure"] .deck-slide{
+    --s-bg:#f6f8fc; --s-ink:#0f2440; --s-muted:#4a5f7d; --s-accent:#2f6fd0;
+    --s-quote-bg:#e6edf7; --s-cover-bg:#0f2440; --s-scrim:9,20,38;
+  }
+  [data-deck-theme="amber"] .deck-slide{
+    --s-bg:#141310; --s-ink:#f8f5ec; --s-muted:#b8b1a1; --s-accent:#f2b705;
+    --s-quote-bg:#1e1c17; --s-cover-bg:#0b0a08; --s-scrim:8,7,4;
+    --s-display:'Karla',system-ui,sans-serif;
+  }
+  [data-deck-theme="plum"] .deck-slide{
+    --s-bg:#fbf7f9; --s-ink:#3a1c33; --s-muted:#6d4b64; --s-accent:#b0417a;
+    --s-quote-bg:#f0e4ec; --s-cover-bg:#2e1329; --s-scrim:30,10,26;
+  }
+  [data-deck-theme="mist"] .deck-slide{
+    --s-bg:#f7f9fb; --s-ink:#24303a; --s-muted:#5b6b78; --s-accent:#7c9cc4;
+    --s-quote-bg:#e8eef4; --s-cover-bg:#2a3a48; --s-scrim:20,32,42;
   }
 
-  .theme-pick{display:flex;gap:5px;margin-right:4px}
-  .theme-pick button{
-    width:16px;height:16px;border-radius:50%;cursor:pointer;padding:0;
-    border:1px solid var(--line);transition:transform .12s, box-shadow .12s;
+  /* ten themes will not fit as a row of swatches in the toolbar, so the picker
+     is a named popover — and names make them choosable rather than guessable */
+  .theme-wrap{position:relative;margin-right:4px}
+  .theme-trigger{
+    display:flex;align-items:center;gap:7px;cursor:pointer;
+    background:var(--surface);border:1px solid var(--line);border-radius:999px;
+    padding:5px 12px 5px 7px;color:var(--deep);
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
   }
-  .theme-pick button:hover{transform:scale(1.12)}
-  .theme-pick button.active{box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--tide)}
-  .theme-pick button[data-theme="tide"]{background:linear-gradient(135deg,#177f78,#0e3b3e)}
-  .theme-pick button[data-theme="dune"]{background:linear-gradient(135deg,#c2643c,#2f2418)}
-  .theme-pick button[data-theme="graphite"]{background:linear-gradient(135deg,#4d7180,#131a1d)}
-  .theme-pick button[data-theme="noir"]{background:linear-gradient(135deg,#63d6bd,#0b0f10)}
-  .theme-pick button[data-theme="press"]{background:linear-gradient(135deg,#c8102e,#111111)}
-  .theme-pick button[data-theme="orchard"]{background:linear-gradient(135deg,#7a9a4e,#26301d)}
+  .theme-trigger:hover{border-color:var(--wave)}
+  .theme-dot{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid var(--line)}
+  .theme-dot[data-theme="tide"]{background:linear-gradient(135deg,#177f78,#0e3b3e)}
+  .theme-dot[data-theme="dune"]{background:linear-gradient(135deg,#c2643c,#2f2418)}
+  .theme-dot[data-theme="graphite"]{background:linear-gradient(135deg,#4d7180,#131a1d)}
+  .theme-dot[data-theme="noir"]{background:linear-gradient(135deg,#63d6bd,#0b0f10)}
+  .theme-dot[data-theme="press"]{background:linear-gradient(135deg,#c8102e,#111111)}
+  .theme-dot[data-theme="orchard"]{background:linear-gradient(135deg,#7a9a4e,#26301d)}
+  .theme-dot[data-theme="azure"]{background:linear-gradient(135deg,#2f6fd0,#0f2440)}
+  .theme-dot[data-theme="amber"]{background:linear-gradient(135deg,#f2b705,#0b0a08)}
+  .theme-dot[data-theme="plum"]{background:linear-gradient(135deg,#b0417a,#2e1329)}
+  .theme-dot[data-theme="mist"]{background:linear-gradient(135deg,#7c9cc4,#2a3a48)}
+
+  /* fixed, and placed by script: the deck panel clips its own overflow, so an
+     absolutely positioned popover inside it gets cut off */
+  .theme-pick{
+    position:fixed;z-index:120;
+    display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:4px;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:8px;box-shadow:var(--shadow-lift);
+  }
+  .theme-pick button{
+    display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left;
+    background:transparent;border:1px solid transparent;border-radius:9px;padding:7px 9px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
+  }
+  .theme-pick button:hover{background:var(--surface-2);color:var(--deep)}
+  .theme-pick button.active{border-color:var(--tide);color:var(--deep)}
 
   .deck-slide.cover{background:var(--s-cover-bg);color:#fff;align-items:center;justify-content:center;text-align:center;gap:2cqw}
   .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.8rem);letter-spacing:.12em;text-transform:uppercase;color:var(--s-accent);position:relative;z-index:2}
@@ -416,7 +459,7 @@
   .deck-slide .cover-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
   .deck-slide .cover-media[data-state="ready"] img{opacity:1}
   .deck-slide .cover-scrim{position:absolute;inset:0;z-index:1;
-    background:linear-gradient(180deg, rgba(6,26,28,0.55) 0%, rgba(6,26,28,0.86) 100%)}
+    background:linear-gradient(180deg, rgba(var(--s-scrim),0.55) 0%, rgba(var(--s-scrim),0.86) 100%)}
 
   .deck-slide.content{background:var(--s-bg);justify-content:center}
   .deck-slide.content h3{font-family:var(--s-display);font-weight:600;font-size:clamp(0.95rem,3.6cqw,1.9rem);color:var(--s-ink);margin:0 0 1.8cqw}
@@ -1101,13 +1144,23 @@
             <span id="draftBadge" class="draft-badge" hidden>Drafted by AI</span>
           </div>
           <div class="deck-toolbar-right">
-            <div class="theme-pick" id="themePick" role="group" aria-label="Deck theme">
-              <button type="button" data-theme="tide" class="active" title="Tide" aria-label="Tide theme"></button>
-              <button type="button" data-theme="dune" title="Dune" aria-label="Dune theme"></button>
-              <button type="button" data-theme="graphite" title="Graphite" aria-label="Graphite theme"></button>
-              <button type="button" data-theme="noir" title="Noir" aria-label="Noir theme"></button>
-              <button type="button" data-theme="press" title="Press" aria-label="Press theme"></button>
-              <button type="button" data-theme="orchard" title="Orchard" aria-label="Orchard theme"></button>
+            <div class="theme-wrap">
+              <button type="button" class="theme-trigger" id="themeTrigger" aria-expanded="false" aria-haspopup="true">
+                <span class="theme-dot" id="themeDot" data-theme="tide"></span>
+                <span id="themeName">Tide</span>
+              </button>
+              <div class="theme-pick" id="themePick" role="group" aria-label="Deck theme" hidden>
+                <button type="button" data-theme="tide" class="active"><span class="theme-dot" data-theme="tide"></span>Tide</button>
+                <button type="button" data-theme="dune"><span class="theme-dot" data-theme="dune"></span>Dune</button>
+                <button type="button" data-theme="orchard"><span class="theme-dot" data-theme="orchard"></span>Orchard</button>
+                <button type="button" data-theme="plum"><span class="theme-dot" data-theme="plum"></span>Plum</button>
+                <button type="button" data-theme="azure"><span class="theme-dot" data-theme="azure"></span>Azure</button>
+                <button type="button" data-theme="mist"><span class="theme-dot" data-theme="mist"></span>Mist</button>
+                <button type="button" data-theme="graphite"><span class="theme-dot" data-theme="graphite"></span>Graphite</button>
+                <button type="button" data-theme="press"><span class="theme-dot" data-theme="press"></span>Press</button>
+                <button type="button" data-theme="noir"><span class="theme-dot" data-theme="noir"></span>Noir</button>
+                <button type="button" data-theme="amber"><span class="theme-dot" data-theme="amber"></span>Amber</button>
+              </div>
             </div>
             <span id="slideCounter" class="slide-counter tabular">1 / 5</span>
             <button type="button" class="deck-icon-btn" id="redoSlideBtn" aria-label="Regenerate this slide" title="Regenerate this slide">&#8635;</button>
@@ -2276,16 +2329,56 @@ Q4,4390"></textarea>
     var deckMock = document.getElementById('deckMock');
     if (deckMock) deckMock.setAttribute('data-deck-theme', deckTheme);
     if (presentOverlay) presentOverlay.setAttribute('data-deck-theme', deckTheme);
+    var active = null;
     document.querySelectorAll('#themePick button').forEach(function(b){
-      b.classList.toggle('active', b.getAttribute('data-theme') === deckTheme);
+      var on = b.getAttribute('data-theme') === deckTheme;
+      b.classList.toggle('active', on);
+      if (on) active = b;
+    });
+    var dot = document.getElementById('themeDot');
+    var name = document.getElementById('themeName');
+    if (dot) dot.setAttribute('data-theme', deckTheme);
+    if (name) name.textContent = active ? active.textContent.trim() : deckTheme;
+  }
+
+  var themeTrigger = document.getElementById('themeTrigger');
+  var themePick = document.getElementById('themePick');
+
+  function closeThemes(){
+    if (!themePick) return;
+    themePick.hidden = true;
+    if (themeTrigger) themeTrigger.setAttribute('aria-expanded', 'false');
+  }
+
+  function placeThemes(){
+    var r = themeTrigger.getBoundingClientRect();
+    themePick.style.top = Math.round(r.bottom + 8) + 'px';
+    // measure once shown, then keep it inside the viewport
+    var w = themePick.offsetWidth || 280;
+    var left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8);
+    themePick.style.left = Math.round(left) + 'px';
+  }
+
+  if (themeTrigger) {
+    themeTrigger.addEventListener('click', function(e){
+      e.stopPropagation();
+      var open = themePick.hidden;
+      themePick.hidden = !open;
+      themeTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) placeThemes();
     });
   }
+  window.addEventListener('resize', function(){ if (!themePick.hidden) placeThemes(); });
+  document.addEventListener('click', function(e){
+    if (themePick && !themePick.hidden && !themePick.contains(e.target)) closeThemes();
+  });
 
   document.querySelectorAll('#themePick button').forEach(function(btn){
     btn.addEventListener('click', function(){
       deckTheme = btn.getAttribute('data-theme') || 'tide';
       applyTheme();
       saveWorking();
+      closeThemes();
     });
   });
   applyTheme();
@@ -3049,11 +3142,19 @@ Q4,4390"></textarea>
       .catch(function(){ return null; });
   }
 
+  // Must list every theme in the CSS above: a missing entry silently falls back
+  // to Tide, so a Press deck exported as teal.
   var PPTX_THEMES = {
     tide:     { bg:'FFFFFF', ink:'0E3B3E', muted:'3C5A56', accent:'177F78', cover:'0E3B3E', quote:'E2ECE7' },
     dune:     { bg:'F7F1E6', ink:'3B2A1C', muted:'6F5844', accent:'C2643C', cover:'2F2418', quote:'EFE4D2' },
     graphite: { bg:'F3F5F6', ink:'151D21', muted:'4F6068', accent:'4D7180', cover:'131A1D', quote:'E5EAEC' },
-    noir:     { bg:'151A1C', ink:'EEF3F2', muted:'A3B5B4', accent:'63D6BD', cover:'0B0F10', quote:'1C2325' }
+    noir:     { bg:'151A1C', ink:'EEF3F2', muted:'A3B5B4', accent:'63D6BD', cover:'0B0F10', quote:'1C2325' },
+    press:    { bg:'FBFAF8', ink:'111111', muted:'4A4A48', accent:'C8102E', cover:'111111', quote:'EFECE7' },
+    orchard:  { bg:'F6F4EF', ink:'2F3A24', muted:'5F6B4F', accent:'7A9A4E', cover:'26301D', quote:'E8EBDF' },
+    azure:    { bg:'F6F8FC', ink:'0F2440', muted:'4A5F7D', accent:'2F6FD0', cover:'0F2440', quote:'E6EDF7' },
+    amber:    { bg:'141310', ink:'F8F5EC', muted:'B8B1A1', accent:'F2B705', cover:'0B0A08', quote:'1E1C17' },
+    plum:     { bg:'FBF7F9', ink:'3A1C33', muted:'6D4B64', accent:'B0417A', cover:'2E1329', quote:'F0E4EC' },
+    mist:     { bg:'F7F9FB', ink:'24303A', muted:'5B6B78', accent:'7C9CC4', cover:'2A3A48', quote:'E8EEF4' }
   };
 
   function exportPptx(){
@@ -3062,7 +3163,8 @@ Q4,4390"></textarea>
     setStatus('Building the PowerPoint…', 'info');
 
     var theme = PPTX_THEMES[deckTheme] || PPTX_THEMES.tide;
-    var display = deckTheme === 'graphite' ? 'Arial' : 'Georgia';
+    // keep in step with the themes whose --s-display is a sans face
+    var display = (deckTheme === 'graphite' || deckTheme === 'amber') ? 'Arial' : 'Georgia';
 
     // resolve every image to bytes first
     var jobs = deckSlides.map(function(s){

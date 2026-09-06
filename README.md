@@ -14,10 +14,11 @@ model is explicitly told not to invent statistics, market sizes or dated
 forecasts, because it has no source to draw them from. Audience, tone and
 length are selectable and feed every request.
 
-- `index.html` — the site, the outline editor and the deck viewer (slides,
-  thumbnail rail, present mode, in-place editing, drag-to-reorder, four deck
-  themes, saved drafts in `localStorage`, PDF export via the browser's print,
-  `.pptx` export, and share links)
+- `index.html` — the landing page plus a full-screen editor (slides, thumbnail
+  rail, present mode, in-place editing, drag-to-reorder, ten deck themes, saved
+  drafts in `localStorage`, PDF export via the browser's print, `.pptx` export,
+  and share links). Generating switches to the editor rather than scrolling;
+  the shared elements are moved between the two rather than duplicated.
 - `api/outline.js` — step one: plans the deck, returns `{title, tagline, sections}`
 - `api/generate.js` — step two: streams the slides. Returns a line-based format
   (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BODY` / `BULLET` /
@@ -51,9 +52,12 @@ from your own data. The model picks per slide and is told to keep at least half
 of them `bullets` — cycling through every layout for its own sake is as bad as
 using one for everything.
 
-Six deck themes: Tide, Dune, Graphite, Noir, Press and Orchard. They are token
-sets on `.deck-slide`, separate from the site's own palette, and travel with a
-deck into saved drafts, share links and both exports.
+Ten deck themes: Tide, Dune, Orchard, Plum, Azure, Mist, Graphite, Press, Noir
+and Amber — warm and cool, light and dark, one editorial and one high-contrast
+keynote. They are token sets on `.deck-slide`, separate from the site's own
+palette, and travel with a deck into saved drafts, share links and both exports.
+Each carries its own scrim colour for full-bleed photographs, and every one was
+checked for contrast: headings 10.9:1 or better, body text 5.2:1 or better.
 
 ## Charts
 
