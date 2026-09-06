@@ -173,7 +173,7 @@
   }
   .prompt-row{display:flex;align-items:center;gap:12px}
   .prompt-row input{
-    flex:1;border:none;background:transparent;font-family:'Karla',sans-serif;
+    flex:1;min-width:0;border:none;background:transparent;font-family:'Karla',sans-serif;
     font-size:1rem;color:var(--ink);outline:none;
   }
   .prompt-row input::placeholder{color:var(--ink-soft)}
@@ -197,7 +197,7 @@
      the one-step path */
   .prompt-source{display:flex;flex-direction:column;gap:8px}
   .prompt-source > button{
-    display:flex;align-items:center;gap:7px;background:none;border:none;padding:0;cursor:pointer;
+    display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;background:none;border:none;padding:0;cursor:pointer;
     font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--wave);text-align:left;
   }
   .prompt-source > button em{font-style:normal;color:var(--ink-soft)}
@@ -328,12 +328,10 @@
   .editor-note{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft)}
 
   .deck-body{display:grid;grid-template-columns:168px 1fr}
-  @media (max-width:700px){ .deck-body{grid-template-columns:1fr} }
   .deck-rail{
     border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:10px;
     max-height:440px;overflow-y:auto;
   }
-  @media (max-width:700px){ .deck-rail{display:none} }
   .deck-thumb{
     border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer;background:var(--surface);
     display:flex;flex-direction:column;gap:5px;aspect-ratio:16/9;justify-content:center;
@@ -730,6 +728,21 @@
   .outline-item .sec-text{flex:1;font-size:0.98rem;color:var(--ink);border-radius:4px;min-width:0}
   .outline-item .sec-text:hover{outline:1px dashed var(--line);outline-offset:3px}
   .outline-item .sec-text:focus{outline:2px solid var(--tide);outline-offset:3px}
+  .outline-item .sec-move{display:flex;gap:2px;flex:none}
+  .outline-item .move-sec{
+    background:transparent;border:none;color:var(--ink-soft);cursor:pointer;
+    font-size:0.8rem;line-height:1;padding:4px 5px;border-radius:6px;
+  }
+  .outline-item .move-sec:hover:not(:disabled){color:var(--deep);background:var(--surface-2)}
+  .outline-item .move-sec:disabled{opacity:0.25;cursor:default}
+  @media (max-width:760px){
+    .outline-item{gap:8px;padding:10px}
+    .outline-item .grip{display:none}
+    .outline-item .move-sec{padding:8px 9px;font-size:0.95rem}
+    .outline-item .drop-sec{padding:6px 9px}
+    .outline-actions{flex-direction:column;align-items:stretch}
+    .outline-actions-right{justify-content:space-between}
+  }
   .outline-item .drop-sec{
     background:transparent;border:none;color:var(--ink-soft);cursor:pointer;
     font-size:1.05rem;line-height:1;padding:2px 6px;border-radius:6px;
@@ -929,6 +942,8 @@
   body.in-app > nav.topbar,
   body.in-app > main,
   body.in-app > footer{display:none}
+  /* the overlay is a body-level sibling so it survives main being hidden */
+  body.in-app > .present-overlay:not([hidden]){display:flex}
   #appScreen{
     position:fixed;inset:0;z-index:60;background:var(--bg);
     display:flex;flex-direction:column;overflow:hidden;
@@ -991,10 +1006,56 @@
   .app-panels .deck-extras{margin-top:0;padding-top:14px}
   .app-panels .editor-note{margin-top:12px}
 
+  /* ---------- phones and small tablets ----------
+     The editor stops trying to fit a fixed viewport and becomes one scrolling
+     column. Fitting it caused the slide to shrink to 138px wide on a phone,
+     because the bar and the tool row took the height first. */
   @media (max-width:760px){
-    .app-bar{flex-direction:column;gap:10px;padding:12px 14px}
-    .app-body{padding:12px}
-    .app-panels{padding:0 14px 14px}
+    body.in-app{overflow:auto}
+    #appScreen{position:static;height:auto;min-height:100vh;overflow:visible;display:block}
+    .app-bar{
+      flex-direction:column;align-items:stretch;gap:10px;padding:12px 14px;
+      position:sticky;top:0;z-index:70;
+    }
+    .app-back{align-self:flex-start}
+    .app-opts{align-self:flex-start}
+    .app-prompt-slot .prompt-card{max-width:none}
+
+    .app-body{display:block;padding:12px;overflow:visible}
+    .app-body .deck-mock{max-width:none;display:block}
+    .app-body .deck-body{display:block}
+    .app-body .deck-stage-wrap{padding:12px;display:block}
+    /* size from width on a phone: there is no spare height to size from */
+    .app-body .deck-slide-frame{width:100%;height:auto;max-width:none;max-height:none;aspect-ratio:auto}
+    .app-body .outline-panel{max-width:none}
+    .app-panels{max-height:none;overflow:visible;padding:0 14px 24px}
+
+    /* the vertical rail becomes a horizontal filmstrip — hiding it entirely
+       left no way to reach a slide once prev/next scrolled off */
+    .deck-body{grid-template-columns:1fr}
+    .deck-rail{
+      display:flex;flex-direction:row;gap:8px;max-height:none;overflow-x:auto;
+      border-right:none;border-bottom:1px solid var(--line);padding:10px 12px;
+      -webkit-overflow-scrolling:touch;
+    }
+    .deck-thumb{flex:0 0 120px;aspect-ratio:16/9}
+
+    /* the tool row ran ~190px off-screen: wrap it and give touch targets size */
+    .deck-toolbar{gap:10px}
+    .deck-toolbar-right{flex-wrap:wrap;justify-content:flex-start;gap:8px}
+    .deck-icon-btn{width:40px;height:40px}
+    #pptxBtn, #pdfBtn{height:40px}
+    .theme-trigger{padding:8px 14px 8px 8px}
+    .deck-toolbar-left span#chromeUrl{max-width:150px}
+
+    .deck-extras{flex-direction:column;align-items:stretch;gap:14px}
+    .extras-actions{flex-direction:column}
+    .extras-actions .btn{width:100%;justify-content:center}
+    .variant-row{justify-content:flex-start}
+
+    .present-controls{bottom:16px}
+    .present-close{top:12px;right:12px}
+    .theme-pick{grid-template-columns:1fr}
   }
 
   /* ---------- PDF export via the browser's own print-to-PDF ---------- */
@@ -1321,18 +1382,6 @@ Q4,4390"></textarea>
     </div>
   </section>
 
-  <div id="printDeck" aria-hidden="true"></div>
-
-  <div class="present-overlay" id="presentOverlay" hidden>
-    <button type="button" class="present-close" id="presentCloseBtn" aria-label="Close presentation">&times;</button>
-    <div class="deck-slide-frame present-frame" id="presentStage"></div>
-    <div class="present-controls">
-      <button type="button" class="deck-icon-btn light" id="presentPrevBtn" aria-label="Previous slide">&larr;</button>
-      <span id="presentCounter" class="tabular">1 / 5</span>
-      <button type="button" class="deck-icon-btn light" id="presentNextBtn" aria-label="Next slide">&rarr;</button>
-    </div>
-  </div>
-
   <section class="band" id="stats">
     <div class="wrap">
       <div class="stat-grid">
@@ -1425,6 +1474,21 @@ Q4,4390"></textarea>
     </div>
   </section>
 </main>
+
+<!-- Both must be direct children of <body>, not inside <main>: the editor hides
+     main, which made Present invisible, and the print stylesheet keeps only a
+     top-level #printDeck, which would have hidden the printed deck with it. -->
+<div id="printDeck" aria-hidden="true"></div>
+
+<div class="present-overlay" id="presentOverlay" hidden>
+  <button type="button" class="present-close" id="presentCloseBtn" aria-label="Close presentation">&times;</button>
+  <div class="deck-slide-frame present-frame" id="presentStage"></div>
+  <div class="present-controls">
+    <button type="button" class="deck-icon-btn light" id="presentPrevBtn" aria-label="Previous slide">&larr;</button>
+    <span id="presentCounter" class="tabular">1 / 5</span>
+    <button type="button" class="deck-icon-btn light" id="presentNextBtn" aria-label="Next slide">&rarr;</button>
+  </div>
+</div>
 
 <footer>
   <div class="footer-inner">
@@ -3540,11 +3604,30 @@ Q4,4390"></textarea>
       li.className = 'outline-item';
       li.setAttribute('data-index', i);
       li.setAttribute('draggable', 'true');
+      // HTML5 drag does not fire on touch, so reordering also needs buttons —
+      // without them the outline cannot be reordered on a phone at all
       li.innerHTML =
         '<span class="grip" aria-hidden="true">⋮⋮</span>' +
         '<span class="idx">' + (i + 1) + '</span>' +
         '<span class="sec-text" contenteditable="true" spellcheck="false">' + escapeHtml(text) + '</span>' +
+        '<span class="sec-move">' +
+          '<button type="button" class="move-sec" data-dir="-1" aria-label="Move up"' +
+            (i === 0 ? ' disabled' : '') + '>&uarr;</button>' +
+          '<button type="button" class="move-sec" data-dir="1" aria-label="Move down"' +
+            (i === outlineSections.length - 1 ? ' disabled' : '') + '>&darr;</button>' +
+        '</span>' +
         '<button type="button" class="drop-sec" aria-label="Remove this slide">&times;</button>';
+
+      Array.prototype.forEach.call(li.querySelectorAll('.move-sec'), function(mb){
+        mb.addEventListener('click', function(){
+          var dir = parseInt(mb.getAttribute('data-dir'), 10);
+          var to = i + dir;
+          if (to < 0 || to >= outlineSections.length) return;
+          var moved = outlineSections.splice(i, 1)[0];
+          outlineSections.splice(to, 0, moved);
+          renderOutline();
+        });
+      });
 
       li.querySelector('.sec-text').addEventListener('input', function(e){
         outlineSections[i] = e.target.textContent;
