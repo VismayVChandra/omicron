@@ -1915,7 +1915,8 @@ Q4,4390"></textarea>
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         topic: topic, surface: currentSurface, plan: plan || null,
-        source: opts.source, audience: opts.audience, tone: opts.tone, length: opts.length
+        source: opts.source, audience: opts.audience, tone: opts.tone,
+        length: opts.length, voice: opts.voice
       })
     })
       .then(function(r){
