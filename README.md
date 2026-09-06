@@ -54,28 +54,26 @@ using one for everything.
 
 Ten deck themes, and they are not all the same kind of thing.
 
-**Three are full themes** — their own geometry, not just their own colours — and
-each carries its furniture into the PowerPoint export, so the design survives
-the file rather than living only on screen:
+All ten are designed themes — their own geometry, not just their own colours —
+and each carries its furniture into the PowerPoint export, so the design
+survives the file rather than living only on screen. Each was given a motif of
+its own so they do not read as variants of one another:
 
-- **Press**, a newspaper. An accent rule across the head of every content slide,
-  a rule under each heading, em-dash bullets, photographs inset behind a keyline
-  instead of bleeding, a cover with a keyline border and the title set hard to
-  the bottom left, section numerals over a rule, statements left-aligned under a
-  rule, and a running foot with the deck title and folio.
-- **Azure**, a board pack. An accent bar down the left edge of every slide, a
-  short rule under each heading, square bullet markers, a keyline of accent
-  along the photograph, chip-style comparison labels, and a numbered chip in the
-  corner instead of a running foot.
-- **Amber**, a keynote on a dark stage. No rules and no chrome: oversized type,
-  a huge ghosted folio behind the content, bullets carried on accent stems
-  rather than markers, and photographs run to the edge.
+| Theme | Motif | What it actually changes |
+|---|---|---|
+| **Tide** | the wave | a crest along the foot of the slide, rounded geometry, a rounded accent underline, pill comparison labels |
+| **Press** | a newspaper | accent rule across the head, ruled headings, em-dash bullets, photographs inset behind a keyline, a running foot with deck title and folio |
+| **Azure** | a board pack | accent bar down the left edge, short rule under each heading, square markers, accent keyline on the photograph, a numbered chip |
+| **Amber** | a dark keynote | no rules at all, oversized type, a folio ghosted behind the content, bullets on accent stems, photographs to the edge |
+| **Dune** | a gallery brochure | everything centred, the heading held between two hairlines, photographs matted inside a wide margin |
+| **Orchard** | a field notebook | a dotted rule down the margin, dotted heading rules, diamond markers, a folio on a tab at the left edge |
+| **Plum** | soft luxe | an arch-topped photograph, one rule holding the whole list instead of a marker per line, italic serif headings |
+| **Mist** | an airy card | the content floats on an inset panel above the slide ground, bullets set as pills |
+| **Graphite** | a blueprint | a faint grid across the slide, `>` chevrons for bullets, comparison columns ruled like a table |
+| **Noir** | a title card | letterbox bars top and bottom, centred content, wide-tracked caps |
 
-The other seven — Tide, Dune, Orchard, Plum, Mist, Graphite and Noir — are
-palette sets: `--s-bg`, `--s-ink`, `--s-accent`, the scrim over photographs, and
-in one case a sans display face. Honest description: they recolour the default
-geometry rather than redesign it. The three above are the pattern for converting
-them.
+The wave decoration belongs to Tide alone; leaving it on by default put a stray
+teal crest through nine themes that have a motif of their own.
 
 Every theme travels with a deck into saved drafts, share links and both exports,
 and each was checked for contrast on a real slide: headings 10.9:1 or better,

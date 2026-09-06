@@ -600,6 +600,177 @@
   }
   [data-deck-theme="amber"] .deck-slide.compare .cmp-col li::before{display:none}
 
+  /* ------------------------------------------------------------------
+     TIDE — the house theme. Soft and organic: a wave crest along the foot of
+     the slide, rounded geometry throughout, and a rounded accent underline.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="tide"] .deck-slide.content{padding:6.5cqw 7cqw}
+  [data-deck-theme="tide"] .deck-slide .wave-accent{
+    right:0;left:0;bottom:0;width:100%;height:16%;opacity:0.4;
+  }
+  [data-deck-theme="tide"] .deck-slide.content h3::after{
+    content:"";display:block;width:9cqw;height:0.6cqw;min-height:3px;border-radius:99px;
+    background:var(--s-accent);margin:1.4cqw 0 2cqw;
+  }
+  [data-deck-theme="tide"] .slide-media{border-radius:2.5cqw}
+  [data-deck-theme="tide"] .deck-slide.split{padding:2.5cqw;gap:2.5cqw;grid-template-columns:1.05fr 0.95fr}
+  [data-deck-theme="tide"] .deck-slide.split .slide-text{padding:4cqw}
+  [data-deck-theme="tide"] .deck-slide.steps .step-no{border-radius:99px}
+  [data-deck-theme="tide"] .deck-slide.compare .cmp-label{
+    background:var(--s-quote-bg);border-radius:99px;padding:0.7cqw 1.6cqw;align-self:flex-start;
+  }
+
+  /* ------------------------------------------------------------------
+     DUNE — a gallery brochure. Everything centred, the heading held between
+     two hairlines, and photographs matted inside a wide margin like a print.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="dune"] .deck-slide{--s-rule:rgba(59,42,28,0.28)}
+  [data-deck-theme="dune"] .deck-slide.content{align-items:center;text-align:center;padding:7cqw}
+  [data-deck-theme="dune"] .deck-slide.content h3{
+    border-top:1px solid var(--s-rule);border-bottom:1px solid var(--s-rule);
+    padding:1.8cqw 0;margin-bottom:2.4cqw;letter-spacing:0.01em;
+  }
+  [data-deck-theme="dune"] .deck-slide .slide-body{text-align:center;max-width:42ch}
+  [data-deck-theme="dune"] .deck-slide.content ul{align-self:center;text-align:left;max-width:40ch}
+  [data-deck-theme="dune"] .deck-slide.split{grid-template-columns:1fr 1fr;padding:0}
+  [data-deck-theme="dune"] .deck-slide.split .slide-text{padding:6cqw 4cqw;align-items:center}
+  [data-deck-theme="dune"] .slide-media{margin:6cqw 6cqw 6cqw 0;border:1px solid var(--s-rule)}
+  [data-deck-theme="dune"] .deck-slide.cover{gap:2.4cqw}
+  [data-deck-theme="dune"] .deck-slide.cover .eyebrow-mini{letter-spacing:.34em}
+  [data-deck-theme="dune"] .deck-slide.statement .statement-text{font-style:italic}
+  [data-deck-theme="dune"] .deck-slide.section{align-items:center;text-align:center;justify-content:center}
+
+  /* ------------------------------------------------------------------
+     ORCHARD — a field notebook. Dotted rules, a tab of accent down the left
+     margin carrying the folio, and photographs under a caption bar.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="orchard"] .deck-slide{--s-rule:rgba(47,58,36,0.4)}
+  [data-deck-theme="orchard"] .deck-slide.content{padding:6cqw 6cqw 6cqw 10cqw}
+  [data-deck-theme="orchard"] .deck-slide.content::before{
+    content:"";position:absolute;left:4cqw;top:0;bottom:0;width:1px;
+    background:repeating-linear-gradient(var(--s-rule) 0 3px, transparent 3px 7px);z-index:1;
+  }
+  [data-deck-theme="orchard"] .deck-slide.content h3{
+    border-bottom:1px dotted var(--s-rule);padding-bottom:1.4cqw;margin-bottom:1.8cqw;
+  }
+  [data-deck-theme="orchard"] .deck-slide.content li::before{
+    border-radius:1px;transform:rotate(45deg);
+  }
+  [data-deck-theme="orchard"] .slide-foot{
+    display:block;position:absolute;left:0;top:5cqw;z-index:3;
+    background:var(--s-accent);color:var(--s-bg);padding:0.8cqw 1.4cqw 0.8cqw 1.1cqw;
+    border-radius:0 3px 3px 0;font-family:'IBM Plex Mono',monospace;
+    font-size:clamp(0.4rem,1.05cqw,0.66rem);letter-spacing:.1em;
+  }
+  [data-deck-theme="orchard"] .slide-foot .foot-title{display:none}
+  [data-deck-theme="orchard"] .slide-foot .foot-no{color:inherit}
+  [data-deck-theme="orchard"] .deck-slide.split{padding:0}
+  [data-deck-theme="orchard"] .deck-slide.split .slide-text{padding:6cqw 4cqw 6cqw 10cqw}
+  [data-deck-theme="orchard"] .slide-media{margin:4cqw;border:1px solid var(--s-rule)}
+
+  /* ------------------------------------------------------------------
+     PLUM — soft luxe. An arch-topped photograph, one rule holding the whole
+     list rather than a marker per line, and an italic serif heading.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="plum"] .deck-slide.content{padding:7cqw}
+  [data-deck-theme="plum"] .deck-slide.content h3{font-style:italic;font-weight:450;letter-spacing:-0.005em}
+  [data-deck-theme="plum"] .deck-slide.content ul{
+    border-left:1px solid var(--s-accent);padding-left:2.6cqw;gap:1.6cqw;
+  }
+  [data-deck-theme="plum"] .deck-slide.content li::before{display:none}
+  [data-deck-theme="plum"] .deck-slide.content li{padding-left:0}
+  [data-deck-theme="plum"] .deck-slide.split{padding:0;grid-template-columns:1.1fr 0.9fr}
+  [data-deck-theme="plum"] .deck-slide.split .slide-text{padding:7cqw 5cqw}
+  /* the arch */
+  [data-deck-theme="plum"] .slide-media{
+    margin:5cqw 5cqw 0 0;border-radius:22cqw 22cqw 0 0;align-self:end;height:calc(100% - 5cqw);
+  }
+  [data-deck-theme="plum"] .deck-slide.cover .eyebrow-mini{letter-spacing:.3em}
+  [data-deck-theme="plum"] .deck-slide.statement .statement-text{font-style:italic;font-weight:450}
+  [data-deck-theme="plum"] .deck-slide.quote .quote-text{font-size:clamp(1rem,4.6cqw,2.4rem)}
+
+  /* ------------------------------------------------------------------
+     MIST — an airy card. The content floats on an inset panel above the
+     slide ground, and the bullets are pills rather than marked lines.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="mist"] .deck-slide.content{padding:7cqw;background:var(--s-quote-bg)}
+  [data-deck-theme="mist"] .deck-slide.content::before{
+    content:"";position:absolute;inset:3.4cqw;border-radius:2.4cqw;background:var(--s-bg);
+    box-shadow:0 2cqw 4cqw rgba(36,48,58,0.10);z-index:0;
+  }
+  [data-deck-theme="mist"] .deck-slide.content > *{position:relative;z-index:1}
+  [data-deck-theme="mist"] .deck-slide.content li{
+    background:var(--s-quote-bg);border-radius:99px;padding:0.9cqw 1.8cqw;align-items:center;
+  }
+  [data-deck-theme="mist"] .deck-slide.content li::before{margin-top:0}
+  [data-deck-theme="mist"] .deck-slide.content ul{gap:1.1cqw}
+  [data-deck-theme="mist"] .deck-slide.split{padding:3.4cqw;gap:3cqw;background:var(--s-quote-bg)}
+  [data-deck-theme="mist"] .deck-slide.split::before{right:47%}
+  [data-deck-theme="mist"] .deck-slide.split .slide-text{padding:4cqw}
+  [data-deck-theme="mist"] .slide-media{border-radius:2.4cqw}
+  [data-deck-theme="mist"] .deck-slide.steps .step-no{border-radius:99px}
+
+  /* ------------------------------------------------------------------
+     GRAPHITE — a blueprint. A faint grid across the slide, mono chevrons
+     for bullets, and comparison columns ruled like a table.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="graphite"] .deck-slide{--s-rule:rgba(21,29,33,0.16)}
+  [data-deck-theme="graphite"] .deck-slide.content{
+    padding:6cqw;
+    background-image:
+      repeating-linear-gradient(to right, var(--s-rule) 0 1px, transparent 1px 6cqw),
+      repeating-linear-gradient(to bottom, var(--s-rule) 0 1px, transparent 1px 6cqw);
+    background-size:100% 100%;
+  }
+  [data-deck-theme="graphite"] .deck-slide.content h3{
+    text-transform:uppercase;letter-spacing:0.04em;font-size:clamp(0.85rem,3cqw,1.6rem);
+  }
+  [data-deck-theme="graphite"] .deck-slide.content li::before{
+    content:">";width:auto;height:auto;min-width:0;min-height:0;background:none;border-radius:0;
+    color:var(--s-accent);font-family:'IBM Plex Mono',monospace;margin-top:0;
+  }
+  [data-deck-theme="graphite"] .deck-slide.content li{font-family:'Karla',system-ui,sans-serif}
+  [data-deck-theme="graphite"] .slide-media{border:1px solid var(--s-rule);border-radius:0}
+  [data-deck-theme="graphite"] .deck-slide.split{padding:0}
+  [data-deck-theme="graphite"] .deck-slide.split .slide-text{padding:6cqw 4.5cqw}
+  [data-deck-theme="graphite"] .deck-slide.compare .cmp-label{
+    border-bottom:1px solid var(--s-rule);padding-bottom:0.8cqw;color:var(--s-ink);
+  }
+  [data-deck-theme="graphite"] .deck-slide.compare .cmp-col li{
+    border-bottom:1px dotted var(--s-rule);padding-bottom:1cqw;
+  }
+  [data-deck-theme="graphite"] .slide-foot{
+    display:flex;justify-content:space-between;position:absolute;left:6cqw;right:6cqw;bottom:2.4cqw;
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.4rem,1cqw,0.64rem);
+    letter-spacing:.14em;text-transform:uppercase;color:var(--s-muted);opacity:0.8;z-index:3;
+  }
+
+  /* ------------------------------------------------------------------
+     NOIR — a title card. Letterboxed with a bar top and bottom, everything
+     centred, headings wide-tracked and set in caps.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="noir"] .deck-slide.content{
+    align-items:center;text-align:center;padding:9cqw 8cqw;
+  }
+  [data-deck-theme="noir"] .deck-slide.content::before,
+  [data-deck-theme="noir"] .deck-slide.content::after{
+    content:"";position:absolute;left:0;right:0;height:4.5cqw;background:var(--s-cover-bg);z-index:2;
+  }
+  [data-deck-theme="noir"] .deck-slide.content::before{top:0}
+  [data-deck-theme="noir"] .deck-slide.content::after{bottom:0}
+  [data-deck-theme="noir"] .deck-slide.content h3{
+    text-transform:uppercase;letter-spacing:0.18em;font-weight:450;
+    font-size:clamp(0.8rem,2.8cqw,1.5rem);
+  }
+  [data-deck-theme="noir"] .deck-slide .slide-body{text-align:center;max-width:44ch}
+  [data-deck-theme="noir"] .deck-slide.content ul{align-self:center;text-align:left;gap:1.8cqw}
+  [data-deck-theme="noir"] .deck-slide.split{grid-template-columns:1fr 1fr;padding:0}
+  [data-deck-theme="noir"] .deck-slide.split .slide-text{padding:9cqw 5cqw;align-items:center}
+  [data-deck-theme="noir"] .deck-slide.cover h3,
+  [data-deck-theme="noir"] .deck-slide.section h3{letter-spacing:0.1em;text-transform:uppercase;font-weight:450}
+  [data-deck-theme="noir"] .deck-slide.statement{text-align:center;align-items:center}
+  [data-deck-theme="noir"] .deck-slide.statement .statement-text{letter-spacing:0.06em}
+
   /* the default slide furniture is off unless a theme asks for it */
   .slide-foot{display:none}
   [data-deck-theme="orchard"] .deck-slide{
@@ -680,7 +851,10 @@
   .deck-slide.content ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.5cqw}
   .deck-slide.content li{display:flex;gap:1.4cqw;font-size:clamp(0.6rem,1.95cqw,1rem);color:var(--s-muted);line-height:1.4}
   .deck-slide.content li::before{content:"";width:0.7cqw;height:0.7cqw;min-width:4px;min-height:4px;border-radius:50%;background:var(--s-accent);margin-top:0.62em;flex:none}
-  .deck-slide .wave-accent{position:absolute;right:-10%;bottom:-18%;width:55%;opacity:0.5;pointer-events:none}
+  /* the wave is Tide's signature, not a default: leaving it on every deck put a
+     stray teal crest through nine themes that have their own motif */
+  .deck-slide .wave-accent{display:none;position:absolute;right:-10%;bottom:-18%;width:55%;opacity:0.5;pointer-events:none}
+  [data-deck-theme="tide"] .deck-slide .wave-accent{display:block}
 
   /* split: copy on the left, photograph on the right */
   /* the photograph bleeds to the slide edges — floating it in padding leaves
@@ -3526,6 +3700,85 @@ Q4,4390"></textarea>
           slide.addText(folio, {
             x: 6.4, y: 0.15, w: 3.2, h: 2.2, fontSize: 150, bold: true,
             color: theme.accent, transparency: 91, align: 'right', fontFace: 'Arial'
+          });
+          return;
+        }
+
+        if (isFullBleed) return;
+
+        if (deckTheme === 'tide') {
+          // the wave crest along the foot
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 5.42, w: '100%', h: 0.2,
+            fill: { color: theme.accent, transparency: 62 }, line: { width: 0 }
+          });
+          return;
+        }
+
+        if (deckTheme === 'dune') {
+          // the hairlines that hold the heading
+          [1.02, 1.92].forEach(function (y) {
+            slide.addShape(pptx.ShapeType.line, {
+              x: 1.4, y: y, w: 7.2, h: 0,
+              line: { color: theme.ink, width: 0.5, transparency: 70 }
+            });
+          });
+          return;
+        }
+
+        if (deckTheme === 'orchard') {
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0.55, w: 0.62, h: 0.3,
+            fill: { color: theme.accent }, line: { width: 0 }
+          });
+          slide.addText(folio, {
+            x: 0, y: 0.55, w: 0.62, h: 0.3, fontSize: 8,
+            color: theme.bg, fontFace: 'Consolas', align: 'center', charSpacing: 1
+          });
+          return;
+        }
+
+        if (deckTheme === 'plum') {
+          // the single rule that holds the list
+          slide.addShape(pptx.ShapeType.line, {
+            x: 0.78, y: 2.1, w: 0, h: 2.5,
+            line: { color: theme.accent, width: 0.75 }
+          });
+          return;
+        }
+
+        if (deckTheme === 'mist') {
+          // the floating card the content sits on
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: 0.34, y: 0.28, w: 9.32, h: 5.07, rectRadius: 0.16,
+            fill: { color: theme.bg }, line: { color: theme.quote, width: 1 }
+          });
+          return;
+        }
+
+        if (deckTheme === 'graphite') {
+          slide.addShape(pptx.ShapeType.line, {
+            x: 0.6, y: 5.05, w: 8.8, h: 0,
+            line: { color: theme.muted, width: 0.5, transparency: 75 }
+          });
+          slide.addText(String((deckSlides[0] && deckSlides[0].title) || '').toUpperCase(), {
+            x: 0.6, y: 5.1, w: 6.0, h: 0.26, fontSize: 7,
+            color: theme.muted, fontFace: 'Consolas', charSpacing: 1.6
+          });
+          slide.addText(folio, {
+            x: 7.6, y: 5.1, w: 1.8, h: 0.26, fontSize: 7,
+            color: theme.muted, fontFace: 'Consolas', align: 'right', charSpacing: 1.6
+          });
+          return;
+        }
+
+        if (deckTheme === 'noir') {
+          // letterbox bars
+          [0, 5.315].forEach(function (y) {
+            slide.addShape(pptx.ShapeType.rect, {
+              x: 0, y: y, w: '100%', h: 0.31,
+              fill: { color: theme.cover }, line: { width: 0 }
+            });
           });
         }
       }
