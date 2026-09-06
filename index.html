@@ -380,6 +380,15 @@
     --s-bg:#151a1c; --s-ink:#eef3f2; --s-muted:#a3b5b4; --s-accent:#63d6bd;
     --s-quote-bg:#1c2325; --s-cover-bg:#0b0f10;
   }
+  [data-deck-theme="press"] .deck-slide{
+    --s-bg:#fbfaf8; --s-ink:#111111; --s-muted:#4a4a48; --s-accent:#c8102e;
+    --s-quote-bg:#efece7; --s-cover-bg:#111111;
+    --s-display:'Fraunces',Georgia,serif;
+  }
+  [data-deck-theme="orchard"] .deck-slide{
+    --s-bg:#f6f4ef; --s-ink:#2f3a24; --s-muted:#5f6b4f; --s-accent:#7a9a4e;
+    --s-quote-bg:#e8ebdf; --s-cover-bg:#26301d;
+  }
 
   .theme-pick{display:flex;gap:5px;margin-right:4px}
   .theme-pick button{
@@ -392,15 +401,19 @@
   .theme-pick button[data-theme="dune"]{background:linear-gradient(135deg,#c2643c,#2f2418)}
   .theme-pick button[data-theme="graphite"]{background:linear-gradient(135deg,#4d7180,#131a1d)}
   .theme-pick button[data-theme="noir"]{background:linear-gradient(135deg,#63d6bd,#0b0f10)}
+  .theme-pick button[data-theme="press"]{background:linear-gradient(135deg,#c8102e,#111111)}
+  .theme-pick button[data-theme="orchard"]{background:linear-gradient(135deg,#7a9a4e,#26301d)}
 
   .deck-slide.cover{background:var(--s-cover-bg);color:#fff;align-items:center;justify-content:center;text-align:center;gap:2cqw}
   .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.8rem);letter-spacing:.12em;text-transform:uppercase;color:var(--s-accent);position:relative;z-index:2}
   .deck-slide.cover h3{font-family:var(--s-display);font-weight:600;font-size:clamp(1.3rem,6.2cqw,3rem);color:#fff;text-wrap:balance;margin:0;position:relative;z-index:2}
   .deck-slide.cover p{color:rgba(255,255,255,0.78);font-size:clamp(0.72rem,2.3cqw,1.2rem);margin:0;max-width:80%;position:relative;z-index:2}
-  .deck-slide.cover .cover-media{position:absolute;inset:0;z-index:0}
-  .deck-slide.cover .cover-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
-  .deck-slide.cover .cover-media[data-state="ready"] img{opacity:1}
-  .deck-slide.cover .cover-scrim{position:absolute;inset:0;z-index:1;
+  /* shared by every full-bleed layout — cover, section and statement — not
+     scoped to .cover, or the others show an unpositioned image at natural size */
+  .deck-slide .cover-media{position:absolute;inset:0;z-index:0}
+  .deck-slide .cover-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
+  .deck-slide .cover-media[data-state="ready"] img{opacity:1}
+  .deck-slide .cover-scrim{position:absolute;inset:0;z-index:1;
     background:linear-gradient(180deg, rgba(6,26,28,0.55) 0%, rgba(6,26,28,0.86) 100%)}
 
   .deck-slide.content{background:var(--s-bg);justify-content:center}
@@ -456,6 +469,53 @@
     color:var(--s-ink);line-height:1;margin:0;font-variant-numeric:tabular-nums;text-wrap:balance;
   }
   .deck-slide.stat .stat-support{font-size:clamp(0.62rem,2cqw,1.05rem);color:var(--s-muted);line-height:1.45;margin:0;max-width:85%}
+
+  /* section divider: a numeral, a name, and air */
+  .deck-slide.section{background:var(--s-cover-bg);color:#fff;justify-content:flex-end;gap:1cqw;padding:6cqw}
+  .deck-slide.section .section-no{
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.6rem,2cqw,1.1rem);
+    color:var(--s-accent);letter-spacing:.16em;position:relative;z-index:2;
+  }
+  .deck-slide.section h3{
+    font-family:var(--s-display);font-weight:600;font-size:clamp(1.1rem,5.6cqw,2.7rem);
+    color:#fff;margin:0;text-wrap:balance;position:relative;z-index:2;
+  }
+
+  /* statement: one line, nothing else on the slide */
+  .deck-slide.statement{background:var(--s-cover-bg);align-items:center;justify-content:center;text-align:center;padding:7cqw}
+  .deck-slide.statement .statement-text{
+    font-family:var(--s-display);font-weight:600;font-size:clamp(1.1rem,5cqw,2.5rem);
+    color:#fff;line-height:1.3;margin:0;text-wrap:balance;position:relative;z-index:2;
+  }
+
+  /* steps: order is the content, so the numerals carry it */
+  .deck-slide.steps .step-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.6cqw;counter-reset:none}
+  .deck-slide.steps .step-list li{display:flex;align-items:flex-start;gap:1.8cqw}
+  .deck-slide.steps .step-no{
+    flex:none;width:2.9cqw;height:2.9cqw;min-width:17px;min-height:17px;border-radius:50%;
+    background:var(--s-accent);color:var(--s-bg);display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.5rem,1.5cqw,0.8rem);font-weight:500;
+    margin-top:0.15em;
+  }
+  .deck-slide.steps .step-text{font-size:clamp(0.62rem,2cqw,1rem);color:var(--s-muted);line-height:1.45}
+
+  /* compare: two columns, one rule, equal weight */
+  .deck-slide.compare .cmp-cols{display:grid;grid-template-columns:1fr auto 1fr;gap:2.6cqw;flex:1;min-height:0;align-items:center}
+  .deck-slide.compare .cmp-rule{width:1px;background:var(--s-muted);opacity:0.25;align-self:stretch}
+  .deck-slide.compare .cmp-col{display:flex;flex-direction:column;gap:1.4cqw;min-width:0}
+  .deck-slide.compare .cmp-label{
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.5rem,1.5cqw,0.82rem);
+    letter-spacing:.1em;text-transform:uppercase;color:var(--s-accent);
+  }
+  .deck-slide.compare .cmp-col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.2cqw}
+  .deck-slide.compare .cmp-col li{
+    font-size:clamp(0.58rem,1.85cqw,0.95rem);color:var(--s-muted);line-height:1.4;
+    display:flex;gap:1.2cqw;
+  }
+  .deck-slide.compare .cmp-col li::before{
+    content:"";width:0.6cqw;height:0.6cqw;min-width:3px;min-height:3px;border-radius:50%;
+    background:var(--s-accent);margin-top:0.62em;flex:none;
+  }
 
   /* quote layout: one line, set large */
   .deck-slide.quote{background:var(--s-quote-bg);justify-content:center;gap:2.4cqw}
@@ -952,6 +1012,8 @@
               <button type="button" data-theme="dune" title="Dune" aria-label="Dune theme"></button>
               <button type="button" data-theme="graphite" title="Graphite" aria-label="Graphite theme"></button>
               <button type="button" data-theme="noir" title="Noir" aria-label="Noir theme"></button>
+              <button type="button" data-theme="press" title="Press" aria-label="Press theme"></button>
+              <button type="button" data-theme="orchard" title="Orchard" aria-label="Orchard theme"></button>
             </div>
             <span id="slideCounter" class="slide-counter tabular">1 / 5</span>
             <button type="button" class="deck-icon-btn" id="redoSlideBtn" aria-label="Regenerate this slide" title="Regenerate this slide">&#8635;</button>
@@ -1469,7 +1531,7 @@ Q4,4390"></textarea>
   }
 
   // 'chart' is never produced by the model — only by pasting your own data
-  var LAYOUTS = ['bullets','stat','quote','chart'];
+  var LAYOUTS = ['bullets','stat','quote','chart','steps','compare','section','statement'];
   function normalizeLayout(v){
     v = String(v || '').trim().toLowerCase();
     return LAYOUTS.indexOf(v) === -1 ? 'bullets' : v;
@@ -1500,6 +1562,56 @@ Q4,4390"></textarea>
         '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
         (slide.body ? '<p class="slide-body" data-field="body"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
         '<div class="chart-holder">' + chartSvg(slide.chart) + '</div>' +
+        '</div>';
+    }
+
+    // a divider announcing the next part: numeral, name, photograph behind
+    if (layout === 'section') {
+      var sectionNo = 0;
+      for (var si = 1; si <= seed && si < deckSlides.length; si++) {
+        if (normalizeLayout(deckSlides[si].layout) === 'section') sectionNo++;
+      }
+      return '<div class="deck-slide section' + (slide.image ? ' has-image' : '') + '">' +
+        (slide.image ? mediaMarkup(slide.image, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
+        '<span class="section-no">' + (sectionNo < 10 ? '0' : '') + sectionNo + '</span>' +
+        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        '</div>';
+    }
+
+    // one line, full bleed, nothing else competing with it
+    if (layout === 'statement') {
+      return '<div class="deck-slide statement' + (slide.image ? ' has-image' : '') + '">' +
+        (slide.image ? mediaMarkup(slide.image, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
+        '<p class="statement-text" data-field="bullet" data-index="0"' + ed + '>' +
+        escapeHtml(bullets[0] || '') + '</p>' +
+        '</div>';
+    }
+
+    if (layout === 'steps') {
+      var stepItems = bullets.map(function(b, i){
+        return '<li><span class="step-no">' + (i + 1) + '</span>' +
+          '<span class="step-text" data-field="bullet" data-index="' + i + '"' + ed + '>' +
+          escapeHtml(b) + '</span></li>';
+      }).join('');
+      return '<div class="deck-slide content steps">' +
+        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        (slide.body ? '<p class="slide-body" data-field="body"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+        '<ol class="step-list">' + stepItems + '</ol>' +
+        '</div>';
+    }
+
+    if (layout === 'compare') {
+      var col = function(sideKey){
+        var side = slide[sideKey] || { label: '', points: [] };
+        return '<div class="cmp-col">' +
+          '<span class="cmp-label" data-field="' + sideKey + 'Label"' + ed + '>' + escapeHtml(side.label || '') + '</span>' +
+          '<ul>' + (side.points || []).map(function(p, i){
+            return '<li data-field="' + sideKey + 'Point" data-index="' + i + '"' + ed + '>' + escapeHtml(p) + '</li>';
+          }).join('') + '</ul></div>';
+      };
+      return '<div class="deck-slide content compare">' +
+        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        '<div class="cmp-cols">' + col('left') + '<div class="cmp-rule"></div>' + col('right') + '</div>' +
         '</div>';
     }
 
@@ -1663,6 +1775,16 @@ Q4,4390"></textarea>
     if (field === 'title') { slide.title = text; updateThumbTitle(activeIndex); }
     else if (field === 'tagline') { slide.tagline = text; }
     else if (field === 'body') { slide.body = text; }
+    else if (field === 'leftLabel' || field === 'rightLabel') {
+      var lk = field === 'leftLabel' ? 'left' : 'right';
+      if (!slide[lk]) slide[lk] = { label: '', points: [] };
+      slide[lk].label = text;
+    }
+    else if (field === 'leftPoint' || field === 'rightPoint') {
+      var pk = field === 'leftPoint' ? 'left' : 'right';
+      var pi = parseInt(el.getAttribute('data-index'), 10);
+      if (slide[pk] && !isNaN(pi)) slide[pk].points[pi] = text;
+    }
     else if (field === 'heading') { slide.heading = text; updateThumbTitle(activeIndex); }
     else if (field === 'bullet') {
       var idx = parseInt(el.getAttribute('data-index'), 10);
@@ -1773,7 +1895,19 @@ Q4,4390"></textarea>
     } else if (key === 'HEADING') {
       slide.heading = value;
       updateThumbTitle(deckSlides.length - 1);
+    } else if (key === 'LEFT' || key === 'RIGHT') {
+      // a compare slide: bullets from here on belong to the side just named
+      var side = key === 'LEFT' ? 'left' : 'right';
+      slide[side] = { label: value, points: [] };
+      slide.compareSide = side;
+      renderStage();
+      return null;
     } else if (key === 'BULLET') {
+      if (slide.compareSide && slide[slide.compareSide]) {
+        slide[slide.compareSide].points.push(value);
+        renderStage();
+        return null;
+      }
       slide.bullets.push(value);
       // patch the list in place so the existing slide doesn't re-animate
       if (!streamPendingRender && normalizeLayout(slide.layout) === 'bullets') {
@@ -2341,6 +2475,12 @@ Q4,4390"></textarea>
       var out = [(s.heading || '')];
       if (s.body) out.push(s.body);
       (s.bullets || []).forEach(function(b){ out.push('- ' + b); });
+      ['left','right'].forEach(function(k){
+        if (s[k]) {
+          out.push(s[k].label + ':');
+          (s[k].points || []).forEach(function(p){ out.push('- ' + p); });
+        }
+      });
       // a rewritten deck must carry the real figures across, not re-guess them
       if (s.chart && s.chart.values) {
         out.push('Data (' + (s.chart.seriesName || 'value') + '): ' +
@@ -2768,9 +2908,13 @@ Q4,4390"></textarea>
     // resolve every image to bytes first
     var jobs = deckSlides.map(function(s){
       if (!s.image) return Promise.resolve(null);
+      // full-bleed layouts become slide backgrounds, which PptxGenJS files as
+      // .png whatever the bytes are — so they must actually be PNG
+      var lay = normalizeLayout(s.layout);
+      var isBackground = s.type === 'cover' || lay === 'section' || lay === 'statement';
       return Promise.resolve(resolveImage(s.image)).then(function(found){
         if (!found || !found.url) return null;
-        return fetchImageData(found.url, theme.accent, s.type === 'cover' ? 'image/png' : 'image/jpeg');
+        return fetchImageData(found.url, theme.accent, isBackground ? 'image/png' : 'image/jpeg');
       }).catch(function(){ return null; });
     });
 
@@ -2846,6 +2990,67 @@ Q4,4390"></textarea>
               return { text: l + ': ' + s.chart.values[i], options: { bullet: true, breakLine: true } };
             }), { x: 0.7, y: 1.7, w: 8.6, h: 3.3, fontSize: 13, color: theme.muted, fontFace: 'Calibri' });
           }
+          return;
+        }
+
+        if (layout === 'section' || layout === 'statement') {
+          slide.background = pic ? { data: pic } : { color: theme.cover };
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: '100%', h: '100%',
+            fill: { color: pic ? '061A1C' : theme.cover, transparency: pic ? 30 : 0 },
+            line: { color: pic ? '061A1C' : theme.cover, width: 0 }
+          });
+          if (layout === 'section') {
+            slide.addText(String(s.heading || ''), {
+              x: 0.8, y: 3.4, w: 8.4, h: 1.0,
+              fontSize: 34, bold: true, color: 'FFFFFF', fontFace: display
+            });
+          } else {
+            slide.addText(String((s.bullets || [])[0] || ''), {
+              x: 1.0, y: 1.9, w: 8.0, h: 1.8,
+              fontSize: 30, bold: true, color: 'FFFFFF', fontFace: display, align: 'center'
+            });
+          }
+          return;
+        }
+
+        if (layout === 'steps') {
+          slide.background = { color: theme.bg };
+          slide.addText(String(s.heading || ''), {
+            x: 0.7, y: 0.7, w: 8.6, h: 0.6, fontSize: 26, bold: true, color: theme.ink, fontFace: display
+          });
+          if (s.body) {
+            slide.addText(String(s.body), {
+              x: 0.7, y: 1.35, w: 8.6, h: 0.5, fontSize: 13, color: theme.muted, fontFace: 'Calibri'
+            });
+          }
+          slide.addText(bullets.map(function(b, bi){
+            return { text: (bi + 1) + '.  ' + String(b), options: { breakLine: true } };
+          }), {
+            x: 0.9, y: 2.0, w: 8.2, h: 2.9, fontSize: 14, color: theme.muted,
+            fontFace: 'Calibri', lineSpacingMultiple: 1.6, valign: 'top'
+          });
+          return;
+        }
+
+        if (layout === 'compare') {
+          slide.background = { color: theme.bg };
+          slide.addText(String(s.heading || ''), {
+            x: 0.7, y: 0.7, w: 8.6, h: 0.6, fontSize: 26, bold: true, color: theme.ink, fontFace: display
+          });
+          [['left', 0.7], ['right', 5.2]].forEach(function(pair){
+            var side = s[pair[0]] || { label: '', points: [] };
+            slide.addText(String(side.label || '').toUpperCase(), {
+              x: pair[1], y: 1.5, w: 4.1, h: 0.4, fontSize: 11, color: theme.accent,
+              fontFace: 'Consolas', charSpacing: 1.5
+            });
+            slide.addText((side.points || []).map(function(p){
+              return { text: String(p), options: { bullet: { code: '2022' }, breakLine: true } };
+            }), {
+              x: pair[1], y: 2.0, w: 4.1, h: 2.9, fontSize: 13, color: theme.muted,
+              fontFace: 'Calibri', lineSpacingMultiple: 1.3, valign: 'top'
+            });
+          });
           return;
         }
 
@@ -3195,6 +3400,8 @@ Q4,4390"></textarea>
         var target = deckSlides[index];
         if (!target) return;
         if (data.heading) target.heading = data.heading;
+        if (data.left) target.left = data.left;
+        if (data.right) target.right = data.right;
         if (Array.isArray(data.bullets) && data.bullets.length) target.bullets = data.bullets.slice(0, 5);
         if (typeof data.body === 'string') target.body = data.body;
         if (data.image) target.image = data.image;

@@ -4,7 +4,7 @@
 export const config = { runtime: 'edge' };
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const LAYOUTS = ['bullets', 'stat', 'quote'];
+const LAYOUTS = ['bullets', 'stat', 'quote', 'steps', 'compare', 'section', 'statement'];
 
 // Kept deliberately short and layout-specific: a longer, rule-heavy prompt
 // makes this model reason for hundreds of tokens before writing anything.
@@ -44,6 +44,24 @@ function buildPrompt({ topic, title, heading, layout, audience, tone, source, vo
     quote:
       'LAYOUT: quote\nHEADING: <who said it, under 8 words>\n' +
       'BULLET: <the quoted line, under 20 words>',
+    steps:
+      'LAYOUT: steps\nHEADING: <heading, under 6 words>\n' +
+      'BODY: <one sentence saying what the sequence achieves>\n' +
+      'BULLET: <step, under 12 words>\nBULLET: <step, under 12 words>\n' +
+      'BULLET: <step, under 12 words>',
+    compare:
+      'LAYOUT: compare\nHEADING: <heading, under 6 words>\n' +
+      'LEFT: <label, under 4 words>\n' +
+      'BULLET: <point, under 12 words>\nBULLET: <point, under 12 words>\n' +
+      'RIGHT: <label, under 4 words>\n' +
+      'BULLET: <point, under 12 words>\nBULLET: <point, under 12 words>',
+    section:
+      'LAYOUT: section\nHEADING: <the name of this part, under 5 words>\n' +
+      'IMAGE: <2 to 5 plain searchable words naming a photographable subject>',
+    statement:
+      'LAYOUT: statement\n' +
+      'BULLET: <one line worth putting on a wall, under 16 words>\n' +
+      'IMAGE: <2 to 5 plain searchable words naming a photographable subject>',
     bullets:
       'LAYOUT: bullets\nHEADING: <heading, under 6 words>\n' +
       'BODY: <1 to 2 sentences, 20 to 40 words>\n' +
@@ -74,11 +92,18 @@ function json(obj, status) {
   });
 }
 
-const MAX_BULLETS = { bullets: 5, stat: 2, quote: 1 };
+const MAX_BULLETS = { bullets: 5, stat: 2, quote: 1, steps: 5, compare: 6, section: 0, statement: 1 };
+
+// Which layouts legitimately carry which fields — a section slide has no
+// bullets and a statement has no heading, so a blanket "strip everything that
+// isn't bullets" throws away valid output.
+const KEEPS_BODY = ['bullets', 'steps'];
+const KEEPS_IMAGE = ['bullets', 'section', 'statement'];
 
 function parseSlide(text) {
   const out = { layout: 'bullets', heading: '', body: '', image: '', bullets: [] };
   let seenLayout = false;
+  let side = null;
   for (const raw of String(text).split('\n')) {
     const line = raw.trim();
     const match = line.match(/^([A-Z]+):\s*(.*)$/);
@@ -95,13 +120,29 @@ function parseSlide(text) {
       if (!out.body) out.body = value;
     } else if (key === 'IMAGE') {
       if (!out.image) out.image = value;
+    } else if (key === 'LEFT' || key === 'RIGHT') {
+      side = key === 'LEFT' ? 'left' : 'right';
+      out[side] = { label: value, points: [] };
     } else if (key === 'BULLET' && value) {
-      out.bullets.push(value);
+      if (side && out[side]) out[side].points.push(value);
+      else out.bullets.push(value);
     }
   }
   out.bullets = out.bullets.slice(0, MAX_BULLETS[out.layout] || 5);
-  if (out.layout !== 'bullets') { out.body = ''; out.image = ''; }
+  if (!KEEPS_BODY.includes(out.layout)) out.body = '';
+  if (!KEEPS_IMAGE.includes(out.layout)) out.image = '';
   return out;
+}
+
+// A regenerated slide is usable if it carries whatever its own layout needs.
+function slideIsUsable(slide) {
+  if (slide.layout === 'section') return !!slide.heading;
+  if (slide.layout === 'statement') return slide.bullets.length > 0;
+  if (slide.layout === 'compare') {
+    return !!slide.heading && !!slide.left && !!slide.right &&
+      slide.left.points.length > 0 && slide.right.points.length > 0;
+  }
+  return !!slide.heading && slide.bullets.length > 0;
 }
 
 export default async function handler(request) {
@@ -174,7 +215,7 @@ export default async function handler(request) {
   if (!content) return json({ error: 'empty_completion' }, 502);
 
   const slide = parseSlide(content);
-  if (!slide.heading || slide.bullets.length === 0) {
+  if (!slideIsUsable(slide)) {
     return json({ error: 'invalid_json', message: 'Model returned an unusable slide.' }, 502);
   }
 

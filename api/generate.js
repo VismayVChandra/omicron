@@ -122,17 +122,57 @@ LAYOUT: stat
 HEADING: <heading, under 6 words>
 BULLET: <one striking number, under 8 words>
 BULLET: <supporting point, under 18 words>
+===
+LAYOUT: steps
+HEADING: <heading, under 6 words>
+BODY: <one sentence saying what the sequence achieves>
+BULLET: <step, under 12 words>
+BULLET: <step, under 12 words>
+BULLET: <step, under 12 words>
+===
+LAYOUT: compare
+HEADING: <heading, under 6 words>
+LEFT: <label for the first side, under 4 words>
+BULLET: <point about the first side, under 12 words>
+BULLET: <point about the first side, under 12 words>
+RIGHT: <label for the second side, under 4 words>
+BULLET: <point about the second side, under 12 words>
+BULLET: <point about the second side, under 12 words>
+===
+LAYOUT: section
+HEADING: <the name of the part that follows, under 5 words>
+IMAGE: <2 to 5 plain words naming a photographable subject>
+===
+LAYOUT: statement
+BULLET: <one line worth putting on a wall, under 16 words>
+IMAGE: <2 to 5 plain words naming a photographable subject>
 
 Rules:
 - Begin every slide with a line of exactly ===
-- LAYOUT is one of: bullets, stat, quote
-- Use stat only where a single number genuinely carries the point, and quote only
-  where one memorable line does (BULLET is the line, HEADING is who said it).
-  At most one of each, and skip them entirely when they don't suit the subject.
+- LAYOUT is one of: bullets, stat, quote, steps, compare, section, statement
+- Vary the layouts. A deck where every slide is "bullets" is a wall of text, and
+  one that cycles through every layout for its own sake is a circus. Pick the
+  layout the content actually wants:
+    steps     — a real sequence or process, where order matters
+    compare   — two things genuinely set against each other (before/after,
+                us/them, option A/option B)
+    section   — a divider announcing the next part of a longer deck
+    statement — the single line you would want left on screen in silence
+    stat      — one number that carries the whole point
+    quote     — one memorable line someone said
+    bullets   — everything else
+- Use stat, quote, statement and compare at most once each. Use section only in a
+  deck of 7 or more slides, at most twice, and never as the last slide. Skip any
+  of them entirely when the subject does not call for it — at least half the
+  slides should still be bullets.
 - bullets: a BODY line then 3 to 5 BULLET lines. stat: exactly 2 BULLET lines and
-  no BODY. quote: exactly 1 BULLET line and no BODY.
-- IMAGE: give one to the cover and to every bullets slide. Never on stat or quote
-  slides. It is used to search a photo library, so write plain searchable nouns
+  no BODY. quote: exactly 1 BULLET line and no BODY. steps: a BODY line then 3 to
+  5 BULLET lines in order. compare: a LEFT label then its BULLET lines, then a
+  RIGHT label then its BULLET lines, 2 to 3 each. section: a HEADING and an IMAGE
+  only. statement: exactly 1 BULLET line and an IMAGE, no HEADING.
+- IMAGE: give one to the cover, to every bullets slide, and to every section and
+  statement slide (they are shown full-bleed behind the text, so they matter
+  most there). Never on stat, quote, steps or compare slides. It is used to search a photo library, so write plain searchable nouns
   for a thing that can be photographed — "coral reef underwater", "marathon
   runners road", "hospital waiting room". No adjectives about mood or lighting,
   no abstractions ("growth", "success"), no diagrams, charts or logos.
@@ -163,8 +203,8 @@ ${formatSpec(opts)}
 
 - Write one slide per numbered section above — no more, no fewer — keeping each
   section's wording as its HEADING, exactly as written.
-- Use only the bullets and stat layouts here. Do not use the quote layout: its
-  HEADING is an attribution, which would overwrite the approved section name.${voiceCoda(opts)}`;
+- Every slide's HEADING must stay the approved section name, so do not use the
+  quote or statement layouts here — those carry no heading of their own.${voiceCoda(opts)}`;
   }
 
   return `Draft ${noun} about: "${topic}".

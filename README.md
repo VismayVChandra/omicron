@@ -41,6 +41,20 @@ All run on the Edge runtime and use `openai/gpt-oss-120b` with
 without that setting it spends its whole token budget thinking and returns
 nothing.
 
+## Slide layouts
+
+Eight of them: a cover, `bullets` (split with a photograph when there is one),
+`steps` for a real sequence, `compare` for two things set against each other,
+`section` as a full-bleed divider in longer decks, `statement` for the one line
+worth leaving on screen alone, `stat` for a single number, `quote`, and `chart`
+from your own data. The model picks per slide and is told to keep at least half
+of them `bullets` — cycling through every layout for its own sake is as bad as
+using one for everything.
+
+Six deck themes: Tide, Dune, Graphite, Noir, Press and Orchard. They are token
+sets on `.deck-slide`, separate from the site's own palette, and travel with a
+deck into saved drafts, share links and both exports.
+
 ## Charts
 
 Chart slides come from data you paste, never from the model. The CSV is parsed
