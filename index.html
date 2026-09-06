@@ -486,6 +486,120 @@
     border-radius:0;background:var(--s-ink);color:var(--s-bg);font-weight:600;
   }
 
+  /* ------------------------------------------------------------------
+     AZURE — a consultancy deck. Gridded and precise: an accent bar down the
+     left edge of every content slide, a short rule under each heading,
+     square bullet markers, a keyline of accent along the photograph, and a
+     numbered chip in the corner. Where Press is a newspaper, this is a
+     board pack.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="azure"] .deck-slide{--s-rule:rgba(15,36,64,0.16)}
+  [data-deck-theme="azure"] .deck-slide.content::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:1.5cqw;min-width:5px;
+    background:var(--s-accent);z-index:3;
+  }
+  [data-deck-theme="azure"] .deck-slide.content{padding:6cqw 6cqw 6cqw 9cqw}
+  [data-deck-theme="azure"] .deck-slide.content h3{
+    letter-spacing:-0.015em;margin-bottom:0;
+  }
+  [data-deck-theme="azure"] .deck-slide.content h3::after{
+    content:"";display:block;width:8cqw;height:0.55cqw;min-height:2px;
+    background:var(--s-accent);margin:1.5cqw 0 2cqw;
+  }
+  [data-deck-theme="azure"] .deck-slide .slide-body{max-width:50ch}
+  /* square markers, not round */
+  [data-deck-theme="azure"] .deck-slide.content li::before{border-radius:0}
+  [data-deck-theme="azure"] .deck-slide.split{padding:0;grid-template-columns:1.08fr 0.92fr}
+  [data-deck-theme="azure"] .deck-slide.split .slide-text{padding:6cqw 5cqw 6cqw 9cqw}
+  [data-deck-theme="azure"] .slide-media{border-left:0.7cqw solid var(--s-accent)}
+  /* a numbered chip rather than a running foot */
+  [data-deck-theme="azure"] .slide-foot{
+    display:block;position:absolute;right:4cqw;bottom:3.4cqw;z-index:3;
+    font-family:'IBM Plex Mono',monospace;font-size:clamp(0.42rem,1.1cqw,0.7rem);
+  }
+  [data-deck-theme="azure"] .slide-foot .foot-title{display:none}
+  [data-deck-theme="azure"] .slide-foot .foot-no{
+    display:inline-block;border:1px solid var(--s-rule);border-radius:2px;
+    padding:0.5cqw 1.1cqw;color:var(--s-muted);letter-spacing:.1em;
+  }
+  [data-deck-theme="azure"] .deck-slide.split .slide-foot{right:auto;left:9cqw}
+  /* cover: an accent chip over the title, set to the bottom left */
+  [data-deck-theme="azure"] .deck-slide.cover{align-items:flex-start;justify-content:flex-end;text-align:left;padding:7cqw}
+  [data-deck-theme="azure"] .deck-slide.cover .eyebrow-mini{
+    background:var(--s-accent);color:#fff;padding:0.7cqw 1.5cqw;letter-spacing:.16em;
+  }
+  [data-deck-theme="azure"] .deck-slide.cover p{max-width:38ch}
+  [data-deck-theme="azure"] .deck-slide.section{padding:7cqw 7cqw 7cqw 9cqw;justify-content:center}
+  [data-deck-theme="azure"] .deck-slide.section::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:1.5cqw;background:var(--s-accent);z-index:2;
+  }
+  [data-deck-theme="azure"] .deck-slide.statement{align-items:flex-start;text-align:left;padding:8cqw}
+  [data-deck-theme="azure"] .deck-slide.statement .statement-text::after{
+    content:"";display:block;width:10cqw;height:0.6cqw;background:var(--s-accent);margin-top:2.4cqw;
+  }
+  [data-deck-theme="azure"] .deck-slide.compare .cmp-label{
+    background:var(--s-accent);color:#fff;padding:0.7cqw 1.2cqw;align-self:flex-start;
+  }
+  [data-deck-theme="azure"] .deck-slide.steps .step-no{border-radius:2px}
+  [data-deck-theme="azure"] .deck-slide.stat .stat-value::after{
+    content:"";display:block;width:7cqw;height:0.6cqw;background:var(--s-accent);margin-top:1.6cqw;
+  }
+
+  /* ------------------------------------------------------------------
+     AMBER — a keynote on a dark stage. No rules and no furniture: oversized
+     type, a huge ghosted slide numeral behind the content, bullets carried
+     on accent stems instead of markers, and photographs run to the edge.
+     ------------------------------------------------------------------ */
+  [data-deck-theme="amber"] .deck-slide.content{padding:8cqw}
+  [data-deck-theme="amber"] .deck-slide.content h3{
+    font-weight:700;letter-spacing:-0.03em;font-size:clamp(1.1rem,4.6cqw,2.4rem);
+    margin-bottom:2.6cqw;position:relative;z-index:2;
+  }
+  [data-deck-theme="amber"] .deck-slide .slide-body{
+    font-size:clamp(0.64rem,2.1cqw,1.05rem);max-width:44ch;position:relative;z-index:2;
+  }
+  /* stems, not dots */
+  [data-deck-theme="amber"] .deck-slide.content li{
+    border-left:0.5cqw solid var(--s-accent);padding-left:2cqw;position:relative;z-index:2;
+    font-size:clamp(0.64rem,2.1cqw,1.05rem);
+  }
+  [data-deck-theme="amber"] .deck-slide.content li::before{display:none}
+  [data-deck-theme="amber"] .deck-slide.content ul{gap:2.2cqw}
+  /* the folio becomes a watermark */
+  [data-deck-theme="amber"] .slide-foot{
+    display:block;position:absolute;right:4cqw;top:1cqw;bottom:auto;z-index:0;pointer-events:none;
+  }
+  [data-deck-theme="amber"] .slide-foot .foot-title{display:none}
+  [data-deck-theme="amber"] .slide-foot .foot-no{
+    font-family:'Karla',system-ui,sans-serif;font-weight:700;
+    font-size:22cqw;line-height:0.8;color:var(--s-accent);opacity:0.09;
+  }
+  /* the watermark would land on the photograph, which already carries the slide */
+  [data-deck-theme="amber"] .deck-slide.split .slide-foot{display:none}
+  [data-deck-theme="amber"] .deck-slide.split{grid-template-columns:1fr 1fr;padding:0}
+  [data-deck-theme="amber"] .deck-slide.split .slide-text{padding:8cqw 6cqw}
+  [data-deck-theme="amber"] .deck-slide.cover h3{font-weight:700;letter-spacing:-0.035em}
+  [data-deck-theme="amber"] .deck-slide.cover .eyebrow-mini{letter-spacing:.28em}
+  [data-deck-theme="amber"] .deck-slide.section{justify-content:center;padding:8cqw}
+  [data-deck-theme="amber"] .deck-slide.section .section-no{
+    font-size:clamp(1.4rem,9cqw,4rem);opacity:0.5;margin-bottom:1cqw;
+  }
+  [data-deck-theme="amber"] .deck-slide.section h3{font-weight:700;letter-spacing:-0.03em}
+  [data-deck-theme="amber"] .deck-slide.statement .statement-text{
+    font-weight:700;letter-spacing:-0.03em;font-size:clamp(1.2rem,5.6cqw,2.8rem);
+  }
+  [data-deck-theme="amber"] .deck-slide.stat .stat-value{
+    color:var(--s-accent);font-weight:700;letter-spacing:-0.04em;font-size:clamp(1.8rem,10cqw,4.8rem);
+  }
+  [data-deck-theme="amber"] .deck-slide.steps .step-no{
+    border-radius:0;background:var(--s-accent);color:#141310;font-weight:700;
+  }
+  [data-deck-theme="amber"] .deck-slide.compare .cmp-label{letter-spacing:.18em}
+  [data-deck-theme="amber"] .deck-slide.compare .cmp-col li{
+    border-left:0.4cqw solid var(--s-accent);padding-left:1.6cqw;
+  }
+  [data-deck-theme="amber"] .deck-slide.compare .cmp-col li::before{display:none}
+
   /* the default slide furniture is off unless a theme asks for it */
   .slide-foot{display:none}
   [data-deck-theme="orchard"] .deck-slide{
@@ -3363,34 +3477,63 @@ Q4,4390"></textarea>
       pptx.layout = 'LAYOUT_16x9';           // 10in x 5.625in
       pptx.title = (deckSlides[0] && deckSlides[0].title) || 'Swell deck';
 
-      // A theme that only recolours the export is not a theme. Press carries its
-      // rule and running foot into the file too.
-      function pressFurniture(slide, index, lay){
-        if (deckTheme !== 'press') return;
-        if (lay === 'cover' || lay === 'section' || lay === 'statement') return;
-        slide.addShape(pptx.ShapeType.rect, {
-          x: 0, y: 0, w: '100%', h: 0.08,
-          fill: { color: theme.accent }, line: { color: theme.accent, width: 0 }
-        });
-        var deckName = (deckSlides[0] && deckSlides[0].title) || '';
-        slide.addShape(pptx.ShapeType.line, {
-          x: 0.7, y: 5.02, w: 8.6, h: 0,
-          line: { color: theme.muted, width: 0.5, transparency: 60 }
-        });
-        slide.addText(String(deckName).toUpperCase(), {
-          x: 0.7, y: 5.08, w: 6.0, h: 0.28, fontSize: 8,
-          color: theme.muted, fontFace: 'Consolas', charSpacing: 1.4
-        });
-        slide.addText((index + 1 < 10 ? '0' : '') + (index + 1), {
-          x: 7.9, y: 5.08, w: 1.4, h: 0.28, fontSize: 8,
-          color: theme.accent, fontFace: 'Consolas', align: 'right', charSpacing: 1.4
-        });
+      // A theme that only recolours the export is not a theme, so each designed
+      // theme carries its own furniture into the file: Press its rule and
+      // running foot, Azure its left bar and numbered chip, Amber its ghosted
+      // folio. Palette-only themes add nothing here, which is the difference.
+      function themeFurniture(slide, index, lay) {
+        var folio = (index + 1 < 10 ? '0' : '') + (index + 1);
+        var isFullBleed = lay === 'cover' || lay === 'section' || lay === 'statement';
+
+        if (deckTheme === 'press') {
+          if (isFullBleed) return;
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: '100%', h: 0.08,
+            fill: { color: theme.accent }, line: { color: theme.accent, width: 0 }
+          });
+          slide.addShape(pptx.ShapeType.line, {
+            x: 0.7, y: 5.02, w: 8.6, h: 0,
+            line: { color: theme.muted, width: 0.5, transparency: 60 }
+          });
+          slide.addText(String((deckSlides[0] && deckSlides[0].title) || '').toUpperCase(), {
+            x: 0.7, y: 5.08, w: 6.0, h: 0.28, fontSize: 8,
+            color: theme.muted, fontFace: 'Consolas', charSpacing: 1.4
+          });
+          slide.addText(folio, {
+            x: 7.9, y: 5.08, w: 1.4, h: 0.28, fontSize: 8,
+            color: theme.accent, fontFace: 'Consolas', align: 'right', charSpacing: 1.4
+          });
+          return;
+        }
+
+        if (deckTheme === 'azure') {
+          // the left bar runs on every slide, full-bleed ones included
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: 0.16, h: '100%',
+            fill: { color: theme.accent }, line: { color: theme.accent, width: 0 }
+          });
+          if (isFullBleed) return;
+          slide.addText(folio, {
+            x: 8.4, y: 4.95, w: 0.9, h: 0.32, fontSize: 8,
+            color: theme.muted, fontFace: 'Consolas', align: 'center', charSpacing: 1.4,
+            line: { color: theme.muted, width: 0.5, transparency: 70 }
+          });
+          return;
+        }
+
+        if (deckTheme === 'amber') {
+          if (isFullBleed) return;
+          slide.addText(folio, {
+            x: 6.4, y: 0.15, w: 3.2, h: 2.2, fontSize: 150, bold: true,
+            color: theme.accent, transparency: 91, align: 'right', fontFace: 'Arial'
+          });
+        }
       }
 
       deckSlides.forEach(function(s, i){
         var slide = pptx.addSlide();
         var pic = images[i];
-        pressFurniture(slide, i, s.type === 'cover' ? 'cover' : normalizeLayout(s.layout));
+        themeFurniture(slide, i, s.type === 'cover' ? 'cover' : normalizeLayout(s.layout));
 
         if (s.type === 'cover') {
           slide.background = pic ? { data: pic } : { color: theme.cover };
