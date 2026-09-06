@@ -24,6 +24,12 @@ length are selectable and feed every request.
   `IMAGE`) rather than JSON so the client can render each slide as it arrives.
   Accepts an approved outline and follows it exactly.
 - `api/slide.js` — regenerates a single slide, returns JSON.
+- `api/critique.js` — reads a finished deck back as its toughest audience and
+  returns what will get challenged, tied to the slides it is about.
+- `api/verify.js` — pulls the externally checkable claims out of a deck, looks
+  each up on Wikipedia (no API key needed) and reports whether the source backs
+  it, contradicts it, or does not settle it. It deliberately skips your own
+  metrics and plans, and "no source found" never means "false".
 - `api/image.js` — finds a slide photograph on Wikimedia Commons, filtering out
   diagrams and NC/ND-licensed files and widening the query if nothing matches.
 

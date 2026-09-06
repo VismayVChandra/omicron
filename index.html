@@ -522,6 +522,31 @@
 
   /* ---------- pressure test + variants ---------- */
   .deck-extras{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:18px;flex-wrap:wrap}
+  .extras-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+  /* fact check: the status colour is the whole point, so each verdict gets one */
+  .verify-panel .critique-list li{border-left-color:var(--wave)}
+  .verify-panel li[data-status="supported"]{border-left-color:var(--tide)}
+  .verify-panel li[data-status="contradicted"]{border-left-color:var(--coral)}
+  .verify-panel li[data-status="unclear"],
+  .verify-panel li[data-status="not-found"]{border-left-color:var(--line)}
+  .verify-panel .kind{color:var(--wave)}
+  .verify-panel li[data-status="supported"] .kind{color:var(--tide)}
+  .verify-panel li[data-status="contradicted"] .kind{color:var(--coral)}
+  .verify-panel li[data-status="unclear"] .kind,
+  .verify-panel li[data-status="not-found"] .kind{color:var(--ink-soft)}
+  .verify-panel .quote{
+    margin:6px 0 0;font-size:0.86rem;color:var(--ink-soft);line-height:1.45;
+    padding-left:12px;border-left:2px solid var(--line);
+  }
+  .verify-panel .src{
+    display:inline-block;margin-top:6px;font-family:'IBM Plex Mono',monospace;
+    font-size:0.7rem;color:var(--wave);
+  }
+  .verify-panel .caveat{
+    margin:16px 0 0;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+    color:var(--ink-soft);line-height:1.5;border-top:1px solid var(--line);padding-top:12px;
+  }
   .variant-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft)}
   .variant-row button{
     font:inherit;color:var(--wave);background:transparent;border:1px solid var(--line);
@@ -895,7 +920,10 @@
       <p id="genStatus2" class="editor-note">Example deck shown above &mdash; five slides, drafted about a tide-powered charging dock.</p>
 
       <div class="deck-extras">
-        <button type="button" class="btn btn-ghost" id="critiqueBtn">Pressure-test this deck</button>
+        <div class="extras-actions">
+          <button type="button" class="btn btn-ghost" id="critiqueBtn">Pressure-test this deck</button>
+          <button type="button" class="btn btn-ghost" id="verifyBtn">Check the facts</button>
+        </div>
         <div class="variant-row" id="variantRow">
           <span>Rewrite for</span>
           <button type="button" data-variant="executives" data-length="brief">a board</button>
@@ -906,6 +934,7 @@
         </div>
       </div>
       <div class="critique-panel" id="critiquePanel" hidden></div>
+      <div class="critique-panel verify-panel" id="verifyPanel" hidden></div>
     </div>
   </section>
 
@@ -1838,6 +1867,7 @@
         } else {
           resetVariants();
           if (critiquePanel) critiquePanel.hidden = true;
+          if (verifyPanel) verifyPanel.hidden = true;
           if (deckCaption) {
             deckCaption.textContent = deckSlides.length + ' slides on "' + topic +
               '." Click any line to rewrite it, drag a thumbnail to reorder, or save it with □.';
@@ -2181,6 +2211,95 @@
       });
   }
   if (critiqueBtn) critiqueBtn.addEventListener('click', runCritique);
+
+  // ---- fact check against Wikipedia -------------------------------------
+  var verifyBtn = document.getElementById('verifyBtn');
+  var verifyPanel = document.getElementById('verifyPanel');
+
+  var STATUS_LABEL = {
+    'supported': 'source found',
+    'contradicted': 'source disagrees',
+    'unclear': 'source unclear',
+    'not-found': 'no source found'
+  };
+
+  function renderVerify(claims){
+    if (!claims.length) {
+      verifyPanel.innerHTML = '<h4>Checked against Wikipedia</h4>' +
+        '<p class="lede">Nothing in this deck is the kind of claim an encyclopedia can settle — ' +
+        'it is all your own figures, plans or judgement calls. Those still need a human check.</p>';
+      verifyPanel.hidden = false;
+      return;
+    }
+    var html = '<h4>Checked against Wikipedia</h4>' +
+      '<p class="lede">' + claims.length + ' claim' + (claims.length === 1 ? '' : 's') +
+      ' looked up. Colour shows what the source said, not whether the claim is true.</p>' +
+      '<ul class="critique-list">';
+    claims.forEach(function(c){
+      var n = parseInt(c.slide, 10);
+      var where = (n >= 1 && n <= deckSlides.length)
+        ? '<button type="button" class="where" data-slide="' + (n - 1) + '">slide ' + n + '</button>'
+        : '<span class="where" style="text-decoration:none;cursor:default">deck</span>';
+      html += '<li data-status="' + escapeHtml(c.status) + '">' +
+        '<span class="kind">' + escapeHtml(STATUS_LABEL[c.status] || c.status) + '</span>' + where +
+        '<div class="detail">' +
+          '<p class="issue">' + escapeHtml(c.claim) + '</p>' +
+          (c.quote ? '<p class="quote">' + escapeHtml(c.quote) + '</p>' : '') +
+          (c.source
+            ? '<a class="src" href="' + escapeHtml(c.source.url) + '" target="_blank" rel="noopener noreferrer">' +
+              escapeHtml(c.source.title) + ' &nearr;</a>'
+            : '') +
+        '</div></li>';
+    });
+    html += '</ul><p class="caveat">Wikipedia only. It cannot check your own metrics, ' +
+      'anything internal, or events from the last few days — and “no source found” means ' +
+      'exactly that, not that the claim is wrong.</p>';
+    verifyPanel.innerHTML = html;
+    verifyPanel.hidden = false;
+
+    verifyPanel.querySelectorAll('.where[data-slide]').forEach(function(b){
+      b.addEventListener('click', function(){
+        setActive(parseInt(b.getAttribute('data-slide'), 10));
+        document.getElementById('editorSection').scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+    });
+  }
+
+  function runVerify(){
+    if (generating || deckSlides.length < 2) return;
+    setBusy(true);
+    verifyBtn.textContent = 'Looking things up…';
+    setStatus('Checking claims against Wikipedia…', 'info');
+
+    fetch('/api/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slides: deckSlides, topic: deckTopic })
+    })
+      .then(function(r){
+        if (r.status === 429) throw { code: 'rate_limited' };
+        if (!r.ok) return r.json().catch(function(){ return {}; }).then(function(b){ throw { code: b.error || 'upstream_error' }; });
+        return r.json();
+      })
+      .then(function(data){
+        if (!data || !Array.isArray(data.claims)) throw { code: 'invalid_json' };
+        renderVerify(data.claims);
+        var backed = data.claims.filter(function(c){ return c.status === 'supported'; }).length;
+        setStatus(data.claims.length
+          ? backed + ' of ' + data.claims.length + ' claims had a source behind them.'
+          : 'Nothing here an encyclopedia can settle.', 'info');
+        verifyPanel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      })
+      .catch(function(e){
+        var code = (e && e.code) || 'network_error';
+        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+      })
+      .finally(function(){
+        setBusy(false);
+        verifyBtn.textContent = 'Check the facts';
+      });
+  }
+  if (verifyBtn) verifyBtn.addEventListener('click', runVerify);
 
   // ---- share links ------------------------------------------------------
   // The whole deck rides in the URL fragment, deflated and base64url'd, so a
