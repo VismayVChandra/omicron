@@ -27,6 +27,9 @@ function deckToText(slides) {
       const lines = [`${i + 1}. ${s.heading || ''}`];
       if (s.body) lines.push(`   ${s.body}`);
       (s.bullets || []).forEach((b) => lines.push(`   - ${b}`));
+      if (s.chart && Array.isArray(s.chart.values)) {
+        lines.push('   data: ' + s.chart.labels.map((l, n) => `${l} ${s.chart.values[n]}`).join(', '));
+      }
       return lines.join('\n');
     })
     .join('\n');

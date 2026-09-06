@@ -23,7 +23,19 @@ const TONE = {
   warm: 'warm and conversational',
 };
 
-function buildPrompt({ topic, title, heading, layout, audience, tone, source }) {
+// A learned voice replaces the generic tone: concrete habits beat an adjective.
+function voiceLine(opts) {
+  const traits = Array.isArray(opts.voice) ? opts.voice.filter(function(t){ return typeof t === 'string' && t.trim(); }).slice(0, 6) : [];
+  if (!traits.length) return '';
+  const lines = traits.map((t) => '- ' + String(t).slice(0, 140));
+  return [
+    "Write in this person's own voice. These are their observed habits:",
+    ...lines,
+    'Match these habits closely — they outrank any default style.',
+  ].join('\n');
+}
+
+function buildPrompt({ topic, title, heading, layout, audience, tone, source, voice }) {
   const shape = {
     stat:
       'LAYOUT: stat\nHEADING: <heading, under 6 words>\n' +
@@ -48,7 +60,7 @@ function buildPrompt({ topic, title, heading, layout, audience, tone, source }) 
 
 Rewrite the "${heading}" slide. Same subject, fresh wording.
 
-${grounding}Write for ${AUDIENCE[audience] || AUDIENCE.general}, in a ${TONE[tone] || TONE.plain} register.
+${grounding}${voiceLine({ voice: voice }) || `Write for ${AUDIENCE[audience] || AUDIENCE.general}, in a ${TONE[tone] || TONE.plain} register.`}
 
 Output exactly these lines and nothing else:
 
@@ -125,6 +137,7 @@ export default async function handler(request) {
     audience: body.audience,
     tone: body.tone,
     source: typeof body.source === 'string' ? body.source.trim().slice(0, 6000) : '',
+    voice: body.voice,
   });
 
   let groqRes;

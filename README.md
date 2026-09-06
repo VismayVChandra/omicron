@@ -26,6 +26,9 @@ length are selectable and feed every request.
 - `api/slide.js` — regenerates a single slide, returns JSON.
 - `api/critique.js` — reads a finished deck back as its toughest audience and
   returns what will get challenged, tied to the slides it is about.
+- `api/voice.js` — reads samples of your own writing and returns your habits as
+  instructions the slide writer follows, in place of the generic tone setting.
+  Stored per browser, not per deck, and it never sees the samples again.
 - `api/verify.js` — pulls the externally checkable claims out of a deck, looks
   each up on Wikipedia (no API key needed) and reports whether the source backs
   it, contradicts it, or does not settle it. It deliberately skips your own
@@ -37,6 +40,15 @@ All run on the Edge runtime and use `openai/gpt-oss-120b` with
 `reasoning_effort: 'low'` — that model reasons silently before answering, and
 without that setting it spends its whole token budget thinking and returns
 nothing.
+
+## Charts
+
+Chart slides come from data you paste, never from the model. The CSV is parsed
+in the browser, the summary line under the heading is computed from the rows,
+and the axis ticks at round numbers. Bars always start at zero because their
+length is the quantity; a line may sit in a focused range because position, not
+length, carries the value. Exports become native PowerPoint charts with their
+data attached, so they stay editable in PowerPoint.
 
 ## Sharing and export
 

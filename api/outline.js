@@ -30,8 +30,24 @@ const TONE = {
 
 const LENGTH = { brief: '4 to 5', standard: '5 to 8', detailed: '9 to 12' };
 
+// A learned voice replaces the generic tone: concrete habits beat an adjective.
+function voiceLine(opts) {
+  const traits = Array.isArray(opts.voice) ? opts.voice.filter(function(t){ return typeof t === 'string' && t.trim(); }).slice(0, 6) : [];
+  if (!traits.length) return '';
+  const lines = traits.map((t) => '- ' + String(t).slice(0, 140));
+  return [
+    "Write in this person's own voice. These are their observed habits:",
+    ...lines,
+    'Match these habits closely — they outrank any default style.',
+  ].join('\n');
+}
+
 export function styleLine(opts) {
   const audience = AUDIENCE[opts.audience] || AUDIENCE.general;
+  const voice = voiceLine(opts);
+  if (voice) return `Write it for ${audience}.
+
+${voice}`;
   const tone = TONE[opts.tone] || TONE.plain;
   return `Write it for ${audience}, in a ${tone} register.`;
 }
@@ -99,6 +115,7 @@ export default async function handler(request) {
     audience: body.audience,
     tone: body.tone,
     length: body.length,
+    voice: body.voice,
   };
   if (!process.env.GROQ_API_KEY) {
     return json({ error: 'upstream_error', message: 'GROQ_API_KEY is not configured.' }, 500);

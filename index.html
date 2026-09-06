@@ -211,6 +211,20 @@
   .source-count{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft);align-self:flex-end}
   .source-count.over{color:var(--coral)}
 
+  .voice-actions{display:flex;align-items:center;gap:14px;margin-top:10px}
+  .voice-forget{background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft)}
+  .voice-forget:hover{color:var(--coral)}
+  .voice-profile{
+    border:1px solid var(--tide);border-radius:12px;padding:12px 14px;background:var(--surface-2);
+  }
+  .voice-profile h5{
+    margin:0 0 8px;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--tide);
+  }
+  .voice-profile ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .voice-profile li{font-size:0.82rem;color:var(--ink-soft);line-height:1.4;display:flex;gap:8px}
+  .voice-profile li::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--tide);margin-top:0.55em;flex:none}
+
   .prompt-style{
     display:flex;align-items:center;gap:14px;flex-wrap:wrap;
     font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
@@ -593,6 +607,34 @@
     .critique-list .detail{grid-column:1;grid-row:auto}
   }
 
+  .chart-panel textarea{
+    width:100%;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.82rem;line-height:1.5;
+    background:var(--bg);color:var(--ink);
+  }
+  .chart-panel textarea:focus{outline:2px solid var(--tide);outline-offset:1px}
+  .chart-controls{
+    display:flex;align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--ink-soft);
+  }
+  .chart-controls label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .chart-controls .csv-note{margin-left:auto;color:var(--wave)}
+  .chart-controls .csv-note.bad{color:var(--coral)}
+
+  /* chart slide: drawn to one scale, labels inside the viewBox */
+  .deck-slide.chart{background:var(--s-bg);justify-content:flex-start}
+  .deck-slide.chart h3{margin-bottom:0.8cqw}
+  .deck-slide.chart .slide-body{margin-bottom:1.4cqw}
+  .deck-slide.chart .chart-holder{flex:1;min-height:0;display:flex}
+  .deck-slide.chart svg{width:100%;height:100%;overflow:visible}
+  .deck-slide.chart .c-bar{fill:var(--s-accent)}
+  .deck-slide.chart .c-line{fill:none;stroke:var(--s-accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+  .deck-slide.chart .c-area{fill:var(--s-accent);opacity:0.14}
+  .deck-slide.chart .c-dot{fill:var(--s-accent)}
+  .deck-slide.chart .c-grid{stroke:var(--s-muted);opacity:0.22;stroke-width:1}
+  .deck-slide.chart .c-axis{fill:var(--s-muted);font-family:'IBM Plex Mono',monospace;font-size:9px}
+  .deck-slide.chart .c-value{fill:var(--s-ink);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500}
+
   /* ---------- saved drafts ---------- */
   .drafts-drawer{border-bottom:1px solid var(--line);background:var(--bg);padding:14px 18px}
   .drafts-drawer ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -746,6 +788,20 @@
           <textarea id="sourceText" hidden rows="5" spellcheck="false"
             placeholder="Paste meeting notes, a report, a transcript — anything the deck should be built from. Leave empty and Swell writes from the topic alone."></textarea>
           <span class="source-count" id="sourceCount" hidden></span>
+        </div>
+        <div class="prompt-source">
+          <button type="button" id="voiceToggle" aria-expanded="false" aria-controls="voiceBox">
+            <span class="chev">&rsaquo;</span> Teach it your voice <em>(optional &mdash; paste your own past writing)</em>
+          </button>
+          <div id="voiceBox" hidden>
+            <textarea id="voiceSamples" rows="4" spellcheck="false"
+              placeholder="Paste a few paragraphs you wrote yourself — an old deck, a memo, an email. It learns your habits, not the content."></textarea>
+            <div class="voice-actions">
+              <button type="button" class="btn btn-ghost" id="learnVoiceBtn">Learn my voice</button>
+              <button type="button" class="link-btn voice-forget" id="forgetVoiceBtn" hidden>Forget it</button>
+            </div>
+          </div>
+          <div class="voice-profile" id="voiceProfile" hidden></div>
         </div>
         <div class="prompt-style">
           <label>For
@@ -923,6 +979,7 @@
         <div class="extras-actions">
           <button type="button" class="btn btn-ghost" id="critiqueBtn">Pressure-test this deck</button>
           <button type="button" class="btn btn-ghost" id="verifyBtn">Check the facts</button>
+          <button type="button" class="btn btn-ghost" id="chartToggle">Add a chart</button>
         </div>
         <div class="variant-row" id="variantRow">
           <span>Rewrite for</span>
@@ -931,6 +988,22 @@
           <button type="button" data-variant="customers" data-length="standard">customers</button>
           <button type="button" data-variant="students" data-length="standard">newcomers</button>
           <button type="button" data-variant="__original" class="variant-original" hidden>&larr; original</button>
+        </div>
+      </div>
+      <div class="critique-panel chart-panel" id="chartPanel" hidden>
+        <h4>Add a chart from your own numbers</h4>
+        <p class="lede">Paste two columns &mdash; labels and values. Every number on the slide comes
+          from what you paste here; nothing is generated.</p>
+        <textarea id="csvInput" rows="6" spellcheck="false" placeholder="Quarter,Tickets
+Q1,4210
+Q2,4515
+Q3,4812
+Q4,4390"></textarea>
+        <div class="chart-controls">
+          <label><input type="radio" name="chartkind" value="bar" checked> Bars</label>
+          <label><input type="radio" name="chartkind" value="line"> Line</label>
+          <span class="csv-note" id="csvNote"></span>
+          <button type="button" class="btn btn-primary" id="addChartBtn">Add the slide</button>
         </div>
       </div>
       <div class="critique-panel" id="critiquePanel" hidden></div>
@@ -1395,7 +1468,8 @@
     ];
   }
 
-  var LAYOUTS = ['bullets','stat','quote'];
+  // 'chart' is never produced by the model — only by pasting your own data
+  var LAYOUTS = ['bullets','stat','quote','chart'];
   function normalizeLayout(v){
     v = String(v || '').trim().toLowerCase();
     return LAYOUTS.indexOf(v) === -1 ? 'bullets' : v;
@@ -1420,6 +1494,14 @@
 
     var layout = normalizeLayout(slide.layout);
     var bullets = slide.bullets || [];
+
+    if (layout === 'chart' && slide.chart && slide.chart.values && slide.chart.values.length) {
+      return '<div class="deck-slide content chart">' +
+        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        (slide.body ? '<p class="slide-body" data-field="body"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+        '<div class="chart-holder">' + chartSvg(slide.chart) + '</div>' +
+        '</div>';
+    }
 
     if (layout === 'stat') {
       return '<div class="deck-slide content stat">' + waveAccentSvg(seed) +
@@ -2055,6 +2137,192 @@
     }
   }
 
+  // ---- charts from pasted data ------------------------------------------
+  // The numbers are the user's, never the model's: parsing is local, the
+  // summary line is computed from the rows, and nothing here calls an API.
+  var chartToggle = document.getElementById('chartToggle');
+  var chartPanel = document.getElementById('chartPanel');
+  var csvInput = document.getElementById('csvInput');
+  var csvNote = document.getElementById('csvNote');
+  var addChartBtn = document.getElementById('addChartBtn');
+
+  function parseCsv(text){
+    var rows = String(text).split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+    if (rows.length < 2) return { error: 'Two rows or more, please.' };
+
+    var split = function(line){
+      return line.split(/\t|,|;/).map(function(c){ return c.trim().replace(/^["']|["']$/g, ''); });
+    };
+    var toNumber = function(v){
+      var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+      return isFinite(n) ? n : null;
+    };
+
+    var cells = rows.map(split);
+    var header = null;
+    if (toNumber(cells[0][1]) === null) header = cells.shift();
+    if (!cells.length) return { error: 'No data rows found under that header.' };
+
+    var labels = [], values = [];
+    for (var i = 0; i < cells.length && labels.length < 12; i++) {
+      var row = cells[i];
+      if (row.length < 2) continue;
+      var v = toNumber(row[1]);
+      if (v === null) continue;
+      labels.push(String(row[0]).slice(0, 24));
+      values.push(v);
+    }
+    if (values.length < 2) return { error: 'Need at least two rows with a number in the second column.' };
+
+    return {
+      labels: labels,
+      values: values,
+      seriesName: header && header[1] ? header[1].slice(0, 40) : 'Value',
+      labelName: header && header[0] ? header[0].slice(0, 40) : ''
+    };
+  }
+
+  function chartSummary(data){
+    var max = 0, min = 0;
+    data.values.forEach(function(v, i){
+      if (v > data.values[max]) max = i;
+      if (v < data.values[min]) min = i;
+    });
+    var fmt = function(n){ return Number(n).toLocaleString(); };
+    return 'Highest: ' + data.labels[max] + ' at ' + fmt(data.values[max]) +
+      '. Lowest: ' + data.labels[min] + ' at ' + fmt(data.values[min]) + '.';
+  }
+
+  // one scale for marks, ticks and labels; room left in the viewBox for the
+  // outermost text so nothing is clipped
+  function chartSvg(chart){
+    var W = 400, H = 210, padL = 34, padR = 8, padT = 16, padB = 26;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var values = chart.values, labels = chart.labels;
+    var maxV = Math.max.apply(null, values);
+    var minV = Math.min.apply(null, values);
+
+    // round the axis to 1/2/5 x 10^n steps: gridlines at 1,604 are arithmetically
+    // right and look generated — real charts tick at round numbers
+    var niceStep = function(rough){
+      var mag = Math.pow(10, Math.floor(Math.log(rough) / Math.LN10));
+      var norm = rough / mag;
+      var mult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+      return mult * mag;
+    };
+    // Bars must start at zero — their length is the quantity, and cutting the
+    // axis exaggerates differences. A line encodes value by position, so it can
+    // sit in a focused range instead of being squashed against the top.
+    var rawTop, rawBase;
+    if (chart.type === 'line' && minV > 0) {
+      var pad = (maxV - minV) * 0.25 || Math.abs(maxV * 0.1) || 1;
+      rawBase = minV - pad;
+      rawTop = maxV + pad;
+    } else {
+      rawTop = maxV > 0 ? maxV : 0;
+      rawBase = minV < 0 ? minV : 0;
+    }
+    if (rawTop === rawBase) rawTop = rawBase + 1;
+    var step = niceStep((rawTop - rawBase) / 3) || 1;
+    var base = Math.floor(rawBase / step) * step;
+    var top = Math.ceil(rawTop / step) * step;
+    if (top === base) top = base + step;
+    var span = top - base;
+    var y = function(v){ return padT + plotH - ((v - base) / span) * plotH; };
+    var fmt = function(n){ return Number(n).toLocaleString(); };
+
+    var parts = [];
+    // one gridline per round step, each labelled with the value it sits at
+    for (var gv = base; gv <= top + step / 2; gv += step) {
+      var gy = y(gv);
+      parts.push('<line class="c-grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + gy.toFixed(1) + '" y2="' + gy.toFixed(1) + '"></line>');
+      parts.push('<text class="c-axis" x="' + (padL - 6) + '" y="' + (gy + 3).toFixed(1) + '" text-anchor="end">' +
+        escapeHtml(fmt(Math.round(gv * 1000) / 1000)) + '</text>');
+    }
+
+    var n = values.length;
+    var step = plotW / n;
+
+    if (chart.type === 'line') {
+      var pts = values.map(function(v, i){ return [padL + step * (i + 0.5), y(v)]; });
+      var d = pts.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+      var areaD = d + ' L' + pts[pts.length - 1][0].toFixed(1) + ',' + y(base).toFixed(1) +
+        ' L' + pts[0][0].toFixed(1) + ',' + y(base).toFixed(1) + ' Z';
+      parts.push('<path class="c-area" d="' + areaD + '"></path>');
+      parts.push('<path class="c-line" d="' + d + '"></path>');
+      pts.forEach(function(p){ parts.push('<circle class="c-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="2.6"></circle>'); });
+    } else {
+      var bw = Math.min(step * 0.62, 42);
+      values.forEach(function(v, i){
+        var cx = padL + step * (i + 0.5);
+        var top1 = y(Math.max(v, base));
+        var h = Math.abs(y(v) - y(base));
+        parts.push('<rect class="c-bar" x="' + (cx - bw / 2).toFixed(1) + '" y="' + top1.toFixed(1) +
+          '" width="' + bw.toFixed(1) + '" height="' + Math.max(h, 1).toFixed(1) + '" rx="2"></rect>');
+      });
+    }
+
+    // value above each mark, category label below the axis
+    values.forEach(function(v, i){
+      var cx = padL + step * (i + 0.5);
+      parts.push('<text class="c-value" x="' + cx.toFixed(1) + '" y="' + (y(v) - 6).toFixed(1) + '" text-anchor="middle">' + escapeHtml(fmt(v)) + '</text>');
+      parts.push('<text class="c-axis" x="' + cx.toFixed(1) + '" y="' + (H - padB + 14) + '" text-anchor="middle">' + escapeHtml(labels[i]) + '</text>');
+    });
+
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' +
+      escapeHtml(chart.seriesName + ' by ' + (chart.labelName || 'category')) + '">' +
+      parts.join('') + '</svg>';
+  }
+
+  function currentChartKind(){
+    var picked = document.querySelector('input[name="chartkind"]:checked');
+    return picked ? picked.value : 'bar';
+  }
+
+  if (chartToggle) {
+    chartToggle.addEventListener('click', function(){
+      chartPanel.hidden = !chartPanel.hidden;
+      if (!chartPanel.hidden) { csvInput.focus(); chartPanel.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+    });
+  }
+
+  if (csvInput) {
+    csvInput.addEventListener('input', function(){
+      var parsed = parseCsv(csvInput.value);
+      if (!csvInput.value.trim()) { csvNote.textContent = ''; csvNote.className = 'csv-note'; return; }
+      if (parsed.error) { csvNote.textContent = parsed.error; csvNote.className = 'csv-note bad'; }
+      else { csvNote.textContent = parsed.values.length + ' rows read'; csvNote.className = 'csv-note'; }
+    });
+  }
+
+  if (addChartBtn) {
+    addChartBtn.addEventListener('click', function(){
+      var parsed = parseCsv(csvInput.value);
+      if (parsed.error) { csvNote.textContent = parsed.error; csvNote.className = 'csv-note bad'; return; }
+
+      var chart = {
+        labels: parsed.labels, values: parsed.values,
+        type: currentChartKind(), seriesName: parsed.seriesName, labelName: parsed.labelName
+      };
+      var slide = {
+        type: 'content', layout: 'chart',
+        heading: parsed.seriesName,
+        body: chartSummary(parsed),
+        bullets: [],
+        chart: chart
+      };
+      deckSlides.splice(activeIndex + 1, 0, slide);
+      activeIndex = activeIndex + 1;
+      renderThumbs();
+      renderStage();
+      saveWorking();
+      chartPanel.hidden = true;
+      csvInput.value = '';
+      csvNote.textContent = '';
+      setStatus('Chart added from ' + chart.values.length + ' rows of your data.', 'info');
+    });
+  }
+
   // ---- audience variants ------------------------------------------------
   // A variant is not a fresh draft: the deck you already have becomes the
   // source material, so the board version and the team version say the same
@@ -2072,6 +2340,11 @@
       var out = [(s.heading || '')];
       if (s.body) out.push(s.body);
       (s.bullets || []).forEach(function(b){ out.push('- ' + b); });
+      // a rewritten deck must carry the real figures across, not re-guess them
+      if (s.chart && s.chart.values) {
+        out.push('Data (' + (s.chart.seriesName || 'value') + '): ' +
+          s.chart.labels.map(function(l, i){ return l + ' ' + s.chart.values[i]; }).join(', '));
+      }
       return out.join('\n');
     }).join('\n\n');
   }
@@ -2535,6 +2808,46 @@
         var layout = normalizeLayout(s.layout);
         var bullets = s.bullets || [];
 
+        // a real PowerPoint chart object, so the numbers stay editable in
+        // PowerPoint rather than arriving as a flat picture
+        if (layout === 'chart' && s.chart && s.chart.values && s.chart.values.length) {
+          slide.background = { color: theme.bg };
+          slide.addText(String(s.heading || ''), {
+            x: 0.7, y: 0.5, w: 8.6, h: 0.6, fontSize: 24, bold: true,
+            color: theme.ink, fontFace: display
+          });
+          if (s.body) {
+            slide.addText(String(s.body), {
+              x: 0.7, y: 1.1, w: 8.6, h: 0.4, fontSize: 12, color: theme.muted, fontFace: 'Calibri'
+            });
+          }
+          try {
+            var kind = s.chart.type === 'line' ? pptx.ChartType.line : pptx.ChartType.bar;
+            slide.addChart(kind, [{
+              name: s.chart.seriesName || 'Value',
+              labels: s.chart.labels,
+              values: s.chart.values
+            }], {
+              x: 0.7, y: 1.65, w: 8.6, h: 3.4,
+              chartColors: [theme.accent],
+              showValue: true,
+              dataLabelColor: theme.ink,
+              dataLabelFontSize: 9,
+              catAxisLabelColor: theme.muted,
+              valAxisLabelColor: theme.muted,
+              catAxisLabelFontSize: 9,
+              valAxisLabelFontSize: 9,
+              showLegend: false
+            });
+          } catch (err) {
+            // never lose the numbers: fall back to listing them
+            slide.addText(s.chart.labels.map(function(l, i){
+              return { text: l + ': ' + s.chart.values[i], options: { bullet: true, breakLine: true } };
+            }), { x: 0.7, y: 1.7, w: 8.6, h: 3.3, fontSize: 13, color: theme.muted, fontFace: 'Calibri' });
+          }
+          return;
+        }
+
         if (layout === 'stat') {
           slide.background = { color: theme.bg };
           slide.addText(String(s.heading || '').toUpperCase(), {
@@ -2707,6 +3020,10 @@
 
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
+  voiceTraits = readStore(VOICE_KEY, []) || [];
+  if (!Array.isArray(voiceTraits)) voiceTraits = [];
+  renderVoice();
+
   bootDeck();   // last: every feature block above is initialised by now
 
   // ---- optional source material + style controls ------------------------
@@ -2738,13 +3055,98 @@
     });
   }
 
-  // what the two endpoints need to know about how this deck should read
+  // ---- voice profile ----------------------------------------------------
+  // Kept separate from source material on purpose: source supplies the facts,
+  // voice supplies the habits. It also outlives a single deck, so it lives in
+  // localStorage rather than the deck state.
+  var VOICE_KEY = 'swell.voice';
+  var voiceToggle = document.getElementById('voiceToggle');
+  var voiceBox = document.getElementById('voiceBox');
+  var voiceSamples = document.getElementById('voiceSamples');
+  var learnVoiceBtn = document.getElementById('learnVoiceBtn');
+  var forgetVoiceBtn = document.getElementById('forgetVoiceBtn');
+  var voiceProfileEl = document.getElementById('voiceProfile');
+  var voiceTraits = [];
+
+  function renderVoice(){
+    if (!voiceProfileEl) return;
+    if (!voiceTraits.length) {
+      voiceProfileEl.hidden = true;
+      if (forgetVoiceBtn) forgetVoiceBtn.hidden = true;
+      return;
+    }
+    voiceProfileEl.innerHTML = '<h5>Writing in your voice</h5><ul>' +
+      voiceTraits.map(function(t){ return '<li>' + escapeHtml(t) + '</li>'; }).join('') +
+      '</ul>';
+    voiceProfileEl.hidden = false;
+    if (forgetVoiceBtn) forgetVoiceBtn.hidden = false;
+  }
+
+  if (voiceToggle) {
+    voiceToggle.addEventListener('click', function(){
+      var open = voiceToggle.getAttribute('aria-expanded') === 'true';
+      voiceToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+      voiceBox.hidden = open;
+      if (!open) voiceSamples.focus();
+    });
+  }
+
+  if (learnVoiceBtn) {
+    learnVoiceBtn.addEventListener('click', function(){
+      var samples = (voiceSamples.value || '').trim();
+      if (samples.length < 200) {
+        setStatus('Paste a few more paragraphs — that is too little to read a voice from.', 'error');
+        return;
+      }
+      learnVoiceBtn.disabled = true;
+      learnVoiceBtn.textContent = 'Reading it…';
+      setStatus('Working out how you write…', 'info');
+
+      fetch('/api/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ samples: samples })
+      })
+        .then(function(r){
+          if (r.status === 429) throw { code: 'rate_limited' };
+          if (!r.ok) return r.json().catch(function(){ return {}; }).then(function(b){ throw { code: b.error || 'upstream_error', message: b.message }; });
+          return r.json();
+        })
+        .then(function(data){
+          if (!data || !Array.isArray(data.traits) || !data.traits.length) throw { code: 'invalid_json' };
+          voiceTraits = data.traits;
+          writeStore(VOICE_KEY, voiceTraits);
+          renderVoice();
+          setStatus('Got it — new decks will be written this way.', 'info');
+        })
+        .catch(function(e){
+          var code = (e && e.code) || 'network_error';
+          setStatus((e && e.message) || errorCopy[code] || errorCopy.upstream_error, 'error');
+        })
+        .finally(function(){
+          learnVoiceBtn.disabled = false;
+          learnVoiceBtn.textContent = 'Learn my voice';
+        });
+    });
+  }
+
+  if (forgetVoiceBtn) {
+    forgetVoiceBtn.addEventListener('click', function(){
+      voiceTraits = [];
+      try { localStorage.removeItem(VOICE_KEY); } catch (e) {}
+      renderVoice();
+      setStatus('Voice forgotten — back to the tone setting.', 'info');
+    });
+  }
+
+  // what the endpoints need to know about how this deck should read
   function draftOptions(){
     return {
       source: sourceText && !sourceText.hidden ? sourceText.value.trim().slice(0, SOURCE_MAX) : '',
       audience: audiencePick ? audiencePick.value : 'general',
       tone: tonePick ? tonePick.value : 'plain',
-      length: lengthPick ? lengthPick.value : 'standard'
+      length: lengthPick ? lengthPick.value : 'standard',
+      voice: voiceTraits.length ? voiceTraits : null
     };
   }
 
