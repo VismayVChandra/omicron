@@ -3076,28 +3076,30 @@ Q4,4390"></textarea>
     return (deckSlides[0] && deckSlides[0].title) || deckTopic || 'Untitled deck';
   }
 
-  function saveDraft(){
-    var state = currentDeckState();
+  // Postgres jsonb refuses a few things JavaScript strings happily hold, and
+  // rejects the whole row with "unsupported Unicode escape sequence": NUL,
+  // other C0 control characters, and half of a surrogate pair. Text pasted out
+  // of a PDF is a common source of the first two, and slicing a string through
+  // an emoji produces the third. Cleaned on the way out rather than hoping.
+  function jsonSafeText(s){
+    return String(s)
+      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '')
+      .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
+      .replace(/(^|[^\uD800-\uDBFF])([\uDC00-\uDFFF])/g, '$1');
+  }
 
-    // signed in: the deck goes to the account and follows you between devices
-    if (signedIn()) {
-      setStatus('Saving…', 'info');
-      cloud.from('decks').insert({
-        user_id: cloudUser.id,
-        title: draftName(),
-        topic: state.topic || '',
-        theme: state.theme || 'tide',
-        slides: state.slides
-      }).then(function(res){
-        if (res && res.error) throw res.error;
-        setStatus('Saved to your account.', 'info');
-        renderDrafts();
-      }).catch(function(err){
-        setStatus((err && err.message) || "Couldn't save to your account.", 'error');
-      });
-      return;
+  function jsonSafe(value){
+    if (typeof value === 'string') return jsonSafeText(value);
+    if (Array.isArray(value)) return value.map(jsonSafe);
+    if (value && typeof value === 'object') {
+      var out = {};
+      Object.keys(value).forEach(function(k){ out[k] = jsonSafe(value[k]); });
+      return out;
     }
+    return value;
+  }
 
+  function saveLocally(state, note){
     var drafts = readStore(DRAFTS_KEY, []);
     if (!Array.isArray(drafts)) drafts = [];
     drafts.unshift({
@@ -3109,9 +3111,39 @@ Q4,4390"></textarea>
       slides: state.slides
     });
     drafts = drafts.slice(0, 12);
-    if (writeStore(DRAFTS_KEY, drafts)) setStatus('Draft saved to this browser.', 'info');
+    if (writeStore(DRAFTS_KEY, drafts)) setStatus(note || 'Draft saved to this browser.', 'info');
     else setStatus("Couldn't save — this browser is blocking storage.", 'error');
     renderDrafts();
+  }
+
+  function saveDraft(){
+    var state = currentDeckState();
+
+    // signed in: the deck goes to the account and follows you between devices
+    if (signedIn()) {
+      setStatus('Saving…', 'info');
+      cloud.from('decks').insert({
+        user_id: cloudUser.id,
+        title: jsonSafeText(draftName()),
+        topic: jsonSafeText(state.topic || ''),
+        theme: state.theme || 'tide',
+        slides: jsonSafe(state.slides)
+      }).then(function(res){
+        if (res && res.error) throw res.error;
+        setStatus('Saved to your account.', 'info');
+        renderDrafts();
+      }).catch(function(err){
+        // never lose the deck to a failed round trip: keep it in this browser
+        // and say so, rather than reporting a database error and dropping it
+        var msg = (err && err.message) || '';
+        saveLocally(state, /unicode|escape|invalid/i.test(msg)
+          ? 'That deck had characters the database rejected — kept in this browser instead.'
+          : "Couldn't reach your account — kept in this browser instead.");
+      });
+      return;
+    }
+
+    saveLocally(state);
   }
 
   function applyLoadedDeck(found){
