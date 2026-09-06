@@ -16,6 +16,49 @@ const SURFACE_NOUN = {
   site: 'a one-page website',
 };
 
+const AUDIENCE = {
+  general: 'a general audience',
+  executives: 'senior executives who want the decision and the numbers',
+  students: 'students meeting this topic for the first time',
+  engineers: 'a technical audience who want mechanism and detail',
+  customers: 'prospective customers weighing whether to buy',
+};
+
+const TONE = {
+  plain: 'plain, direct',
+  persuasive: 'persuasive',
+  technical: 'precise and technical',
+  warm: 'warm and conversational',
+};
+
+const LENGTH = { brief: '4 to 5', standard: '5 to 8', detailed: '9 to 12' };
+
+function styleLine(opts) {
+  const audience = AUDIENCE[opts.audience] || AUDIENCE.general;
+  const tone = TONE[opts.tone] || TONE.plain;
+  return `Write for ${audience}, in a ${tone} register.`;
+}
+
+// With pasted material every fact must come from it. Without it, the model has
+// no source at all, so it is told not to pass invented figures off as data.
+function groundingLine(opts) {
+  if (opts.source) {
+    return `Write the slides from the material below. Every fact, figure, name and
+date must come from it — do not introduce statistics or claims it does not
+contain. Where it is thin on a section, keep that slide short rather than
+padding it out with invention.
+
+"""
+${opts.source}
+"""
+`;
+  }
+  return `You have no source material, so do not invent precise statistics, market
+sizes, percentages or dated forecasts, and do not attribute quotes to real
+people. Prefer qualitative claims you are confident are true, and use the stat
+layout only for a figure that is genuinely well known.`;
+}
+
 const FORMAT_SPEC = `Reply in EXACTLY this plain-text format and nothing else:
 
 TITLE: <short title, under 6 words>
@@ -51,7 +94,7 @@ Rules:
 - Write real substance specific to the subject — never placeholder filler.
 - No markdown, no blank lines, no commentary before or after.`;
 
-function buildPrompt(topic, surface, plan) {
+function buildPrompt(topic, surface, plan, opts) {
   const noun = SURFACE_NOUN[surface] || SURFACE_NOUN.deck;
 
   // When the user has approved an outline, follow it exactly rather than
@@ -66,6 +109,10 @@ ${list}
 
 ${plan.title ? `The deck is titled "${plan.title}".` : ''}
 ${plan.tagline ? `Its subtitle is "${plan.tagline}".` : ''}
+
+${groundingLine(opts)}
+
+${styleLine(opts)}
 
 ${FORMAT_SPEC}
 
@@ -85,9 +132,13 @@ traction, the ask) unless the subject genuinely is a business pitch. A deck abou
 photosynthesis should read like a lesson; a deck about last quarter should read
 like a review.
 
+${groundingLine(opts)}
+
+${styleLine(opts)}
+
 ${FORMAT_SPEC}
 
-- Write 5 to 8 slides after the cover — as many as the subject actually needs.
+- Write ${LENGTH[opts.length] || LENGTH.standard} slides after the cover — as many as the subject needs.
 - Order the slides the way someone would actually present them, and finish with a
   closing slide: a summary, a takeaway, or what happens next.`;
 }
@@ -129,7 +180,15 @@ export default async function handler(request) {
       },
       body: JSON.stringify({
         model: 'openai/gpt-oss-120b',
-        messages: [{ role: 'user', content: buildPrompt(topic, body.surface, body.plan) }],
+        messages: [{
+          role: 'user',
+          content: buildPrompt(topic, body.surface, body.plan, {
+            source: typeof body.source === 'string' ? body.source.trim().slice(0, 12000) : '',
+            audience: body.audience,
+            tone: body.tone,
+            length: body.length,
+          }),
+        }],
         temperature: 0.8,
         max_tokens: 2600,
         reasoning_effort: 'low',

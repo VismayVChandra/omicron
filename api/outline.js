@@ -13,14 +13,53 @@ const SURFACE_NOUN = {
   site: 'one-page website',
 };
 
-function buildPrompt(topic, surface) {
+const AUDIENCE = {
+  general: 'a general audience',
+  executives: 'senior executives who want the decision and the numbers',
+  students: 'students meeting this topic for the first time',
+  engineers: 'a technical audience who want mechanism and detail',
+  customers: 'prospective customers weighing whether to buy',
+};
+
+const TONE = {
+  plain: 'plain, direct',
+  persuasive: 'persuasive',
+  technical: 'precise and technical',
+  warm: 'warm and conversational',
+};
+
+const LENGTH = { brief: '4 to 5', standard: '5 to 8', detailed: '9 to 12' };
+
+export function styleLine(opts) {
+  const audience = AUDIENCE[opts.audience] || AUDIENCE.general;
+  const tone = TONE[opts.tone] || TONE.plain;
+  return `Write it for ${audience}, in a ${tone} register.`;
+}
+
+function buildPrompt(topic, surface, opts) {
   const noun = SURFACE_NOUN[surface] || SURFACE_NOUN.deck;
+  const count = LENGTH[opts.length] || LENGTH.standard;
+
+  // With pasted material the outline follows the material; without it the
+  // model plans from the topic alone, as before.
+  const grounding = opts.source
+    ? `Base the outline on the material below and derive the sections from what
+it actually contains — its own structure, emphasis and terms. Do not add
+sections it says nothing about.
+
+"""
+${opts.source}
+"""
+
+`
+    : '';
+
   return `Plan a ${noun} about: "${topic}".
 
-Work out what kind it should be — lesson, report, how-to, retrospective,
+${grounding}Work out what kind it should be — lesson, report, how-to, retrospective,
 proposal, pitch — and outline it that way. Do not use pitch sections
 (problem, market, the ask) unless it really is a pitch. End with a closing
-section.
+section. ${styleLine(opts)}
 
 Output exactly these lines and nothing else:
 
@@ -29,7 +68,7 @@ TAGLINE: <one sentence>
 SECTION: <section heading, under 6 words>
 SECTION: <section heading, under 6 words>
 
-Give 5 to 8 SECTION lines.`;
+Give ${count} SECTION lines.`;
 }
 
 function json(obj, status) {
@@ -54,6 +93,13 @@ export default async function handler(request) {
   const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
   if (!topic) return json({ error: 'invalid_request', message: 'Missing topic.' }, 400);
   if (topic.length > 500) return json({ error: 'prompt_too_large' }, 400);
+
+  const opts = {
+    source: typeof body.source === 'string' ? body.source.trim().slice(0, 12000) : '',
+    audience: body.audience,
+    tone: body.tone,
+    length: body.length,
+  };
   if (!process.env.GROQ_API_KEY) {
     return json({ error: 'upstream_error', message: 'GROQ_API_KEY is not configured.' }, 500);
   }
@@ -68,9 +114,9 @@ export default async function handler(request) {
       },
       body: JSON.stringify({
         model: 'openai/gpt-oss-120b',
-        messages: [{ role: 'user', content: buildPrompt(topic, body.surface) }],
+        messages: [{ role: 'user', content: buildPrompt(topic, body.surface, opts) }],
         temperature: 0.8,
-        max_tokens: 900,
+        max_tokens: 1100,
         reasoning_effort: 'low',
       }),
     });

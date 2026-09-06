@@ -8,7 +8,22 @@ const LAYOUTS = ['bullets', 'stat', 'quote'];
 
 // Kept deliberately short and layout-specific: a longer, rule-heavy prompt
 // makes this model reason for hundreds of tokens before writing anything.
-function buildPrompt({ topic, title, heading, layout }) {
+const AUDIENCE = {
+  general: 'a general audience',
+  executives: 'senior executives who want the decision and the numbers',
+  students: 'students meeting this topic for the first time',
+  engineers: 'a technical audience who want mechanism and detail',
+  customers: 'prospective customers weighing whether to buy',
+};
+
+const TONE = {
+  plain: 'plain, direct',
+  persuasive: 'persuasive',
+  technical: 'precise and technical',
+  warm: 'warm and conversational',
+};
+
+function buildPrompt({ topic, title, heading, layout, audience, tone, source }) {
   const shape = {
     stat:
       'LAYOUT: stat\nHEADING: <heading, under 6 words>\n' +
@@ -25,9 +40,15 @@ function buildPrompt({ topic, title, heading, layout }) {
       'IMAGE: <2 to 5 plain searchable words naming a photographable subject>',
   }[LAYOUTS.includes(layout) ? layout : 'bullets'];
 
+  const grounding = source
+    ? `Take the facts from this material and nothing else:\n\n"""\n${source}\n"""\n\n`
+    : 'Do not invent precise statistics, market sizes or dated forecasts.\n\n';
+
   return `Deck: "${title}" — about ${topic}.
 
 Rewrite the "${heading}" slide. Same subject, fresh wording.
+
+${grounding}Write for ${AUDIENCE[audience] || AUDIENCE.general}, in a ${TONE[tone] || TONE.plain} register.
 
 Output exactly these lines and nothing else:
 
@@ -101,6 +122,9 @@ export default async function handler(request) {
     title: typeof body.title === 'string' ? body.title.slice(0, 120) : topic,
     heading,
     layout: body.layout,
+    audience: body.audience,
+    tone: body.tone,
+    source: typeof body.source === 'string' ? body.source.trim().slice(0, 6000) : '',
   });
 
   let groqRes;

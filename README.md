@@ -7,6 +7,13 @@ via Vercel Edge Functions backed by Groq.
 Drafting is two steps, as in Gamma: a topic produces an editable outline, and
 only once that outline is approved are the slides written.
 
+You can optionally paste your own material — notes, a report, a transcript —
+and the deck is built from that instead of from the model's own knowledge, with
+every figure required to come from what you pasted. With nothing pasted the
+model is explicitly told not to invent statistics, market sizes or dated
+forecasts, because it has no source to draw them from. Audience, tone and
+length are selectable and feed every request.
+
 - `index.html` — the site, the outline editor and the deck viewer (slides,
   thumbnail rail, present mode, in-place editing, drag-to-reorder, four deck
   themes, saved drafts in `localStorage`, PDF export via the browser's print,

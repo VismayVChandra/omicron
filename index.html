@@ -191,6 +191,37 @@
   .surface-pick button:disabled, #generateBtn:disabled{opacity:0.6;cursor:default}
   #promptInput{cursor:text}
   .gen-status{margin:0;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;line-height:1.4}
+  /* optional source material — collapsed by default so typing a topic stays
+     the one-step path */
+  .prompt-source{display:flex;flex-direction:column;gap:8px}
+  .prompt-source > button{
+    display:flex;align-items:center;gap:7px;background:none;border:none;padding:0;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--wave);text-align:left;
+  }
+  .prompt-source > button em{font-style:normal;color:var(--ink-soft)}
+  .prompt-source > button:hover{color:var(--deep)}
+  .prompt-source .chev{display:inline-block;transition:transform .15s}
+  .prompt-source > button[aria-expanded="true"] .chev{transform:rotate(90deg)}
+  .prompt-source textarea{
+    width:100%;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    font-family:'Karla',system-ui,sans-serif;font-size:0.92rem;line-height:1.5;
+    background:var(--bg);color:var(--ink);
+  }
+  .prompt-source textarea:focus{outline:2px solid var(--tide);outline-offset:1px}
+  .source-count{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft);align-self:flex-end}
+  .source-count.over{color:var(--coral)}
+
+  .prompt-style{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
+  }
+  .prompt-style label{display:flex;align-items:center;gap:5px}
+  .prompt-style select{
+    font-family:inherit;font-size:0.72rem;color:var(--wave);background:transparent;
+    border:1px solid var(--line);border-radius:999px;padding:4px 8px;cursor:pointer;
+  }
+  .prompt-style select:focus-visible{outline:2px solid var(--tide);outline-offset:2px}
+
   .prompt-examples{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft)}
   .prompt-examples button{
     font:inherit;color:var(--wave);background:transparent;border:1px solid var(--line);
@@ -375,6 +406,15 @@
   .slide-media{position:relative;overflow:hidden;background:var(--s-quote-bg);width:100%;height:100%}
   .slide-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
   .slide-media[data-state="ready"] img{opacity:1}
+  /* Photographs come from many different photographers and eras. One grade and
+     a wash of the deck's accent pulls them into a single deck rather than a
+     scrapbook of stock. */
+  .slide-media img, .cover-media img{filter:saturate(0.72) contrast(1.06)}
+  .slide-media[data-state="ready"]::before,
+  .cover-media[data-state="ready"]::before{
+    content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:var(--s-accent);mix-blend-mode:soft-light;opacity:0.55;
+  }
   .slide-media[data-state="loading"]::after{
     content:"";position:absolute;inset:0;
     background:linear-gradient(100deg, transparent 20%, rgba(46,168,163,0.16) 50%, transparent 80%);
@@ -625,6 +665,40 @@
         <div class="prompt-row">
           <span class="prompt-chip">PROMPT</span>
           <input type="text" id="promptInput" value="A pitch deck for a tide-powered charging dock" aria-label="Topic to draft">
+        </div>
+        <div class="prompt-source">
+          <button type="button" id="sourceToggle" aria-expanded="false" aria-controls="sourceText">
+            <span class="chev">&rsaquo;</span> Paste your own notes <em>(optional &mdash; grounds the deck in your material)</em>
+          </button>
+          <textarea id="sourceText" hidden rows="5" spellcheck="false"
+            placeholder="Paste meeting notes, a report, a transcript — anything the deck should be built from. Leave empty and Swell writes from the topic alone."></textarea>
+          <span class="source-count" id="sourceCount" hidden></span>
+        </div>
+        <div class="prompt-style">
+          <label>For
+            <select id="audiencePick">
+              <option value="general">a general audience</option>
+              <option value="executives">executives</option>
+              <option value="students">students</option>
+              <option value="engineers">engineers</option>
+              <option value="customers">customers</option>
+            </select>
+          </label>
+          <label>in a
+            <select id="tonePick">
+              <option value="plain">plain</option>
+              <option value="persuasive">persuasive</option>
+              <option value="technical">technical</option>
+              <option value="warm">warm</option>
+            </select> tone
+          </label>
+          <label>
+            <select id="lengthPick">
+              <option value="brief">brief</option>
+              <option value="standard" selected>standard</option>
+              <option value="detailed">detailed</option>
+            </select>
+          </label>
         </div>
         <div class="prompt-actions">
           <div class="surface-pick" id="surfacePick">
@@ -1620,7 +1694,7 @@
     fetch('/api/outline', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: topic, surface: currentSurface })
+      body: JSON.stringify(Object.assign({ topic: topic, surface: currentSurface }, draftOptions()))
     })
       .then(function(r){
         if (r.status === 429) throw { code: 'rate_limited' };
@@ -1666,7 +1740,10 @@
     fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: topic, surface: currentSurface, plan: plan || null })
+      body: JSON.stringify(Object.assign(
+        { topic: topic, surface: currentSurface, plan: plan || null },
+        draftOptions()
+      ))
     })
       .then(function(r){
         if (r.status === 429) throw { code: 'rate_limited' };
@@ -1999,17 +2076,35 @@
   }
 
   // PowerPoint wants image bytes, not a URL — Commons sends
-  // access-control-allow-origin:* so these can be read cross-origin
-  function fetchImageData(url){
+  // access-control-allow-origin:* so these can be read cross-origin, which also
+  // means a canvas can re-grade them without being tainted. The same grade and
+  // accent wash the CSS applies on screen is baked in here, so an exported deck
+  // looks like the one on the page rather than a pile of raw stock photos.
+  // `mime` matters: PptxGenJS files a slide *background* as .png whatever the
+  // data actually is, and [Content_Types].xml then declares it image/png. Handing
+  // it JPEG bytes under a .png name is the kind of mismatch that makes PowerPoint
+  // offer to repair the file, so covers are encoded as real PNG.
+  function fetchImageData(url, accentHex, mime){
     return fetch(url)
       .then(function(r){ return r.ok ? r.blob() : null; })
       .then(function(blob){
         if (!blob) return null;
-        return new Promise(function(resolve){
-          var reader = new FileReader();
-          reader.onload = function(){ resolve(reader.result); };
-          reader.onerror = function(){ resolve(null); };
-          reader.readAsDataURL(blob);
+        return createImageBitmap(blob).then(function(bmp){
+          var canvas = document.createElement('canvas');
+          canvas.width = bmp.width;
+          canvas.height = bmp.height;
+          var ctx = canvas.getContext('2d');
+          ctx.filter = 'saturate(0.72) contrast(1.06)';
+          ctx.drawImage(bmp, 0, 0);
+          ctx.filter = 'none';
+          ctx.globalCompositeOperation = 'soft-light';
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = '#' + accentHex;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          bmp.close && bmp.close();
+          return mime === 'image/png'
+            ? canvas.toDataURL('image/png')
+            : canvas.toDataURL('image/jpeg', 0.86);
         });
       })
       .catch(function(){ return null; });
@@ -2034,7 +2129,8 @@
     var jobs = deckSlides.map(function(s){
       if (!s.image) return Promise.resolve(null);
       return Promise.resolve(resolveImage(s.image)).then(function(found){
-        return found && found.url ? fetchImageData(found.url) : null;
+        if (!found || !found.url) return null;
+        return fetchImageData(found.url, theme.accent, s.type === 'cover' ? 'image/png' : 'image/jpeg');
       }).catch(function(){ return null; });
     });
 
@@ -2245,6 +2341,45 @@
 
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
+  // ---- optional source material + style controls ------------------------
+  var sourceToggle = document.getElementById('sourceToggle');
+  var sourceText = document.getElementById('sourceText');
+  var sourceCount = document.getElementById('sourceCount');
+  var audiencePick = document.getElementById('audiencePick');
+  var tonePick = document.getElementById('tonePick');
+  var lengthPick = document.getElementById('lengthPick');
+  var SOURCE_MAX = 12000;
+
+  if (sourceToggle) {
+    sourceToggle.addEventListener('click', function(){
+      var open = sourceToggle.getAttribute('aria-expanded') === 'true';
+      sourceToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+      sourceText.hidden = open;
+      sourceCount.hidden = open || !sourceText.value.length;
+      if (!open) sourceText.focus();
+    });
+  }
+  if (sourceText) {
+    sourceText.addEventListener('input', function(){
+      var n = sourceText.value.length;
+      sourceCount.hidden = !n;
+      sourceCount.textContent = n > SOURCE_MAX
+        ? n.toLocaleString() + ' characters — only the first ' + SOURCE_MAX.toLocaleString() + ' will be used'
+        : n.toLocaleString() + ' characters';
+      sourceCount.classList.toggle('over', n > SOURCE_MAX);
+    });
+  }
+
+  // what the two endpoints need to know about how this deck should read
+  function draftOptions(){
+    return {
+      source: sourceText && !sourceText.hidden ? sourceText.value.trim().slice(0, SOURCE_MAX) : '',
+      audience: audiencePick ? audiencePick.value : 'general',
+      tone: tonePick ? tonePick.value : 'plain',
+      length: lengthPick ? lengthPick.value : 'standard'
+    };
+  }
+
   document.querySelectorAll('#promptExamples button').forEach(function(btn){
     btn.addEventListener('click', function(){
       promptInput.value = btn.getAttribute('data-topic') || btn.textContent;
@@ -2266,12 +2401,12 @@
     fetch('/api/slide', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify(Object.assign({
         topic: deckTopic || (promptInput.value || '').trim(),
         title: deckSlides[0] ? deckSlides[0].title : '',
         heading: slide.heading,
         layout: slide.layout
-      })
+      }, draftOptions()))
     })
       .then(function(r){
         if (r.status === 429) throw { code: 'rate_limited' };
