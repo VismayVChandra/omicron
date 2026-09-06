@@ -233,9 +233,21 @@ export default async function handler(request) {
   }
 
   const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
-  const heading = typeof body.heading === 'string' ? body.heading.trim() : '';
-  if (!topic || !heading) {
-    return json({ error: 'invalid_request', message: 'Missing topic or heading.' }, 400);
+  let heading = typeof body.heading === 'string' ? body.heading.trim() : '';
+
+  // A statement slide has no heading — that is the whole point of the layout —
+  // so requiring one meant those slides could not be reworked at all, and the
+  // 400 came back as a message the person could not see. Name the slide by
+  // what is on it instead.
+  if (!heading && body.current && typeof body.current === 'object') {
+    const first = Array.isArray(body.current.bullets) ? body.current.bullets[0] : '';
+    heading = String(first || '').trim().slice(0, 60);
+  }
+  if (!topic) {
+    return json({ error: 'invalid_request', message: 'Missing topic.' }, 400);
+  }
+  if (!heading) {
+    return json({ error: 'invalid_request', message: 'Missing heading.' }, 400);
   }
   if (topic.length > 500 || heading.length > 200) {
     return json({ error: 'prompt_too_large', message: 'Input is too long.' }, 400);

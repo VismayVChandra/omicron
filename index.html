@@ -388,6 +388,12 @@
     background:var(--surface);color:var(--deep);font:inherit;font-size:0.86rem;
   }
   .rework-eg{margin:12px 0 0;font-size:0.8rem;color:var(--ink-soft)}
+  .panel-status{
+    margin:14px 0 0;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;
+    color:var(--tide);line-height:1.5;
+  }
+  .panel-status.bad{color:#e0776d}
+  .panel-status[hidden]{display:none !important}
 
   .layout-pick{grid-template-columns:repeat(2,minmax(158px,1fr))}
   .layout-pick button{display:block}
@@ -5391,6 +5397,34 @@ Q4,4390"></textarea>
   // Six of them share the strip under the deck. Opening one used to leave the
   // last still sitting there, so the answer to a question you had forgotten
   // asking stayed on screen under the one you just asked.
+  // Every message this app produces goes to #genStatus, which lives in the
+  // prompt card at the top of the page. Standing at a panel below the deck —
+  // on a phone that is most of a screen away — you press a button and see
+  // nothing: not the slide changing, not the error, not even "working on it".
+  // So a panel says its own piece, where the button that started it is.
+  function panelSay(panel, text, bad){
+    if (!panel) return;
+    var line = panel.querySelector('.panel-status');
+    if (!line) {
+      line = document.createElement('p');
+      line.className = 'panel-status';
+      panel.appendChild(line);
+    }
+    line.className = 'panel-status' + (bad ? ' bad' : '');
+    line.textContent = text || '';
+    line.hidden = !text;
+  }
+
+  // and the deck itself is the point: if the slide that just changed is off
+  // screen, bring it back rather than reporting the change into the void
+  function revealDeck(){
+    var mock = document.getElementById('deckMock');
+    if (!mock) return;
+    var r = mock.getBoundingClientRect();
+    if (r.top >= 0 && r.top < window.innerHeight * 0.6) return;
+    mock.scrollIntoView({ block: 'start' });
+  }
+
   function showPanel(panel, focusOn){
     ['chartPanel', 'imagePanel', 'notesPanel', 'reworkPanel', 'critiquePanel', 'verifyPanel']
       .forEach(function(id){
@@ -5726,7 +5760,11 @@ Q4,4390"></textarea>
     if (generating || !deckSlides.length) return;
     var targets = all ? deckSlides.map(function(s, i){ return i; }) : [activeIndex];
     setBusy(true);
-    setStatus(all ? 'Writing notes for the whole deck…' : 'Writing notes…', 'info');
+    var saying = all ? 'Writing notes for all ' + deckSlides.length + ' slides…' : 'Writing notes for this slide…';
+    setStatus(saying, 'info');
+    panelSay(notesPanel, saying);
+    if (notesOneBtn) notesOneBtn.disabled = true;
+    if (notesAllBtn) notesAllBtn.disabled = true;
 
     fetch('/api/notes', {
       method: 'POST',
@@ -5761,20 +5799,29 @@ Q4,4390"></textarea>
         paintNotes();
         saveWorking();
         pushHistory();
-        setStatus(written === 1
+        var done = written === 1
           ? 'Notes written — edit them like anything else.'
-          : 'Notes written for ' + written + ' slides.', 'info');
+          : 'Notes written for ' + written + ' slides.';
+        setStatus(done, 'info');
+        panelSay(notesPanel, done);
       })
       .catch(function(e){
         var code = (e && e.code) || 'network_error';
-        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+        var copy = errorCopy[code] || errorCopy.upstream_error;
+        setStatus(copy, 'error');
+        panelSay(notesPanel, copy, true);
       })
-      .finally(function(){ setBusy(false); });
+      .finally(function(){
+        setBusy(false);
+        if (notesOneBtn) notesOneBtn.disabled = false;
+        if (notesAllBtn) notesAllBtn.disabled = false;
+      });
   }
 
   if (notesBtn) notesBtn.addEventListener('click', function(){
     if (!notesPanel.hidden) { notesPanel.hidden = true; return; }
     paintNotes();
+    panelSay(notesPanel, '');
     showPanel(notesPanel, notesText);
   });
   if (notesOneBtn) notesOneBtn.addEventListener('click', function(){ writeNotes(false); });
@@ -5789,15 +5836,30 @@ Q4,4390"></textarea>
   function runRework(){
     var value = (reworkInput.value || '').trim();
     if (!value) {
+      panelSay(reworkPanel, 'Say what should change first.', true);
       setStatus('Say what should change first.', 'error');
       reworkInput.focus();
       return;
     }
-    handleRegenerateSlide(value);
+    // both of these used to return from handleRegenerateSlide with no message
+    // at all, which is indistinguishable from a dead button
+    if (generating) {
+      panelSay(reworkPanel, 'Still finishing the last request — give it a moment.', true);
+      return;
+    }
+    var slide = deckSlides[activeIndex];
+    if (!slide || slide.type !== 'content') {
+      panelSay(reworkPanel, 'Rework works on the slides, not the cover. Pick one from the strip above.', true);
+      return;
+    }
+    panelSay(reworkPanel, 'Reworking slide ' + (activeIndex + 1) + '…');
+    if (reworkGoBtn) reworkGoBtn.disabled = true;
+    handleRegenerateSlide(value, reworkPanel);
   }
 
   if (reworkBtn) reworkBtn.addEventListener('click', function(){
     if (!reworkPanel.hidden) { reworkPanel.hidden = true; return; }
+    panelSay(reworkPanel, '');
     showPanel(reworkPanel, reworkInput);
   });
   if (reworkGoBtn) reworkGoBtn.addEventListener('click', runRework);
@@ -5806,7 +5868,7 @@ Q4,4390"></textarea>
   });
 
   // ---- regenerate a single slide ---------------------------------------
-  function handleRegenerateSlide(instruction){
+  function handleRegenerateSlide(instruction, panel){
     if (generating) return;
     var slide = deckSlides[activeIndex];
     if (!slide || slide.type !== 'content') return;
@@ -5854,13 +5916,20 @@ Q4,4390"></textarea>
         saveWorking();
         pushHistory();
         setStatus(ask ? 'Slide reworked — Ctrl+Z puts it back.' : 'Slide redrawn.', 'info');
+        if (panel) {
+          panelSay(panel, 'Slide ' + (index + 1) + ' reworked. Ctrl+Z puts it back.');
+          revealDeck();
+        }
       })
       .catch(function(e){
         var code = (e && e.code) || 'network_error';
-        setStatus(errorCopy[code] || errorCopy.upstream_error, 'error');
+        var copy = errorCopy[code] || errorCopy.upstream_error;
+        setStatus(copy, 'error');
+        if (panel) panelSay(panel, copy, true);
       })
       .finally(function(){
         setBusy(false);
+        if (reworkGoBtn) reworkGoBtn.disabled = false;
       });
   }
 
