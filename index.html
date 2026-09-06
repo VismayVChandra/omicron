@@ -58,6 +58,8 @@
   }
 
   *{box-sizing:border-box}
+  /* any rule that sets display would otherwise beat the hidden attribute */
+  [hidden]{display:none !important}
   body{
     margin:0;
     background:var(--bg);
@@ -778,6 +780,79 @@
     .pillar, .btn-primary { transition:none }
   }
 
+  /* ---------- the editor screen ---------- */
+  body.in-app{overflow:hidden}
+  body.in-app > nav.topbar,
+  body.in-app > main,
+  body.in-app > footer{display:none}
+  #appScreen{
+    position:fixed;inset:0;z-index:60;background:var(--bg);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  #appScreen[hidden]{display:none}
+  .app-bar{
+    display:flex;align-items:flex-start;gap:20px;padding:14px 22px;
+    border-bottom:1px solid var(--line);background:var(--surface);flex:none;
+  }
+  .app-back{
+    display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;
+    font-family:'Fraunces',serif;font-weight:600;font-size:1.05rem;color:var(--deep);
+    padding:6px 4px;flex:none;
+  }
+  .app-back svg{width:24px;height:24px}
+  .app-back:hover span{text-decoration:underline}
+  .app-prompt-slot{flex:1;min-width:0;display:flex;justify-content:center}
+  /* the prompt card keeps its own styling, but trims down: the example chips
+     are there to get a first-time visitor started, and in the editor they are
+     just height taken from the slide */
+  .app-prompt-slot .prompt-card{
+    margin:0;width:100%;max-width:820px;box-shadow:none;border-radius:14px;
+    padding:12px 16px;gap:9px;
+  }
+  .app-prompt-slot .prompt-examples{display:none}
+  .app-prompt-slot .prompt-actions{padding-top:9px}
+  /* notes, voice and the style selects fold away in the editor: they are set
+     once and then only take height from the slide */
+  #appScreen:not(.opts-open) .app-prompt-slot .prompt-source,
+  #appScreen:not(.opts-open) .app-prompt-slot .prompt-style{display:none}
+  .app-opts{
+    flex:none;align-self:center;background:transparent;border:1px solid var(--line);
+    border-radius:999px;padding:7px 15px;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--wave);
+  }
+  .app-opts:hover{border-color:var(--wave)}
+  #appScreen.opts-open .app-opts{background:var(--deep);color:var(--surface);border-color:var(--deep)}
+
+  .app-body{
+    flex:1;min-height:0;display:flex;align-items:stretch;justify-content:center;
+    padding:18px 22px;overflow:auto;
+  }
+  .app-body .deck-mock{width:100%;max-width:1240px;display:flex;flex-direction:column;min-height:0}
+  .app-body .deck-body{flex:1;min-height:0;grid-template-columns:186px 1fr}
+  .app-body .deck-rail{max-height:none}
+  /* The slide takes the room the screen actually has. Sized from the available
+     HEIGHT as well as width — width alone gives a 16:9 box taller than the
+     viewport, which then scrolls instead of fitting. */
+  .app-body .deck-stage-wrap{flex:1;min-height:0;padding:22px;align-items:center}
+  .app-body .deck-slide-frame{
+    max-width:min(1080px, 100%);
+    height:100%;max-height:100%;width:auto;aspect-ratio:16/9;
+  }
+  .app-body .outline-panel{width:100%;max-width:760px;margin:0 auto;align-self:center}
+
+  .app-panels{
+    flex:none;max-height:42vh;overflow:auto;padding:0 22px 18px;
+    background:var(--bg);
+  }
+  .app-panels .deck-extras{margin-top:0;padding-top:14px}
+  .app-panels .editor-note{margin-top:12px}
+
+  @media (max-width:760px){
+    .app-bar{flex-direction:column;gap:10px;padding:12px 14px}
+    .app-body{padding:12px}
+    .app-panels{padding:0 14px 14px}
+  }
+
   /* ---------- PDF export via the browser's own print-to-PDF ---------- */
   #printDeck{display:none}
   @media print{
@@ -800,6 +875,25 @@
 </style>
 </head>
 <body>
+
+<!-- The editor. Hidden until you generate; the prompt bar, deck and panels are
+     physically moved in here rather than duplicated, so there is only ever one
+     of each element and no second set of ids to drift. -->
+<div id="appScreen" hidden>
+  <header class="app-bar">
+    <button type="button" class="app-back" id="backHome" aria-label="Back to the home page">
+      <svg viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <circle cx="13" cy="13" r="13" fill="var(--tide)"/>
+        <path d="M3 14c2 0 2-4 4.5-4s2.5 4 4.5 4 2.5-4 4.5-4 2.5 4 4.5 4" stroke="var(--surface)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span>Swell</span>
+    </button>
+    <div class="app-prompt-slot" id="appPromptSlot"></div>
+    <button type="button" class="app-opts" id="appOptsBtn" aria-expanded="false">Options</button>
+  </header>
+  <div class="app-body" id="appDeckSlot"></div>
+  <div class="app-panels" id="appPanels"></div>
+</div>
 
 <nav class="topbar">
   <div class="topbar-inner">
@@ -836,7 +930,7 @@
           <a class="btn btn-ghost btn-lg" href="#how">See how it flows</a>
         </div>
       </div>
-      <div class="prompt-card">
+      <div class="prompt-card" id="promptCard">
         <div class="prompt-row">
           <span class="prompt-chip">PROMPT</span>
           <input type="text" id="promptInput" value="A pitch deck for a tide-powered charging dock" aria-label="Topic to draft">
@@ -1037,7 +1131,7 @@
       </div>
       <p id="genStatus2" class="editor-note">Example deck shown above &mdash; five slides, drafted about a tide-powered charging dock.</p>
 
-      <div class="deck-extras">
+      <div class="deck-extras" id="deckExtras">
         <div class="extras-actions">
           <button type="button" class="btn btn-ghost" id="critiqueBtn">Pressure-test this deck</button>
           <button type="button" class="btn btn-ghost" id="verifyBtn">Check the facts</button>
@@ -1994,8 +2088,7 @@ Q4,4390"></textarea>
     setStatus('Planning the outline…', 'info');
     if (outlinePanel) outlinePanel.hidden = true;
 
-    var editorSection = document.getElementById('editorSection');
-    if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    enterApp();
 
     fetch('/api/outline', {
       method: 'POST',
@@ -2034,10 +2127,10 @@ Q4,4390"></textarea>
     if (deckCaption) deckCaption.textContent = opts.variantOf ? 'Rewriting for ' + opts.label + '…' : 'Writing the slides…';
     if (draftBadge) draftBadge.hidden = true;
 
-    var editorSection = document.getElementById('editorSection');
-    if (editorSection) editorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    enterApp();
 
     deckTopic = topic;
+    showStep('deck');
     deckSlides = [{ type:'cover', title: (plan && plan.title) || 'Drafting…', tagline: (plan && plan.tagline) || '' }];
     activeIndex = 0;
     streamPendingRender = false;
@@ -2104,6 +2197,70 @@ Q4,4390"></textarea>
         setBusy(false);
       });
   }
+
+  // ---- the editor screen ------------------------------------------------
+  // Generating switches to a full-screen editor rather than scrolling the
+  // landing page. The elements are MOVED, not cloned, so every reference
+  // captured above keeps working and there is no duplicate state.
+  var appScreen = document.getElementById('appScreen');
+  var appPromptSlot = document.getElementById('appPromptSlot');
+  var appDeckSlot = document.getElementById('appDeckSlot');
+  var appPanels = document.getElementById('appPanels');
+  var backHome = document.getElementById('backHome');
+  var inApp = false;
+
+  // remember where each piece lives on the landing page so it can go back
+  var movable = [];
+  function trackMove(id, slot){
+    var el = document.getElementById(id);
+    if (!el) return;
+    movable.push({ el: el, slot: slot, parent: el.parentNode, next: el.nextSibling });
+  }
+  trackMove('promptCard', appPromptSlot);
+  trackMove('outlinePanel', appDeckSlot);
+  trackMove('deckMock', appDeckSlot);
+  trackMove('deckExtras', appPanels);
+  trackMove('genStatus2', appPanels);
+  trackMove('chartPanel', appPanels);
+  trackMove('critiquePanel', appPanels);
+  trackMove('verifyPanel', appPanels);
+
+  function enterApp(){
+    if (inApp) return;
+    inApp = true;
+    movable.forEach(function(m){ m.slot.appendChild(m.el); });
+    appScreen.hidden = false;
+    document.body.classList.add('in-app');
+    window.scrollTo(0, 0);
+  }
+
+  function exitApp(){
+    if (!inApp) return;
+    inApp = false;
+    // back to the exact spot each element came from
+    movable.forEach(function(m){
+      if (m.next && m.next.parentNode === m.parent) m.parent.insertBefore(m.el, m.next);
+      else m.parent.appendChild(m.el);
+    });
+    appScreen.hidden = true;
+    document.body.classList.remove('in-app');
+    var mock = document.getElementById('deckMock');
+    if (mock) mock.hidden = false;   // the landing page always shows its example
+    var section = document.getElementById('editorSection');
+    if (section) section.scrollIntoView({ block: 'start' });
+  }
+
+  if (backHome) backHome.addEventListener('click', exitApp);
+  var appOptsBtn = document.getElementById('appOptsBtn');
+  if (appOptsBtn) {
+    appOptsBtn.addEventListener('click', function(){
+      var open = appScreen.classList.toggle('opts-open');
+      appOptsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && inApp && presentOverlay && presentOverlay.hidden) exitApp();
+  });
 
   // ---- themes -----------------------------------------------------------
   var deckTheme = 'tide';
@@ -2202,6 +2359,7 @@ Q4,4390"></textarea>
     draftsDrawer.hidden = true;
     resetVariants();
     saveWorking();
+    enterApp();
   }
 
   function deleteDraft(id){
@@ -2583,7 +2741,7 @@ Q4,4390"></textarea>
     critiquePanel.querySelectorAll('.where[data-slide]').forEach(function(b){
       b.addEventListener('click', function(){
         setActive(parseInt(b.getAttribute('data-slide'), 10));
-        document.getElementById('editorSection').scrollIntoView({ behavior:'smooth', block:'start' });
+        if (!inApp) document.getElementById('editorSection').scrollIntoView({ behavior:'smooth', block:'start' });
       });
     });
   }
@@ -2674,7 +2832,7 @@ Q4,4390"></textarea>
     verifyPanel.querySelectorAll('.where[data-slide]').forEach(function(b){
       b.addEventListener('click', function(){
         setActive(parseInt(b.getAttribute('data-slide'), 10));
-        document.getElementById('editorSection').scrollIntoView({ behavior:'smooth', block:'start' });
+        if (!inApp) document.getElementById('editorSection').scrollIntoView({ behavior:'smooth', block:'start' });
       });
     });
   }
@@ -2804,6 +2962,7 @@ Q4,4390"></textarea>
       if (promptInput && deckTopic) promptInput.value = deckTopic;
       if (draftBadge) draftBadge.hidden = false;
       resetVariants();
+      enterApp();
       if (deckCaption) deckCaption.textContent = 'Opened from a shared link. Edit it freely — it is your copy now.';
     }).catch(function(){
       if (deckCaption) deckCaption.textContent = "That shared link couldn't be read — showing the example deck.";
@@ -3184,12 +3343,21 @@ Q4,4390"></textarea>
     });
   }
 
+  // In the editor the outline and the deck are the same slot: they are step one
+  // and step two, not two things to look at side by side.
+  function showStep(which){
+    var mock = document.getElementById('deckMock');
+    if (!mock) return;
+    mock.hidden = inApp && which === 'outline';
+  }
+
   function showOutline(data){
     outlineSections = data.sections.slice(0, 8);
     outlineTitle.textContent = data.title || 'Untitled';
     outlineTagline.textContent = data.tagline || '';
     renderOutline();
     outlinePanel.hidden = false;
+    showStep('outline');
     outlinePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -3210,6 +3378,7 @@ Q4,4390"></textarea>
 
   if (cancelOutlineBtn) cancelOutlineBtn.addEventListener('click', function(){
     outlinePanel.hidden = true;
+    showStep('deck');
     setStatus('', null);
   });
 
