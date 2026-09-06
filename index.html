@@ -5509,7 +5509,10 @@ Q4,4390"></textarea>
     var w = selBar.offsetWidth || 300;
     var h = selBar.offsetHeight || 34;
     var top = rect.top - h - 8;
-    if (top < 8) top = Math.min(rect.bottom + 8, window.innerHeight - h - 8);
+    if (top < 8) top = rect.bottom + 8;
+    // clamped like the pickers: you cannot normally highlight text you cannot
+    // see, but a selection made before scrolling away is still a live selection
+    top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
     var left = Math.min(Math.max(8, rect.left + rect.width / 2 - w / 2), window.innerWidth - w - 8);
     selBar.style.top = Math.round(top) + 'px';
     selBar.style.left = Math.round(left) + 'px';
