@@ -3020,10 +3020,6 @@ Q4,4390"></textarea>
 
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
-  voiceTraits = readStore(VOICE_KEY, []) || [];
-  if (!Array.isArray(voiceTraits)) voiceTraits = [];
-  renderVoice();
-
   bootDeck();   // last: every feature block above is initialised by now
 
   // ---- optional source material + style controls ------------------------
@@ -3138,6 +3134,13 @@ Q4,4390"></textarea>
       setStatus('Voice forgotten — back to the tone setting.', 'info');
     });
   }
+
+  // restore here, not at the end of the script: VOICE_KEY and voiceTraits are
+  // assigned in this block, so anything earlier reads undefined and is then
+  // overwritten by the declarations above
+  var savedVoice = readStore(VOICE_KEY, []);
+  voiceTraits = Array.isArray(savedVoice) ? savedVoice : [];
+  renderVoice();
 
   // what the endpoints need to know about how this deck should read
   function draftOptions(){
