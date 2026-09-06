@@ -1346,6 +1346,44 @@
     .theme-pick{grid-template-columns:1fr}
   }
 
+  /* ---------- accounts ---------- */
+  .account-btn{color:var(--deep);border-color:var(--line)}
+  .account-btn.signed-in{color:var(--wave);border-color:var(--wave)}
+  .auth-overlay{
+    position:fixed;inset:0;z-index:220;background:rgba(4,16,17,0.62);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .auth-card{
+    position:relative;width:min(420px,100%);background:var(--surface);
+    border:1px solid var(--line);border-radius:18px;padding:30px 28px 26px;
+    box-shadow:var(--shadow-lift);
+  }
+  .auth-card h3{font-family:'Fraunces',serif;font-size:1.3rem;color:var(--deep);margin:0 0 8px}
+  .auth-lede{font-size:0.92rem;color:var(--ink-soft);line-height:1.55;margin:0 0 18px}
+  .auth-card form{display:flex;flex-direction:column;gap:10px}
+  .auth-card input{
+    border:1px solid var(--line);border-radius:11px;padding:12px 14px;
+    font-family:'Karla',system-ui,sans-serif;font-size:0.95rem;
+    background:var(--bg);color:var(--ink);
+  }
+  .auth-card input:focus{outline:2px solid var(--tide);outline-offset:1px}
+  .auth-card .btn{justify-content:center}
+  .auth-note{
+    margin:14px 0 0;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;
+    line-height:1.5;color:var(--wave);
+  }
+  .auth-note.is-error{color:var(--coral)}
+  .auth-close{
+    position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;
+    font-size:1.3rem;line-height:1;color:var(--ink-soft);padding:4px 6px;
+  }
+  .auth-close:hover{color:var(--deep)}
+  .drafts-drawer .d-where{
+    font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--wave);border:1px solid var(--line);
+    border-radius:999px;padding:2px 8px;flex:none;
+  }
+
   /* ---------- PDF export via the browser's own print-to-PDF ---------- */
   #printDeck{display:none}
   @media print{
@@ -1383,6 +1421,7 @@
     </button>
     <div class="app-prompt-slot" id="appPromptSlot"></div>
     <button type="button" class="app-opts" id="appOptsBtn" aria-expanded="false">Options</button>
+    <button type="button" class="app-opts account-btn" id="accountBtn" hidden>Sign in</button>
   </header>
   <div class="app-body" id="appDeckSlot"></div>
   <div class="app-panels" id="appPanels"></div>
@@ -1404,7 +1443,7 @@
       <a href="#quotes">Stories</a>
     </div>
     <div class="navcta">
-      <a class="link-btn" href="#top">Log in</a>
+      <button type="button" class="link-btn" id="navLogin" style="background:none;border:none;cursor:pointer;font-family:inherit">Log in</button>
       <a class="btn btn-primary" href="#top">Try Swell free</a>
     </div>
   </div>
@@ -1766,6 +1805,22 @@ Q4,4390"></textarea>
 <!-- Both must be direct children of <body>, not inside <main>: the editor hides
      main, which made Present invisible, and the print stylesheet keeps only a
      top-level #printDeck, which would have hidden the printed deck with it. -->
+<!-- Sign-in. Email link only: no password ever reaches this page, and there is
+     nothing here to leak if the markup is scraped. -->
+<div class="auth-overlay" id="authOverlay" hidden>
+  <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button type="button" class="auth-close" id="authCloseBtn" aria-label="Close">&times;</button>
+    <h3 id="authTitle">Keep your decks</h3>
+    <p class="auth-lede" id="authLede">Sign in and your decks follow you between browsers and
+      devices. Without it they stay in this browser only.</p>
+    <form id="authForm">
+      <input type="email" id="authEmail" required autocomplete="email" placeholder="you@example.com" aria-label="Email address">
+      <button type="submit" class="btn btn-primary" id="authSubmit">Email me a link</button>
+    </form>
+    <p class="auth-note" id="authNote" hidden></p>
+  </div>
+</div>
+
 <div id="printDeck" aria-hidden="true"></div>
 
 <div class="present-overlay" id="presentOverlay" hidden>
@@ -2848,6 +2903,142 @@ Q4,4390"></textarea>
   });
   applyTheme();
 
+  // ---- accounts and cloud storage ---------------------------------------
+  // Optional by design. /api/config reports whether Supabase is configured;
+  // when it is not, every path below short-circuits and drafts stay in
+  // localStorage exactly as before, so the site works with no backend at all.
+  var SUPA_SRC = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+  var cloud = null;        // the supabase client, once configured and loaded
+  var cloudUser = null;    // the signed-in user, or null
+  var accountBtn = document.getElementById('accountBtn');
+  var authOverlay = document.getElementById('authOverlay');
+  var authForm = document.getElementById('authForm');
+  var authEmail = document.getElementById('authEmail');
+  var authSubmit = document.getElementById('authSubmit');
+  var authNote = document.getElementById('authNote');
+
+  function signedIn(){ return !!(cloud && cloudUser); }
+
+  function setAuthNote(text, isError){
+    if (!authNote) return;
+    authNote.textContent = text || '';
+    authNote.hidden = !text;
+    authNote.className = 'auth-note' + (isError ? ' is-error' : '');
+  }
+
+  function paintAccount(){
+    if (!accountBtn) return;
+    accountBtn.hidden = !cloud;                 // hidden entirely when unconfigured
+    accountBtn.classList.toggle('signed-in', signedIn());
+    accountBtn.textContent = signedIn()
+      ? (cloudUser.email || 'Signed in').split('@')[0]
+      : 'Sign in';
+    var navLogin = document.getElementById('navLogin');
+    if (navLogin) navLogin.textContent = signedIn() ? 'Your decks' : 'Log in';
+  }
+
+  function openAuth(){
+    if (!cloud) return;
+    setAuthNote('');
+    authOverlay.hidden = false;
+    if (authEmail) authEmail.focus();
+  }
+  function closeAuth(){ if (authOverlay) authOverlay.hidden = true; }
+
+  function loadScript(src){
+    return new Promise(function(resolve, reject){
+      var el = document.createElement('script');
+      el.src = src;
+      el.onload = resolve;
+      el.onerror = function(){ reject(new Error('load failed')); };
+      document.head.appendChild(el);
+    });
+  }
+
+  function initCloud(){
+    return fetch('/api/config')
+      .then(function(r){ return r.ok ? r.json() : { enabled: false }; })
+      .then(function(cfg){
+        if (!cfg || !cfg.enabled) return null;
+        return loadScript(SUPA_SRC).then(function(){
+          if (!window.supabase || !window.supabase.createClient) return null;
+          cloud = window.supabase.createClient(cfg.url, cfg.anonKey, {
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+          });
+          cloud.auth.onAuthStateChange(function(_event, session){
+            cloudUser = session ? session.user : null;
+            paintAccount();
+            if (!draftsDrawer.hidden) renderDrafts();
+          });
+          return cloud.auth.getSession().then(function(res){
+            cloudUser = res && res.data && res.data.session ? res.data.session.user : null;
+            paintAccount();
+          });
+        });
+      })
+      .catch(function(){ cloud = null; })
+      .then(function(){ paintAccount(); });
+  }
+
+  var navLoginBtn = document.getElementById('navLogin');
+  if (navLoginBtn) {
+    navLoginBtn.addEventListener('click', function(){
+      if (!cloud) { setStatus('Accounts are not switched on for this site yet.', 'info'); return; }
+      if (signedIn()) { enterApp(); draftsDrawer.hidden = false; renderDrafts(); }
+      else openAuth();
+    });
+  }
+
+  if (accountBtn) {
+    accountBtn.addEventListener('click', function(){
+      if (!signedIn()) { openAuth(); return; }
+      cloud.auth.signOut().then(function(){
+        cloudUser = null;
+        paintAccount();
+        renderDrafts();
+        setStatus('Signed out. Drafts saved from now on stay in this browser.', 'info');
+      });
+    });
+  }
+  var authCloseBtn = document.getElementById('authCloseBtn');
+  if (authCloseBtn) authCloseBtn.addEventListener('click', closeAuth);
+  if (authOverlay) {
+    authOverlay.addEventListener('click', function(e){ if (e.target === authOverlay) closeAuth(); });
+  }
+  if (authForm) {
+    authForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      if (!cloud) return;
+      var email = (authEmail.value || '').trim();
+      if (!email) return;
+      authSubmit.disabled = true;
+      authSubmit.textContent = 'Sending…';
+      setAuthNote('');
+      cloud.auth.signInWithOtp({
+        email: email,
+        options: { emailRedirectTo: location.origin + location.pathname }
+      }).then(function(res){
+        if (res && res.error) throw res.error;
+        setAuthNote('Check ' + email + ' — the link signs you in. You can close this.', false);
+      }).catch(function(err){
+        var msg = (err && err.message) || '';
+        // "Failed to fetch" is the browser's wording for a network or
+        // misconfiguration problem, and means nothing to the person reading it
+        if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+          msg = "Couldn't reach the sign-in service. Check back shortly.";
+        } else if (/rate|too many/i.test(msg)) {
+          msg = 'Too many attempts just now — wait a minute and try again.';
+        } else if (!msg) {
+          msg = 'Could not send the link. Try again.';
+        }
+        setAuthNote(msg, true);
+      }).finally(function(){
+        authSubmit.disabled = false;
+        authSubmit.textContent = 'Email me a link';
+      });
+    });
+  }
+
   // ---- saved drafts (localStorage; may throw in private modes) -----------
   var DRAFTS_KEY = 'swell.drafts';
   var WORKING_KEY = 'swell.working';
@@ -2881,28 +3072,49 @@ Q4,4390"></textarea>
     }, 700);
   }
 
+  function draftName(){
+    return (deckSlides[0] && deckSlides[0].title) || deckTopic || 'Untitled deck';
+  }
+
   function saveDraft(){
+    var state = currentDeckState();
+
+    // signed in: the deck goes to the account and follows you between devices
+    if (signedIn()) {
+      setStatus('Saving…', 'info');
+      cloud.from('decks').insert({
+        user_id: cloudUser.id,
+        title: draftName(),
+        topic: state.topic || '',
+        theme: state.theme || 'tide',
+        slides: state.slides
+      }).then(function(res){
+        if (res && res.error) throw res.error;
+        setStatus('Saved to your account.', 'info');
+        renderDrafts();
+      }).catch(function(err){
+        setStatus((err && err.message) || "Couldn't save to your account.", 'error');
+      });
+      return;
+    }
+
     var drafts = readStore(DRAFTS_KEY, []);
     if (!Array.isArray(drafts)) drafts = [];
-    var state = currentDeckState();
     drafts.unshift({
       id: String(Date.now()),
-      name: (deckSlides[0] && deckSlides[0].title) || deckTopic || 'Untitled deck',
+      name: draftName(),
       savedAt: Date.now(),
       topic: state.topic,
       theme: state.theme,
       slides: state.slides
     });
     drafts = drafts.slice(0, 12);
-    if (writeStore(DRAFTS_KEY, drafts)) setStatus('Draft saved.', 'info');
+    if (writeStore(DRAFTS_KEY, drafts)) setStatus('Draft saved to this browser.', 'info');
     else setStatus("Couldn't save — this browser is blocking storage.", 'error');
     renderDrafts();
   }
 
-  function loadDraft(id){
-    var drafts = readStore(DRAFTS_KEY, []);
-    var found = drafts.filter(function(d){ return d.id === id; })[0];
-    if (!found || !Array.isArray(found.slides) || !found.slides.length) return;
+  function applyLoadedDeck(found){
     deckSlides = found.slides;
     deckTopic = found.topic || '';
     deckTheme = found.theme || 'tide';
@@ -2920,30 +3132,86 @@ Q4,4390"></textarea>
     enterApp();
   }
 
+  function loadDraft(id){
+    if (signedIn()) {
+      cloud.from('decks').select('*').eq('id', id).single().then(function(res){
+        if (res && res.error) throw res.error;
+        var row = res.data;
+        if (!row || !Array.isArray(row.slides) || !row.slides.length) return;
+        applyLoadedDeck({ slides: row.slides, topic: row.topic, theme: row.theme, name: row.title });
+      }).catch(function(err){
+        setStatus((err && err.message) || "Couldn't open that deck.", 'error');
+      });
+      return;
+    }
+    var found = readStore(DRAFTS_KEY, []).filter(function(d){ return d.id === id; })[0];
+    if (!found || !Array.isArray(found.slides) || !found.slides.length) return;
+    applyLoadedDeck(found);
+  }
+
   function deleteDraft(id){
-    var drafts = readStore(DRAFTS_KEY, []).filter(function(d){ return d.id !== id; });
-    writeStore(DRAFTS_KEY, drafts);
+    if (signedIn()) {
+      cloud.from('decks').delete().eq('id', id).then(function(res){
+        if (res && res.error) setStatus(res.error.message, 'error');
+        renderDrafts();
+      });
+      return;
+    }
+    writeStore(DRAFTS_KEY, readStore(DRAFTS_KEY, []).filter(function(d){ return d.id !== id; }));
     renderDrafts();
   }
 
-  function renderDrafts(){
-    var drafts = readStore(DRAFTS_KEY, []);
-    if (!Array.isArray(drafts) || !drafts.length) {
-      draftsDrawer.innerHTML = '<p class="drafts-empty">No saved drafts yet — hit the □ button to keep one.</p>';
-      return;
-    }
+  function draftsListHtml(rows, where){
     var html = '<ul>';
-    drafts.forEach(function(d){
+    rows.forEach(function(d){
       var when = new Date(d.savedAt || Date.now());
       html += '<li>' +
         '<span class="d-name">' + escapeHtml(d.name || 'Untitled') + '</span>' +
-        '<span class="d-meta">' + (d.slides ? d.slides.length : 0) + ' slides · ' +
-          when.toLocaleDateString() + '</span>' +
-        '<button type="button" data-load="' + d.id + '">Open</button>' +
-        '<button type="button" data-del="' + d.id + '">Delete</button>' +
+        '<span class="d-where">' + where + '</span>' +
+        '<span class="d-meta">' + (d.slides || 0) + ' slides · ' + when.toLocaleDateString() + '</span>' +
+        '<button type="button" data-load="' + escapeHtml(String(d.id)) + '">Open</button>' +
+        '<button type="button" data-del="' + escapeHtml(String(d.id)) + '">Delete</button>' +
         '</li>';
     });
-    draftsDrawer.innerHTML = html + '</ul>';
+    return html + '</ul>';
+  }
+
+  function renderDrafts(){
+    if (signedIn()) {
+      draftsDrawer.innerHTML = '<p class="drafts-empty">Loading your decks…</p>';
+      cloud.from('decks')
+        .select('id,title,topic,theme,slides,updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(30)
+        .then(function(res){
+          if (res && res.error) throw res.error;
+          var rows = (res.data || []).map(function(r){
+            return {
+              id: r.id, name: r.title,
+              savedAt: r.updated_at ? Date.parse(r.updated_at) : Date.now(),
+              slides: Array.isArray(r.slides) ? r.slides.length : 0
+            };
+          });
+          draftsDrawer.innerHTML = rows.length
+            ? draftsListHtml(rows, 'account')
+            : '<p class="drafts-empty">No decks saved to your account yet — hit □ to keep this one.</p>';
+        })
+        .catch(function(err){
+          draftsDrawer.innerHTML = '<p class="drafts-empty">' +
+            escapeHtml((err && err.message) || 'Could not reach your decks.') + '</p>';
+        });
+      return;
+    }
+
+    var drafts = readStore(DRAFTS_KEY, []);
+    if (!Array.isArray(drafts) || !drafts.length) {
+      draftsDrawer.innerHTML = '<p class="drafts-empty">No saved drafts yet — hit the □ button to keep one.' +
+        (cloud ? ' Sign in and they follow you between devices.' : '') + '</p>';
+      return;
+    }
+    draftsDrawer.innerHTML = draftsListHtml(drafts.map(function(d){
+      return { id: d.id, name: d.name, savedAt: d.savedAt, slides: (d.slides || []).length };
+    }), 'this browser');
   }
 
   if (draftsDrawer) {
@@ -4115,6 +4383,7 @@ Q4,4390"></textarea>
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
   bootDeck();   // last: every feature block above is initialised by now
+  initCloud();  // optional: no-ops entirely when Supabase is not configured
 
   // ---- optional source material + style controls ------------------------
   var sourceToggle = document.getElementById('sourceToggle');

@@ -99,12 +99,44 @@ search terms rather than image data, which keeps a link around 1KB.
 **4.0.1** — 3.12.0's bundle never settles its `write()` promise in the browser.
 The library is ~470KB, so it is fetched on first use rather than on page load.
 
+## Accounts (optional)
+
+Without accounts, decks live in `localStorage` — this browser only. Turn on
+accounts and a saved deck follows you between browsers and devices.
+
+It is entirely optional: `/api/config` reports whether Supabase is configured,
+and when it is not, nothing loads and the site behaves exactly as it did before
+accounts existed.
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Open the **SQL editor** and run [`supabase/schema.sql`](supabase/schema.sql).
+   It creates the `decks` table and the row level security policies.
+3. **Authentication → URL configuration**: set *Site URL* to your deployed URL
+   and add the same URL under *Redirect URLs*. Sign-in is an emailed link, so
+   this is what the link comes back to.
+4. **Project settings → API**: copy the *Project URL* and the *anon public* key.
+5. Add both to Vercel under **Settings → Environment Variables**:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+6. Redeploy.
+
+The anon key is meant to be public — it carries no privileges of its own. Every
+rule that matters is the row level security in `schema.sql`, which compares
+`auth.uid()` to each row's `user_id`, so a signed-in person can only ever read
+and write their own decks. The *service role* key must never be used here.
+
+Supabase's built-in email sender is rate limited and fine for trying this out;
+a real deployment wants SMTP configured under Authentication → Emails.
+
 ## Not built
 
-Accounts, cross-device storage, real-time collaboration and view analytics all
-need infrastructure to be provisioned (a database, a realtime service) and are
-not part of this repo. AI-generated slide images need a paid image API; the free
-generators cannot sustain a deck's worth of requests.
+Real-time collaboration and view analytics on shared links need infrastructure
+beyond the database above and are not built. AI-generated slide images need a
+paid image API; the free generators cannot sustain a deck's worth of requests.
+
+Editing is still shallow next to the generation: you can retype any line, drag
+slides to reorder and regenerate one slide, but you cannot change a slide's
+layout after the fact, add a slide by hand, replace an image, or undo anything.
 
 ## Deploy on Vercel
 
