@@ -325,6 +325,61 @@
   #pptxBtn, #pdfBtn{width:auto;padding:0 9px;font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:.04em}
   .deck-icon-btn.light{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);color:#fff}
   .deck-icon-btn.light:hover{border-color:rgba(255,255,255,0.5)}
+
+  /* the slide-scoped actions: add, relayout, repicture, duplicate, delete.
+     A row of their own rather than six more glyphs in the chrome above —
+     these act on one slide, the toolbar acts on the deck. */
+  .slide-tools{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);
+  }
+  .slide-tools .st-label{
+    font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.09em;
+    text-transform:uppercase;color:var(--ink-soft);margin-right:4px;
+  }
+  .slide-tool{
+    cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    padding:6px 11px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
+  }
+  .slide-tool:hover:not(:disabled){border-color:var(--wave);color:var(--deep)}
+  .slide-tool:disabled{opacity:0.35;cursor:default}
+  .slide-tool.danger:hover:not(:disabled){border-color:#c0524a;color:#c0524a}
+
+  .layout-pick{grid-template-columns:repeat(2,minmax(158px,1fr))}
+  .layout-pick button{display:block}
+  .layout-pick .lp-name{display:block;color:var(--deep);font-size:0.74rem}
+  .layout-pick .lp-hint{display:block;font-size:0.65rem;opacity:0.72;margin-top:2px;line-height:1.35}
+
+  .img-results{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .img-results button{
+    padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    background:var(--surface-2);cursor:pointer;aspect-ratio:4/3;
+  }
+  .img-results button:hover{border-color:var(--wave)}
+  .img-results img{width:100%;height:100%;object-fit:cover;display:block}
+  .img-search{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .img-search input{
+    flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface);color:var(--deep);font:inherit;font-size:0.86rem;
+  }
+  .img-hint{font-size:0.8rem;color:var(--ink-soft);margin:12px 0 0}
+  @media (max-width:620px){ .img-results{grid-template-columns:repeat(2,1fr)} }
+
+  .drafts-drawer input.d-rename{
+    flex:1;min-width:0;padding:4px 8px;border:1px solid var(--wave);border-radius:7px;
+    background:var(--surface);color:var(--deep);font:inherit;font-size:0.86rem;font-weight:600;
+  }
+
+  /* An emptied line has no height left to click back into, so it names itself.
+     Which pseudo-element carries the label depends on what the themes already
+     spend there: ::before is the bullet marker on a list item and the em dash
+     on a quote attribution, so those two take ::after instead. */
+  .deck-slide [contenteditable]:empty:not(li):not(.quote-attr)::before,
+  .deck-slide li[contenteditable]:empty::after,
+  .deck-slide .quote-attr[contenteditable]:empty::after{
+    content:attr(data-ph);color:var(--s-muted);opacity:0.45;font-style:normal;
+    font-weight:inherit;letter-spacing:normal;
+  }
   .editor-note{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft)}
 
   .deck-body{display:grid;grid-template-columns:168px 1fr}
@@ -1344,6 +1399,9 @@
     .present-controls{bottom:16px}
     .present-close{top:12px;right:12px}
     .theme-pick{grid-template-columns:1fr}
+    /* match the 40px touch targets the rest of the phone layout uses */
+    .slide-tool{min-height:40px;padding:6px 13px}
+    .slide-tools{padding:10px 12px}
   }
 
   /* ---------- accounts ---------- */
@@ -1651,6 +1709,8 @@
                 <button type="button" data-theme="amber"><span class="theme-dot" data-theme="amber"></span>Amber</button>
               </div>
             </div>
+            <button type="button" class="deck-icon-btn" id="undoBtn" aria-label="Undo" title="Undo (Ctrl+Z)">&#8630;</button>
+            <button type="button" class="deck-icon-btn" id="redoBtn" aria-label="Redo" title="Redo (Ctrl+Shift+Z)">&#8631;</button>
             <span id="slideCounter" class="slide-counter tabular">1 / 5</span>
             <button type="button" class="deck-icon-btn" id="redoSlideBtn" aria-label="Regenerate this slide" title="Regenerate this slide">&#8635;</button>
             <button type="button" class="deck-icon-btn" id="prevSlideBtn" aria-label="Previous slide">&larr;</button>
@@ -1664,6 +1724,15 @@
           </div>
         </div>
         <div class="drafts-drawer" id="draftsDrawer" hidden></div>
+        <div class="slide-tools" id="slideTools">
+          <span class="st-label">This slide</span>
+          <button type="button" class="slide-tool" id="addSlideBtn" title="Add a slide after this one">+ Add</button>
+          <button type="button" class="slide-tool" id="layoutBtn" title="Change this slide&#39;s layout">Layout</button>
+          <button type="button" class="slide-tool" id="imageBtn" title="Choose or clear the photograph">Image</button>
+          <button type="button" class="slide-tool" id="dupSlideBtn" title="Duplicate this slide">Duplicate</button>
+          <button type="button" class="slide-tool danger" id="delSlideBtn" title="Delete this slide">Delete</button>
+        </div>
+        <div class="theme-pick layout-pick" id="layoutPick" role="group" aria-label="Slide layout" hidden></div>
         <div class="deck-body">
           <div class="deck-rail" id="deckRail"></div>
           <div class="deck-stage-wrap">
@@ -1703,6 +1772,18 @@ Q4,4390"></textarea>
           <span class="csv-note" id="csvNote"></span>
           <button type="button" class="btn btn-primary" id="addChartBtn">Add the slide</button>
         </div>
+      </div>
+      <div class="critique-panel" id="imagePanel" hidden>
+        <h4>The photograph on this slide</h4>
+        <p class="lede">Search Wikimedia Commons and pick one, or clear it. Everything here is
+          openly licensed &mdash; the credit travels with the picture onto the slide.</p>
+        <div class="img-search">
+          <input type="text" id="imageQuery" spellcheck="false" placeholder="harbour at dawn">
+          <button type="button" class="btn btn-primary" id="imageSearchBtn">Search</button>
+          <button type="button" class="btn btn-ghost" id="imageClearBtn">Clear the photo</button>
+        </div>
+        <div class="img-results" id="imageResults"></div>
+        <p class="img-hint" id="imageNote"></p>
       </div>
       <div class="critique-panel" id="critiquePanel" hidden></div>
       <div class="critique-panel verify-panel" id="verifyPanel" hidden></div>
@@ -2106,20 +2187,30 @@ Q4,4390"></textarea>
     return p;
   }
 
-  function mediaMarkup(query, cls){
-    return '<div class="' + cls + '" data-state="loading" data-query="' + escapeHtml(query) + '">' +
-      '<img alt="">' +
-      '<span class="media-credit" hidden></span>' +
-      '</div>';
+  // A slide's picture is normally a search term, resolved through the API and
+  // memoised. Once someone picks a specific one, the choice is what matters,
+  // so the exact URL and its credit ride along on the slide and short-circuit
+  // the lookup entirely.
+  function mediaMarkup(slide, cls){
+    var pick = slide.pick && slide.pick.url ? slide.pick : null;
+    var credit = pick ? [pick.credit, pick.license].filter(Boolean).join(' · ') : '';
+    return '<div class="' + cls + '" data-state="loading" data-query="' + escapeHtml(slide.image || '') + '"' +
+      (pick ? ' data-url="' + escapeHtml(pick.url) + '" data-credit="' + escapeHtml(credit) + '"' : '') +
+      '><img alt=""><span class="media-credit" hidden></span></div>';
   }
 
   function attachMedia(root){
     Array.prototype.forEach.call(root.querySelectorAll('.slide-media, .cover-media'), function(box){
       var query = box.getAttribute('data-query');
+      var direct = box.getAttribute('data-url');
       var img = box.querySelector('img');
-      if (!query || !img) return;
+      if ((!query && !direct) || !img) return;
 
-      Promise.resolve(resolveImage(query)).then(function(data){
+      var source = direct
+        ? Promise.resolve({ url: direct, credit: box.getAttribute('data-credit') || '', license: '' })
+        : Promise.resolve(resolveImage(query));
+
+      source.then(function(data){
         if (!data || !data.url) { box.setAttribute('data-state', 'failed'); return; }
         var credit = box.querySelector('.media-credit');
         if (credit && (data.credit || data.license)) {
@@ -2136,15 +2227,26 @@ Q4,4390"></textarea>
 
   // warm the lookups one at a time so clicking through a finished deck is instant
   function prefetchImages(){
-    var queue = deckSlides.filter(function(s){ return s.image; }).map(function(s){ return s.image; });
+    var queue = deckSlides.filter(function(s){ return s.image || (s.pick && s.pick.url); });
     (function next(){
-      var q = queue.shift();
-      if (!q) return;
-      Promise.resolve(resolveImage(q)).then(function(data){
+      var s = queue.shift();
+      if (!s) return;
+      if (s.pick && s.pick.url) { var chosen = new Image(); chosen.src = s.pick.url; next(); return; }
+      Promise.resolve(resolveImage(s.image)).then(function(data){
         if (data && data.url) { var im = new Image(); im.src = data.url; }
         next();
       });
     })();
+  }
+
+  // what a slide's picture resolves to, whichever way it was chosen
+  function slideImage(slide){
+    if (slide.pick && slide.pick.url) return Promise.resolve(slide.pick);
+    if (!slide.image) return Promise.resolve(null);
+    return Promise.resolve(resolveImage(slide.image));
+  }
+  function hasImage(slide){
+    return !!(slide && (slide.image || (slide.pick && slide.pick.url)));
   }
 
   function defaultSlides(){
@@ -2212,12 +2314,12 @@ Q4,4390"></textarea>
     var ed = editable ? ' contenteditable="true" spellcheck="false"' : '';
     var foot = slideFoot(seed);
     if (slide.type === 'cover') {
-      var coverMedia = slide.image ? mediaMarkup(slide.image, 'cover-media') + '<div class="cover-scrim"></div>' : '';
-      return '<div class="deck-slide cover' + (slide.image ? ' has-image' : '') + '">' +
-        coverMedia + (slide.image ? '' : waveAccentSvg(seed)) +
+      var coverMedia = hasImage(slide) ? mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' : '';
+      return '<div class="deck-slide cover' + (hasImage(slide) ? ' has-image' : '') + '">' +
+        coverMedia + (hasImage(slide) ? '' : waveAccentSvg(seed)) +
         '<span class="eyebrow-mini">Swell draft</span>' +
-        '<h3 data-field="title"' + ed + '>' + escapeHtml(slide.title || 'Untitled') + '</h3>' +
-        '<p data-field="tagline"' + ed + '>' + escapeHtml(slide.tagline || '') + '</p>' +
+        '<h3 data-field="title" data-ph="Deck title"' + ed + '>' + escapeHtml(slide.title || 'Untitled') + '</h3>' +
+        '<p data-field="tagline" data-ph="A line under the title"' + ed + '>' + escapeHtml(slide.tagline || '') + '</p>' +
         '</div>';
     }
 
@@ -2226,8 +2328,8 @@ Q4,4390"></textarea>
 
     if (layout === 'chart' && slide.chart && slide.chart.values && slide.chart.values.length) {
       return '<div class="deck-slide content chart">' +
-        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
-        (slide.body ? '<p class="slide-body" data-field="body"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+        '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
         '<div class="chart-holder">' + chartSvg(slide.chart) + '</div>' + foot +
         '</div>';
     }
@@ -2238,18 +2340,18 @@ Q4,4390"></textarea>
       for (var si = 1; si <= seed && si < deckSlides.length; si++) {
         if (normalizeLayout(deckSlides[si].layout) === 'section') sectionNo++;
       }
-      return '<div class="deck-slide section' + (slide.image ? ' has-image' : '') + '">' +
-        (slide.image ? mediaMarkup(slide.image, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
+      return '<div class="deck-slide section' + (hasImage(slide) ? ' has-image' : '') + '">' +
+        (hasImage(slide) ? mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
         '<span class="section-no">' + (sectionNo < 10 ? '0' : '') + sectionNo + '</span>' +
-        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
         '</div>';
     }
 
     // one line, full bleed, nothing else competing with it
     if (layout === 'statement') {
-      return '<div class="deck-slide statement' + (slide.image ? ' has-image' : '') + '">' +
-        (slide.image ? mediaMarkup(slide.image, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
-        '<p class="statement-text" data-field="bullet" data-index="0"' + ed + '>' +
+      return '<div class="deck-slide statement' + (hasImage(slide) ? ' has-image' : '') + '">' +
+        (hasImage(slide) ? mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
+        '<p class="statement-text" data-field="bullet" data-index="0" data-ph="The one line"' + ed + '>' +
         escapeHtml(bullets[0] || '') + '</p>' +
         '</div>';
     }
@@ -2257,12 +2359,12 @@ Q4,4390"></textarea>
     if (layout === 'steps') {
       var stepItems = bullets.map(function(b, i){
         return '<li><span class="step-no">' + (i + 1) + '</span>' +
-          '<span class="step-text" data-field="bullet" data-index="' + i + '"' + ed + '>' +
+          '<span class="step-text" data-field="bullet" data-index="' + i + '" data-ph="This step"' + ed + '>' +
           escapeHtml(b) + '</span></li>';
       }).join('');
       return '<div class="deck-slide content steps">' +
-        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
-        (slide.body ? '<p class="slide-body" data-field="body"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+        '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
         '<ol class="step-list">' + stepItems + '</ol>' + foot +
         '</div>';
     }
@@ -2271,44 +2373,44 @@ Q4,4390"></textarea>
       var col = function(sideKey){
         var side = slide[sideKey] || { label: '', points: [] };
         return '<div class="cmp-col">' +
-          '<span class="cmp-label" data-field="' + sideKey + 'Label"' + ed + '>' + escapeHtml(side.label || '') + '</span>' +
+          '<span class="cmp-label" data-field="' + sideKey + 'Label" data-ph="Column"' + ed + '>' + escapeHtml(side.label || '') + '</span>' +
           '<ul>' + (side.points || []).map(function(p, i){
-            return '<li data-field="' + sideKey + 'Point" data-index="' + i + '"' + ed + '>' + escapeHtml(p) + '</li>';
+            return '<li data-field="' + sideKey + 'Point" data-index="' + i + '" data-ph="A point"' + ed + '>' + escapeHtml(p) + '</li>';
           }).join('') + '</ul></div>';
       };
       return '<div class="deck-slide content compare">' +
-        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
         '<div class="cmp-cols">' + col('left') + '<div class="cmp-rule"></div>' + col('right') + '</div>' + foot +
         '</div>';
     }
 
     if (layout === 'stat') {
       return '<div class="deck-slide content stat">' + waveAccentSvg(seed) +
-        '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
-        '<p class="stat-value" data-field="bullet" data-index="0"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
-        '<p class="stat-support" data-field="bullet" data-index="1"' + ed + '>' + escapeHtml(bullets[1] || '') + '</p>' + foot +
+        '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        '<p class="stat-value" data-field="bullet" data-index="0" data-ph="42%"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
+        '<p class="stat-support" data-field="bullet" data-index="1" data-ph="What the number means"' + ed + '>' + escapeHtml(bullets[1] || '') + '</p>' + foot +
         '</div>';
     }
 
     if (layout === 'quote') {
       return '<div class="deck-slide content quote">' + waveAccentSvg(seed) +
-        '<p class="quote-text" data-field="bullet" data-index="0"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
-        '<p class="quote-attr" data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</p>' + foot +
+        '<p class="quote-text" data-field="bullet" data-index="0" data-ph="The quotation"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
+        '<p class="quote-attr" data-field="heading" data-ph="Who said it"' + ed + '>' + escapeHtml(slide.heading || '') + '</p>' + foot +
         '</div>';
     }
 
     var items = bullets.map(function(b, i){
-      return '<li data-field="bullet" data-index="' + i + '"' + ed + '>' + escapeHtml(b) + '</li>';
+      return '<li data-field="bullet" data-index="' + i + '" data-ph="A point"' + ed + '>' + escapeHtml(b) + '</li>';
     }).join('');
     var text =
-      '<h3 data-field="heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
-      (slide.body ? '<p class="slide-body" data-field="body"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+      '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+      (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
       '<ul>' + items + '</ul>';
 
-    if (slide.image) {
+    if (hasImage(slide)) {
       return '<div class="deck-slide content bullets split">' +
         '<div class="slide-text">' + text + '</div>' +
-        mediaMarkup(slide.image, 'slide-media') + foot +
+        mediaMarkup(slide, 'slide-media') + foot +
         '</div>';
     }
     return '<div class="deck-slide content bullets">' + waveAccentSvg(seed) + text + foot + '</div>';
@@ -2379,6 +2481,7 @@ Q4,4390"></textarea>
     renderThumbs();
     renderStage();
     saveWorking();
+    pushHistory();
   }
 
   function renderThumbs(animate){
@@ -2409,6 +2512,7 @@ Q4,4390"></textarea>
       redoSlideBtn.disabled = isCover || generating;
       redoSlideBtn.title = isCover ? 'Regenerate works on content slides' : 'Regenerate this slide';
     }
+    updateSlideTools();
     Array.prototype.forEach.call(deckRail.querySelectorAll('.deck-thumb'), function(el){
       el.classList.toggle('active', parseInt(el.getAttribute('data-index'), 10) === activeIndex);
     });
@@ -2460,7 +2564,10 @@ Q4,4390"></textarea>
         slide.bullets[idx] = text;
       }
     }
+    // an emptied field keeps a stray <br>, which defeats :empty and its label
+    if (!text && el.innerHTML !== '') el.innerHTML = '';
     saveWorking();
+    pushHistorySoon();
   });
 
   if (prevSlideBtn) prevSlideBtn.addEventListener('click', function(){ setActive(activeIndex - 1); });
@@ -2749,6 +2856,8 @@ Q4,4390"></textarea>
           }
         } else {
           resetVariants();
+          forgetDeckIdentity();   // a new draft is not an edit of the last save
+          resetHistory();
           if (critiquePanel) critiquePanel.hidden = true;
           if (verifyPanel) verifyPanel.hidden = true;
           if (deckCaption) {
@@ -2898,6 +3007,7 @@ Q4,4390"></textarea>
       deckTheme = btn.getAttribute('data-theme') || 'tide';
       applyTheme();
       saveWorking();
+      pushHistory();
       closeThemes();
     });
   });
@@ -3042,6 +3152,27 @@ Q4,4390"></textarea>
   // ---- saved drafts (localStorage; may throw in private modes) -----------
   var DRAFTS_KEY = 'swell.drafts';
   var WORKING_KEY = 'swell.working';
+
+  // Which saved deck is open, if any. Without this every save inserted a new
+  // row, so pressing save twice left two copies and editing a saved deck left
+  // three. An open deck is updated in place; only a new one is inserted.
+  var deckId = null;
+  var deckOrigin = null;   // 'cloud' | 'local' | null
+  var deckLabel = '';      // a name given by hand, which beats the cover title
+
+  function forgetDeckIdentity(){
+    deckId = null;
+    deckOrigin = null;
+    deckLabel = '';
+    paintSaveState();
+  }
+
+  function paintSaveState(){
+    if (!saveDraftBtn) return;
+    var saved = !!(deckId && deckOrigin);
+    saveDraftBtn.title = saved ? 'Update this saved deck' : 'Save this deck';
+    saveDraftBtn.setAttribute('aria-label', saved ? 'Update saved deck' : 'Save deck');
+  }
   var saveDraftBtn = document.getElementById('saveDraftBtn');
   var draftsBtn = document.getElementById('draftsBtn');
   var draftsDrawer = document.getElementById('draftsDrawer');
@@ -3060,7 +3191,8 @@ Q4,4390"></textarea>
   function currentDeckState(){
     return {
       topic: deckTopic, theme: deckTheme, slides: deckSlides,
-      original: originalDeck || deckSlides, variant: activeVariant
+      original: originalDeck || deckSlides, variant: activeVariant,
+      id: deckId, origin: deckOrigin, label: deckLabel
     };
   }
 
@@ -3073,7 +3205,7 @@ Q4,4390"></textarea>
   }
 
   function draftName(){
-    return (deckSlides[0] && deckSlides[0].title) || deckTopic || 'Untitled deck';
+    return deckLabel || (deckSlides[0] && deckSlides[0].title) || deckTopic || 'Untitled deck';
   }
 
   // Postgres jsonb refuses a few things JavaScript strings happily hold, and
@@ -3102,8 +3234,14 @@ Q4,4390"></textarea>
   function saveLocally(state, note){
     var drafts = readStore(DRAFTS_KEY, []);
     if (!Array.isArray(drafts)) drafts = [];
+
+    // an open local draft is replaced, not duplicated; a cloud deck that could
+    // not be reached lands here as a fresh copy rather than overwriting one
+    var reuse = deckOrigin === 'local' && deckId;
+    var id = reuse ? deckId : String(Date.now());
+    drafts = drafts.filter(function(d){ return d.id !== id; });
     drafts.unshift({
-      id: String(Date.now()),
+      id: id,
       name: draftName(),
       savedAt: Date.now(),
       topic: state.topic,
@@ -3111,8 +3249,16 @@ Q4,4390"></textarea>
       slides: state.slides
     });
     drafts = drafts.slice(0, 12);
-    if (writeStore(DRAFTS_KEY, drafts)) setStatus(note || 'Draft saved to this browser.', 'info');
-    else setStatus("Couldn't save — this browser is blocking storage.", 'error');
+
+    if (writeStore(DRAFTS_KEY, drafts)) {
+      if (!reuse && deckOrigin !== 'cloud') { deckId = id; deckOrigin = 'local'; }
+      deckLabel = draftName();
+      paintSaveState();
+      saveWorking();
+      setStatus(note || (reuse ? 'Draft updated in this browser.' : 'Draft saved to this browser.'), 'info');
+    } else {
+      setStatus("Couldn't save — this browser is blocking storage.", 'error');
+    }
     renderDrafts();
   }
 
@@ -3121,16 +3267,45 @@ Q4,4390"></textarea>
 
     // signed in: the deck goes to the account and follows you between devices
     if (signedIn()) {
-      setStatus('Saving…', 'info');
-      cloud.from('decks').insert({
-        user_id: cloudUser.id,
+      var updating = !!(deckId && deckOrigin === 'cloud');
+      setStatus(updating ? 'Updating…' : 'Saving…', 'info');
+
+      var row = {
         title: jsonSafeText(draftName()),
         topic: jsonSafeText(state.topic || ''),
         theme: state.theme || 'tide',
         slides: jsonSafe(state.slides)
-      }).then(function(res){
+      };
+
+      var insertRow = function(){
+        return cloud.from('decks')
+          .insert(Object.assign({ user_id: cloudUser.id }, row))
+          .select('id');
+      };
+
+      var request = updating
+        ? cloud.from('decks').update(row).eq('id', deckId).select('id')
+        : insertRow();
+
+      Promise.resolve(request).then(function(res){
         if (res && res.error) throw res.error;
-        setStatus('Saved to your account.', 'info');
+        // an update that matched nothing means the row is gone from under us
+        if (updating && !(res.data && res.data.length)) {
+          deckId = null;
+          deckOrigin = null;
+          return Promise.resolve(insertRow()).then(function(again){
+            if (again && again.error) throw again.error;
+            return again;
+          });
+        }
+        return res;
+      }).then(function(res){
+        var saved = res && res.data && res.data[0];
+        if (saved && saved.id) { deckId = saved.id; deckOrigin = 'cloud'; }
+        deckLabel = draftName();
+        paintSaveState();
+        saveWorking();
+        setStatus(updating && saved ? 'Updated in your account.' : 'Saved to your account.', 'info');
         renderDrafts();
       }).catch(function(err){
         // never lose the deck to a failed round trip: keep it in this browser
@@ -3147,6 +3322,10 @@ Q4,4390"></textarea>
   }
 
   function applyLoadedDeck(found){
+    deckId = found.id || null;
+    deckOrigin = found.origin || null;
+    deckLabel = found.name || '';
+    paintSaveState();
     deckSlides = found.slides;
     deckTopic = found.topic || '';
     deckTheme = found.theme || 'tide';
@@ -3170,7 +3349,8 @@ Q4,4390"></textarea>
         if (res && res.error) throw res.error;
         var row = res.data;
         if (!row || !Array.isArray(row.slides) || !row.slides.length) return;
-        applyLoadedDeck({ slides: row.slides, topic: row.topic, theme: row.theme, name: row.title });
+        applyLoadedDeck({ slides: row.slides, topic: row.topic, theme: row.theme,
+          name: row.title, id: row.id, origin: 'cloud' });
       }).catch(function(err){
         setStatus((err && err.message) || "Couldn't open that deck.", 'error');
       });
@@ -3178,10 +3358,13 @@ Q4,4390"></textarea>
     }
     var found = readStore(DRAFTS_KEY, []).filter(function(d){ return d.id === id; })[0];
     if (!found || !Array.isArray(found.slides) || !found.slides.length) return;
+    found.origin = 'local';
     applyLoadedDeck(found);
   }
 
   function deleteDraft(id){
+    // the deck on screen survives its saved copy, but stops claiming to be it
+    if (String(id) === String(deckId)) forgetDeckIdentity();
     if (signedIn()) {
       cloud.from('decks').delete().eq('id', id).then(function(res){
         if (res && res.error) setStatus(res.error.message, 'error');
@@ -3193,6 +3376,51 @@ Q4,4390"></textarea>
     renderDrafts();
   }
 
+  function renameDraft(id, name){
+    if (String(id) === String(deckId)) { deckLabel = name; saveWorking(); }
+    if (signedIn()) {
+      cloud.from('decks').update({ title: jsonSafeText(name) }).eq('id', id).then(function(res){
+        if (res && res.error) setStatus(res.error.message, 'error');
+        renderDrafts();
+      });
+      return;
+    }
+    var drafts = readStore(DRAFTS_KEY, []);
+    if (!Array.isArray(drafts)) drafts = [];
+    drafts.forEach(function(d){ if (d.id === id) d.name = name; });
+    writeStore(DRAFTS_KEY, drafts);
+    renderDrafts();
+  }
+
+  // rename in place rather than in a dialog: the row is already the right shape
+  function startRename(btn){
+    var li = btn.closest ? btn.closest('li') : null;
+    var span = li ? li.querySelector('.d-name') : null;
+    if (!span) return;
+    var id = btn.getAttribute('data-rename');
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'd-rename';
+    input.value = span.textContent;
+    span.parentNode.replaceChild(input, span);
+    input.focus();
+    input.select();
+
+    var settled = false;
+    function finish(keep){
+      if (settled) return;
+      settled = true;
+      var value = input.value.trim();
+      if (keep && value) renameDraft(id, value);
+      else renderDrafts();
+    }
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener('blur', function(){ finish(true); });
+  }
+
   function draftsListHtml(rows, where){
     var html = '<ul>';
     rows.forEach(function(d){
@@ -3202,6 +3430,7 @@ Q4,4390"></textarea>
         '<span class="d-where">' + where + '</span>' +
         '<span class="d-meta">' + (d.slides || 0) + ' slides · ' + when.toLocaleDateString() + '</span>' +
         '<button type="button" data-load="' + escapeHtml(String(d.id)) + '">Open</button>' +
+        '<button type="button" data-rename="' + escapeHtml(String(d.id)) + '">Rename</button>' +
         '<button type="button" data-del="' + escapeHtml(String(d.id)) + '">Delete</button>' +
         '</li>';
     });
@@ -3251,6 +3480,7 @@ Q4,4390"></textarea>
       var el = e.target;
       if (!el || !el.getAttribute) return;
       if (el.getAttribute('data-load')) loadDraft(el.getAttribute('data-load'));
+      else if (el.getAttribute('data-rename')) startRename(el);
       else if (el.getAttribute('data-del')) deleteDraft(el.getAttribute('data-del'));
     });
   }
@@ -3273,6 +3503,10 @@ Q4,4390"></textarea>
     deckSlides = saved.slides;
     deckTopic = saved.topic || deckTopic;
     deckTheme = saved.theme || 'tide';
+    deckId = saved.id || null;
+    deckOrigin = saved.origin || null;
+    deckLabel = saved.label || '';
+    paintSaveState();
     originalDeck = Array.isArray(saved.original) && saved.original.length ? saved.original : saved.slides.slice();
     activeVariant = saved.variant || '__original';
     activeIndex = 0;
@@ -3467,6 +3701,7 @@ Q4,4390"></textarea>
       renderThumbs();
       renderStage();
       saveWorking();
+      pushHistory();
       chartPanel.hidden = true;
       csvInput.value = '';
       csvNote.textContent = '';
@@ -3530,6 +3765,7 @@ Q4,4390"></textarea>
     prefetchImages();
     saveWorking();
     markVariant();
+    pushHistory();
     if (deckCaption) deckCaption.textContent = label;
   }
 
@@ -3820,6 +4056,8 @@ Q4,4390"></textarea>
       if (promptInput && deckTopic) promptInput.value = deckTopic;
       if (draftBadge) draftBadge.hidden = false;
       resetVariants();
+      forgetDeckIdentity();   // a shared link is a copy, not the sender's row
+      resetHistory();
       enterApp();
       if (deckCaption) deckCaption.textContent = 'Opened from a shared link. Edit it freely — it is your copy now.';
     }).catch(function(){
@@ -3843,7 +4081,7 @@ Q4,4390"></textarea>
     attachMedia(printDeck);
 
     // give the pictures a moment to decode, otherwise they print as blanks
-    var pending = deckSlides.filter(function(s){ return s.image; }).length;
+    var pending = deckSlides.filter(hasImage).length;
     setTimeout(function(){
       setStatus('', null);
       window.print();
@@ -3933,12 +4171,12 @@ Q4,4390"></textarea>
 
     // resolve every image to bytes first
     var jobs = deckSlides.map(function(s){
-      if (!s.image) return Promise.resolve(null);
+      if (!hasImage(s)) return Promise.resolve(null);
       // full-bleed layouts become slide backgrounds, which PptxGenJS files as
       // .png whatever the bytes are — so they must actually be PNG
       var lay = normalizeLayout(s.layout);
       var isBackground = s.type === 'cover' || lay === 'section' || lay === 'statement';
-      return Promise.resolve(resolveImage(s.image)).then(function(found){
+      return slideImage(s).then(function(found){
         if (!found || !found.url) return null;
         return fetchImageData(found.url, theme.accent, isBackground ? 'image/png' : 'image/jpeg');
       }).catch(function(){ return null; });
@@ -4556,6 +4794,516 @@ Q4,4390"></textarea>
     });
   });
 
+  // ---- undo, redo, and editing a deck by hand ---------------------------
+  // Every change to the deck lands in a snapshot, so a mis-drag, a deletion or
+  // a regenerate is one keystroke from being undone. Typing is coalesced: a
+  // burst of keys becomes one entry rather than one per character. Note the
+  // name — `history` alone would shadow window.history, which share links use.
+  var deckHistory = [];
+  var histIndex = -1;
+  var histTimer = null;
+  var HIST_MAX = 60;
+
+  var undoBtn = document.getElementById('undoBtn');
+  var redoBtn = document.getElementById('redoBtn');
+  var addSlideBtn = document.getElementById('addSlideBtn');
+  var layoutBtn = document.getElementById('layoutBtn');
+  var imageBtn = document.getElementById('imageBtn');
+  var dupSlideBtn = document.getElementById('dupSlideBtn');
+  var delSlideBtn = document.getElementById('delSlideBtn');
+
+  function snapshot(){
+    return {
+      slides: JSON.parse(JSON.stringify(deckSlides)),
+      theme: deckTheme,
+      active: activeIndex
+    };
+  }
+
+  function updateHistoryButtons(){
+    if (undoBtn) undoBtn.disabled = histIndex <= 0;
+    if (redoBtn) redoBtn.disabled = histIndex >= deckHistory.length - 1;
+  }
+
+  function pushHistory(){
+    clearTimeout(histTimer);
+    histTimer = null;
+    deckHistory = deckHistory.slice(0, histIndex + 1);   // a new branch drops the redo tail
+    deckHistory.push(snapshot());
+    if (deckHistory.length > HIST_MAX) deckHistory.shift();
+    histIndex = deckHistory.length - 1;
+    updateHistoryButtons();
+  }
+
+  function pushHistorySoon(){
+    clearTimeout(histTimer);
+    histTimer = setTimeout(function(){ histTimer = null; pushHistory(); }, 700);
+  }
+
+  // typing may still be in the debounce when undo is pressed; land it first so
+  // the keystroke undoes what was just typed rather than the change before it
+  function flushHistory(){
+    if (!histTimer) return;
+    clearTimeout(histTimer);
+    histTimer = null;
+    pushHistory();
+  }
+
+  function resetHistory(){
+    clearTimeout(histTimer);
+    histTimer = null;
+    deckHistory = [snapshot()];
+    histIndex = 0;
+    updateHistoryButtons();
+  }
+
+  function applySnapshot(snap){
+    var wasCount = deckSlides.length;
+    var wasActive = activeIndex;
+    deckSlides = JSON.parse(JSON.stringify(snap.slides));
+    deckTheme = snap.theme || deckTheme;
+
+    // Undoing an edit should leave you looking at the slide you were editing.
+    // Only a change in the number of slides — an add, a delete — means the
+    // snapshot's own position is the one worth restoring.
+    activeIndex = wasCount === deckSlides.length
+      ? Math.min(wasActive, deckSlides.length - 1)
+      : Math.max(0, Math.min(deckSlides.length - 1, snap.active || 0));
+    applyTheme();
+    renderThumbs(false);
+    renderStage();
+    prefetchImages();
+    saveWorking();
+    updateHistoryButtons();
+  }
+
+  function undo(){
+    flushHistory();
+    if (histIndex <= 0) { setStatus('Nothing left to undo.', 'info'); return; }
+    histIndex--;
+    applySnapshot(deckHistory[histIndex]);
+    setStatus('Undone.', 'info');
+  }
+
+  function redoEdit(){
+    if (histIndex >= deckHistory.length - 1) return;
+    histIndex++;
+    applySnapshot(deckHistory[histIndex]);
+    setStatus('Redone.', 'info');
+  }
+
+  if (undoBtn) undoBtn.addEventListener('click', undo);
+  if (redoBtn) redoBtn.addEventListener('click', redoEdit);
+
+  document.addEventListener('keydown', function(e){
+    if (!(e.metaKey || e.ctrlKey) || generating) return;
+    var k = (e.key || '').toLowerCase();
+    if (k !== 'z' && k !== 'y') return;
+    // the prompt box and the option fields keep the browser's own undo stack
+    var tag = e.target && e.target.tagName;
+    var onSlide = e.target && e.target.closest && e.target.closest('#deckStage');
+    if ((tag === 'INPUT' || tag === 'TEXTAREA') && !onSlide) return;
+    e.preventDefault();
+    if (k === 'y' || e.shiftKey) redoEdit(); else undo();
+  });
+
+  // ---- adding, duplicating and deleting slides --------------------------
+  function blankSlide(layout){
+    var s = { type: 'content', layout: normalizeLayout(layout) };
+    if (s.layout === 'compare') {
+      s.heading = 'New slide';
+      s.left = { label: '', points: ['', ''] };
+      s.right = { label: '', points: ['', ''] };
+    } else if (s.layout === 'stat') {
+      s.heading = 'New slide';
+      s.bullets = ['', ''];
+    } else if (s.layout === 'quote') {
+      s.heading = '';
+      s.bullets = [''];
+    } else if (s.layout === 'statement') {
+      s.bullets = [''];
+    } else if (s.layout === 'section') {
+      s.heading = 'New section';
+    } else {
+      s.heading = 'New slide';
+      s.bullets = ['', '', ''];
+    }
+    return s;
+  }
+
+  function focusField(field, index, atEnd){
+    var sel = '[data-field="' + field + '"]';
+    if (index !== undefined && index !== null) sel += '[data-index="' + index + '"]';
+    var el = deckStage.querySelector(sel);
+    if (!el) return;
+    el.focus();
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(!atEnd);
+      var sn = window.getSelection();
+      sn.removeAllRanges();
+      sn.addRange(range);
+    } catch (err) {}
+  }
+
+  function insertSlide(slide, at){
+    at = Math.max(1, Math.min(deckSlides.length, at));   // the cover stays first
+    deckSlides.splice(at, 0, slide);
+    activeIndex = at;
+    renderThumbs(false);
+    renderStage();
+    saveWorking();
+    pushHistory();
+  }
+
+  function addSlide(layout){
+    flushHistory();
+    insertSlide(blankSlide(layout), activeIndex + 1);
+    setStatus('Slide added.', 'info');
+    focusField(deckSlides[activeIndex].heading !== undefined ? 'heading' : 'bullet', undefined);
+  }
+
+  function duplicateSlide(){
+    var s = deckSlides[activeIndex];
+    if (!s || s.type === 'cover') return;
+    flushHistory();
+    insertSlide(JSON.parse(JSON.stringify(s)), activeIndex + 1);
+    setStatus('Slide duplicated.', 'info');
+  }
+
+  function deleteSlide(){
+    var s = deckSlides[activeIndex];
+    if (!s || s.type === 'cover') return;
+    if (deckSlides.length <= 2) {
+      setStatus('A deck needs at least one slide after the cover.', 'error');
+      return;
+    }
+    flushHistory();
+    deckSlides.splice(activeIndex, 1);
+    activeIndex = Math.min(activeIndex, deckSlides.length - 1);
+    renderThumbs(false);
+    renderStage();
+    saveWorking();
+    pushHistory();
+    setStatus('Slide deleted — Ctrl+Z brings it back.', 'info');
+  }
+
+  // ---- changing a slide's layout after the fact -------------------------
+  // Carrying the words across matters more than the shape: a comparison
+  // flattened into bullets should keep both columns' points, and a slide
+  // turned into a statement should keep its strongest line, not an empty box.
+  function slidePool(slide){
+    var lay = normalizeLayout(slide.layout);
+    var out = [];
+    if (lay === 'compare') {
+      ['left', 'right'].forEach(function(k){
+        var side = slide[k];
+        if (!side) return;
+        if (side.label && side.label.trim()) out.push(side.label.trim());
+        (side.points || []).forEach(function(p){ if (String(p).trim()) out.push(String(p).trim()); });
+      });
+    } else {
+      (slide.bullets || []).forEach(function(b){ if (String(b).trim()) out.push(String(b).trim()); });
+    }
+    if (!out.length && slide.body && slide.body.trim()) out.push(slide.body.trim());
+    return out;
+  }
+
+  function convertSlide(slide, to){
+    to = normalizeLayout(to);
+    var from = normalizeLayout(slide.layout);
+    if (from === to) return;
+    var pool = slidePool(slide);
+    var longest = pool.slice().sort(function(a, b){ return b.length - a.length; })[0] ||
+      (slide.body || '').trim();
+
+    if (to === 'compare') {
+      var half = Math.ceil(pool.length / 2) || 1;
+      slide.left = { label: '', points: pool.slice(0, half) };
+      slide.right = { label: '', points: pool.slice(half) };
+      if (!slide.left.points.length) slide.left.points = [''];
+      if (!slide.right.points.length) slide.right.points = [''];
+    } else {
+      // leaving compare behind: stale columns would resurface on the way back
+      delete slide.left;
+      delete slide.right;
+      if (to === 'stat') slide.bullets = [pool[0] || '', pool[1] || (slide.body || '')];
+      else if (to === 'quote' || to === 'statement') slide.bullets = [longest];
+      else if (to === 'section') slide.bullets = [];
+      else slide.bullets = pool.length ? pool.slice(0, 6) : [''];
+    }
+
+    if (!slide.heading && to !== 'statement' && to !== 'quote') {
+      slide.heading = to === 'section' ? 'New section' : 'New slide';
+    }
+    slide.layout = to;
+  }
+
+  var LAYOUT_INFO = [
+    ['bullets',   'Bullets',   'points, with a photograph beside them'],
+    ['steps',     'Steps',     'a numbered sequence'],
+    ['compare',   'Compare',   'two columns set against each other'],
+    ['stat',      'Stat',      'one number and a line of support'],
+    ['quote',     'Quote',     'someone else’s words'],
+    ['statement', 'Statement', 'one line, full bleed'],
+    ['section',   'Section',   'a divider announcing what follows']
+  ];
+
+  var layoutPick = document.getElementById('layoutPick');
+  var layoutMode = 'change';
+  var layoutAnchor = null;
+
+  function closeLayouts(){ if (layoutPick) layoutPick.hidden = true; }
+
+  function placePop(trigger, pop){
+    var r = trigger.getBoundingClientRect();
+    pop.style.top = Math.round(r.bottom + 8) + 'px';
+    var w = pop.offsetWidth || 320;
+    pop.style.left = Math.round(Math.min(Math.max(8, r.left), window.innerWidth - w - 8)) + 'px';
+  }
+
+  function openLayouts(trigger, mode){
+    if (!layoutPick) return;
+    layoutMode = mode;
+    var slide = deckSlides[activeIndex];
+    var current = slide && slide.type === 'content' ? normalizeLayout(slide.layout) : null;
+    layoutPick.innerHTML = LAYOUT_INFO.map(function(row){
+      var on = mode === 'change' && row[0] === current;
+      return '<button type="button" data-layout="' + row[0] + '"' + (on ? ' class="active"' : '') + '>' +
+        '<span class="lp-name">' + escapeHtml(row[1]) + '</span>' +
+        '<span class="lp-hint">' + escapeHtml(row[2]) + '</span></button>';
+    }).join('');
+    layoutPick.hidden = false;
+    layoutAnchor = trigger;
+    placePop(trigger, layoutPick);
+  }
+
+  function changeLayout(to){
+    var slide = deckSlides[activeIndex];
+    if (!slide || slide.type === 'cover') return;
+    if (normalizeLayout(slide.layout) === normalizeLayout(to)) return;
+    flushHistory();
+    convertSlide(slide, to);
+    updateThumbTitle(activeIndex);
+    renderStage();
+    saveWorking();
+    pushHistory();
+    setStatus('Layout changed.', 'info');
+  }
+
+  if (layoutPick) {
+    layoutPick.addEventListener('click', function(e){
+      var btn = e.target.closest ? e.target.closest('button[data-layout]') : null;
+      if (!btn) return;
+      var chosen = btn.getAttribute('data-layout');
+      closeLayouts();
+      if (layoutMode === 'add') addSlide(chosen); else changeLayout(chosen);
+    });
+  }
+  if (addSlideBtn) addSlideBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if (layoutPick && !layoutPick.hidden && layoutMode === 'add') { closeLayouts(); return; }
+    openLayouts(addSlideBtn, 'add');
+  });
+  if (layoutBtn) layoutBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if (layoutPick && !layoutPick.hidden && layoutMode === 'change') { closeLayouts(); return; }
+    openLayouts(layoutBtn, 'change');
+  });
+  if (dupSlideBtn) dupSlideBtn.addEventListener('click', duplicateSlide);
+  if (delSlideBtn) delSlideBtn.addEventListener('click', deleteSlide);
+  document.addEventListener('click', function(e){
+    if (layoutPick && !layoutPick.hidden && !layoutPick.contains(e.target)) closeLayouts();
+  });
+  // follow the button rather than vanishing, the way the theme picker does —
+  // a phone keyboard opening counts as a resize, and closing on that is rude
+  window.addEventListener('resize', function(){
+    if (layoutPick && !layoutPick.hidden && layoutAnchor) placePop(layoutAnchor, layoutPick);
+  });
+
+  function updateSlideTools(){
+    var slide = deckSlides[activeIndex];
+    var isCover = !slide || slide.type === 'cover';
+    if (addSlideBtn) addSlideBtn.disabled = generating;
+    if (imageBtn) imageBtn.disabled = generating;
+    if (layoutBtn) layoutBtn.disabled = isCover || generating;
+    if (dupSlideBtn) dupSlideBtn.disabled = isCover || generating;
+    if (delSlideBtn) delSlideBtn.disabled = isCover || generating || deckSlides.length <= 2;
+  }
+
+  // ---- bullets are a list, so Enter and Backspace should behave ---------
+  var LIST_LAYOUTS = { bullets: 1, steps: 1 };
+
+  deckStage.addEventListener('keydown', function(e){
+    if (e.key !== 'Enter' && e.key !== 'Backspace') return;
+    var el = e.target;
+    if (!el || !el.getAttribute) return;
+    var field = el.getAttribute('data-field');
+    if (!field) return;
+    var slide = deckSlides[activeIndex];
+    if (!slide) return;
+
+    var onList = (field === 'bullet' && LIST_LAYOUTS[normalizeLayout(slide.layout)]) ||
+      field === 'leftPoint' || field === 'rightPoint';
+
+    if (!onList) {
+      // a heading or a stat is one value, not a paragraph
+      if (e.key === 'Enter') e.preventDefault();
+      return;
+    }
+
+    var arr;
+    if (field === 'bullet') {
+      arr = slide.bullets || (slide.bullets = []);
+    } else {
+      var side = field === 'leftPoint' ? 'left' : 'right';
+      if (!slide[side]) slide[side] = { label: '', points: [] };
+      arr = slide[side].points || (slide[side].points = []);
+    }
+    var idx = parseInt(el.getAttribute('data-index'), 10);
+    if (isNaN(idx)) return;
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (arr.length >= 8) { setStatus('Eight lines is as many as a slide should carry.', 'info'); return; }
+      flushHistory();
+      arr.splice(idx + 1, 0, '');
+      renderStage();
+      saveWorking();
+      pushHistory();
+      focusField(field, idx + 1);
+      return;
+    }
+
+    if (e.key === 'Backspace' && !el.textContent && arr.length > 1) {
+      e.preventDefault();
+      flushHistory();
+      arr.splice(idx, 1);
+      renderStage();
+      saveWorking();
+      pushHistory();
+      focusField(field, Math.max(0, idx - 1), true);
+    }
+  });
+
+  // ---- choosing the photograph -----------------------------------------
+  var imagePanel = document.getElementById('imagePanel');
+  var imageQuery = document.getElementById('imageQuery');
+  var imageSearchBtn = document.getElementById('imageSearchBtn');
+  var imageClearBtn = document.getElementById('imageClearBtn');
+  var imageResults = document.getElementById('imageResults');
+  var imageNote = document.getElementById('imageNote');
+  var imageHits = [];
+  var imageToken = 0;   // two searches can be in flight; only the last one counts
+
+  // the layouts that actually render a picture; the rest keep one in state so
+  // switching back brings it with you, but say plainly that it is not showing
+  var IMAGE_LAYOUTS = { bullets: 1, section: 1, statement: 1 };
+
+  function layoutShowsImage(slide){
+    if (!slide) return false;
+    if (slide.type === 'cover') return true;
+    return !!IMAGE_LAYOUTS[normalizeLayout(slide.layout)];
+  }
+
+  function paintImageNote(){
+    var slide = deckSlides[activeIndex];
+    if (!slide || !imageNote) return;
+    if (!layoutShowsImage(slide)) {
+      imageNote.textContent = 'A ' + normalizeLayout(slide.layout) +
+        ' slide does not show a photograph. Pick one anyway and it waits, or change the layout first.';
+    } else if (hasImage(slide)) {
+      imageNote.textContent = 'Showing ' + (slide.pick ? 'a picture you chose' : '"' + slide.image + '"') + '.';
+    } else {
+      imageNote.textContent = 'This slide has no photograph yet.';
+    }
+  }
+
+  function searchImages(q){
+    q = String(q || '').trim();
+    if (!q) { imageResults.innerHTML = '<p class="drafts-empty">Type what the picture should be of.</p>'; return; }
+    imageResults.innerHTML = '<p class="drafts-empty">Searching Commons…</p>';
+    var token = ++imageToken;
+    fetch('/api/image?n=8&q=' + encodeURIComponent(q))
+      .then(function(r){ return r.ok ? r.json() : { results: [] }; })
+      .then(function(data){
+        if (token !== imageToken) return;   // a newer search has already answered
+        var rows = (data && data.results) || [];
+        imageHits = rows;
+        if (!rows.length) {
+          imageResults.innerHTML = '<p class="drafts-empty">Nothing on Commons matched that — try a plainer word.</p>';
+          return;
+        }
+        imageResults.innerHTML = rows.map(function(r, i){
+          var credit = [r.credit, r.license].filter(Boolean).join(' · ');
+          return '<button type="button" data-pick="' + i + '" title="' + escapeHtml(credit) + '">' +
+            '<img src="' + escapeHtml(r.thumb || r.url) + '" alt="" loading="lazy"></button>';
+        }).join('');
+        // the small thumbnail is a constructed URL; fall back to the full one
+        Array.prototype.forEach.call(imageResults.querySelectorAll('img'), function(img, i){
+          img.addEventListener('error', function(){
+            if (rows[i] && img.getAttribute('src') !== rows[i].url) img.src = rows[i].url;
+          });
+        });
+      })
+      .catch(function(){
+        if (token !== imageToken) return;
+        imageResults.innerHTML = '<p class="drafts-empty">Could not reach the image search.</p>';
+      });
+  }
+
+  function openImagePanel(){
+    var slide = deckSlides[activeIndex];
+    if (!slide || !imagePanel) return;
+    imagePanel.hidden = false;
+    imageResults.innerHTML = '';
+    imageHits = [];
+    imageQuery.value = slide.image || '';
+    paintImageNote();
+    imageQuery.focus();
+    if (slide.image) searchImages(slide.image);
+  }
+
+  if (imageBtn) imageBtn.addEventListener('click', function(){
+    if (imagePanel.hidden) openImagePanel();
+    else imagePanel.hidden = true;
+  });
+  if (imageSearchBtn) imageSearchBtn.addEventListener('click', function(){ searchImages(imageQuery.value); });
+  if (imageQuery) imageQuery.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); searchImages(imageQuery.value); }
+  });
+  if (imageResults) imageResults.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('button[data-pick]') : null;
+    if (!btn) return;
+    var hit = imageHits[parseInt(btn.getAttribute('data-pick'), 10)];
+    var slide = deckSlides[activeIndex];
+    if (!hit || !slide) return;
+    flushHistory();
+    slide.image = (imageQuery.value || '').trim() || slide.image || 'photograph';
+    slide.pick = { url: hit.url, credit: hit.credit || '', license: hit.license || '' };
+    renderStage();
+    saveWorking();
+    pushHistory();
+    paintImageNote();
+    setStatus(layoutShowsImage(slide)
+      ? 'Photograph set.'
+      : 'Photograph saved — this layout does not show one yet.', 'info');
+  });
+  if (imageClearBtn) imageClearBtn.addEventListener('click', function(){
+    var slide = deckSlides[activeIndex];
+    if (!slide) return;
+    if (!hasImage(slide)) { setStatus('There is no photograph on this slide.', 'info'); return; }
+    flushHistory();
+    slide.image = '';
+    delete slide.pick;
+    renderStage();
+    saveWorking();
+    pushHistory();
+    paintImageNote();
+    setStatus('Photograph cleared — Ctrl+Z brings it back.', 'info');
+  });
+
   // ---- regenerate a single slide ---------------------------------------
   function handleRegenerateSlide(){
     if (generating) return;
@@ -4598,6 +5346,7 @@ Q4,4390"></textarea>
         updateThumbTitle(index);
         if (activeIndex === index) renderStage();
         saveWorking();
+        pushHistory();
         setStatus('Slide redrawn.', 'info');
       })
       .catch(function(e){
@@ -4610,6 +5359,13 @@ Q4,4390"></textarea>
   }
 
   if (redoSlideBtn) redoSlideBtn.addEventListener('click', handleRegenerateSlide);
+
+  // Genuinely last. bootDeck() runs further up, before the editing block below
+  // it has assigned its buttons, so the first paint of undo, redo and the slide
+  // tools has to happen down here where those elements actually exist.
+  resetHistory();   // the deck on screen is the floor undo cannot go below
+  paintSaveState();
+  updateNav();
 })();
 </script>
 </body>

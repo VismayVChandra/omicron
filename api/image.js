@@ -67,7 +67,17 @@ async function search(query) {
   }
 
   candidates.sort((a, b) => a.score - b.score || a.order - b.order);
-  return candidates[0] || null;
+  return candidates;
+}
+
+// Commons serves rendered thumbnails at .../thumb/a/ab/File.jpg/1200px-File.jpg,
+// so a grid of eight can ask for small ones instead of eight full-size images.
+// If the pattern is not there the file was served at its own size; the caller
+// falls back to the full URL when the small one fails to load.
+function smallerThumb(url, width) {
+  return String(url).replace(/\/(\d+)px-/, (match, w) =>
+    Number(w) > width ? `/${width}px-` : match
+  );
 }
 
 export default async function handler(request) {
@@ -83,17 +93,34 @@ export default async function handler(request) {
   if (words.length > 2) attempts.push(words.slice(0, 2).join(' '));
   if (words.length > 1) attempts.push(words[0]);
 
+  // ?n=8 asks for a choice rather than a verdict — the picker in the editor
+  // shows these so a slide's photograph can be someone's decision, not the
+  // first thing the search happened to rank.
+  const wanted = Math.min(12, Math.max(0, parseInt(url.searchParams.get('n') || '0', 10) || 0));
+
   for (const attempt of attempts) {
-    let pick;
+    let found;
     try {
-      pick = await search(attempt);
+      found = await search(attempt);
     } catch (e) {
       return json({ error: 'upstream_error' }, 502);
     }
-    if (pick) {
-      return json({ url: pick.url, credit: pick.credit, license: pick.license }, 200, 604800);
+    if (!found.length) continue;
+
+    if (wanted) {
+      return json({
+        results: found.slice(0, wanted).map((c) => ({
+          url: c.url,
+          thumb: smallerThumb(c.url, 320),
+          credit: c.credit,
+          license: c.license,
+        })),
+      }, 200, 604800);
     }
+
+    const pick = found[0];
+    return json({ url: pick.url, credit: pick.credit, license: pick.license }, 200, 604800);
   }
 
-  return json({ error: 'no_image' }, 404, 3600);
+  return json(wanted ? { results: [] } : { error: 'no_image' }, wanted ? 200 : 404, 3600);
 }

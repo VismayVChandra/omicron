@@ -15,10 +15,12 @@ forecasts, because it has no source to draw them from. Audience, tone and
 length are selectable and feed every request.
 
 - `index.html` — the landing page plus a full-screen editor (slides, thumbnail
-  rail, present mode, in-place editing, drag-to-reorder, ten deck themes, saved
-  drafts in `localStorage`, PDF export via the browser's print, `.pptx` export,
-  and share links). Generating switches to the editor rather than scrolling;
-  the shared elements are moved between the two rather than duplicated.
+  rail, present mode, in-place editing, undo and redo, adding and deleting
+  slides, changing a slide's layout, choosing its photograph, drag-to-reorder,
+  ten deck themes, saved drafts, PDF export via the browser's print, `.pptx`
+  export, and share links). Generating switches to the editor rather than
+  scrolling; the shared elements are moved between the two rather than
+  duplicated.
 - `api/outline.js` — step one: plans the deck, returns `{title, tagline, sections}`
 - `api/generate.js` — step two: streams the slides. Returns a line-based format
   (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BODY` / `BULLET` /
@@ -36,11 +38,44 @@ length are selectable and feed every request.
   metrics and plans, and "no source found" never means "false".
 - `api/image.js` — finds a slide photograph on Wikimedia Commons, filtering out
   diagrams and NC/ND-licensed files and widening the query if nothing matches.
+  `?n=8` returns a set to choose from instead of a single verdict, which is what
+  the editor's image picker shows.
 
 All run on the Edge runtime and use `openai/gpt-oss-120b` with
 `reasoning_effort: 'low'` — that model reasons silently before answering, and
 without that setting it spends its whole token budget thinking and returns
 nothing.
+
+## Editing a deck
+
+The draft is a starting point, not a verdict, so everything it decided can be
+taken back:
+
+- **Undo and redo**, on Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z as well as the two
+  arrows in the chrome. Every change goes through it — typing, reordering,
+  regenerating a slide, switching theme, adding a chart, rewriting for another
+  audience. A burst of typing collapses into one step rather than one per
+  keystroke, and undoing an edit leaves you looking at the slide you edited;
+  only adding or deleting a slide moves you.
+- **Add, duplicate and delete** slides. Adding asks which layout, and the new
+  slide's empty lines carry their own labels, because a line with nothing in it
+  has no height left to click back into.
+- **Change a slide's layout** after the fact. The words come across rather than
+  the shape: bullets split into two columns when a slide becomes a comparison
+  and flatten back when it stops being one, and a slide turned into a statement
+  keeps its strongest line.
+- **Enter and Backspace work on lists.** Enter opens the next bullet, Backspace
+  on an empty one removes it. In a heading Enter does nothing, because a
+  heading is one value and not a paragraph.
+- **Choose the photograph.** Search Commons from the editor and pick from the
+  results instead of accepting whatever ranked first, or clear it. A picture
+  chosen by hand travels with the slide into saved decks, share links and both
+  exports; one left to the search still travels as its search term, which is
+  what keeps an ordinary share link near 1KB.
+
+Saving updates the deck that is open rather than filing another copy of it, and
+saved decks can be renamed in place. A deck opened from a share link is a copy,
+so saving it makes a new one — the sender's deck is not yours to overwrite.
 
 ## Slide layouts
 
@@ -134,9 +169,12 @@ Real-time collaboration and view analytics on shared links need infrastructure
 beyond the database above and are not built. AI-generated slide images need a
 paid image API; the free generators cannot sustain a deck's worth of requests.
 
-Editing is still shallow next to the generation: you can retype any line, drag
-slides to reorder and regenerate one slide, but you cannot change a slide's
-layout after the fact, add a slide by hand, replace an image, or undo anything.
+Editing has no rich text: a line is a line, with no bold, italic, links or
+inline notes, and there is no way to edit a selection with AI ("make this
+shorter"). There are no speaker notes, no tables and no embeds, and a deck
+cannot be started from an existing PDF, `.pptx` or URL. The ten themes
+above are the whole set — there is no way to build one from your own colours,
+fonts and logo.
 
 ## Deploy on Vercel
 
