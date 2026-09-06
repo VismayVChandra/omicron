@@ -2997,9 +2997,18 @@ Q4,4390"></textarea>
   trackMove('deckMock', appDeckSlot);
   trackMove('deckExtras', appPanels);
   trackMove('genStatus2', appPanels);
-  trackMove('chartPanel', appPanels);
-  trackMove('critiquePanel', appPanels);
-  trackMove('verifyPanel', appPanels);
+
+  // Every panel under the deck, found rather than listed by hand. Listing them
+  // is how Image, Notes and Rework came to stay behind in <main>, which the
+  // editor screen sets to display:none — so opening one set hidden = false on
+  // something that could not be seen, and the button did nothing at all. Any
+  // panel added later comes along on its own now.
+  Array.prototype.forEach.call(
+    document.querySelectorAll('#editorSection .critique-panel'),
+    function(el){
+      movable.push({ el: el, slot: appPanels, parent: el.parentNode, next: el.nextSibling });
+    }
+  );
 
   function enterApp(){
     if (inApp) return;
@@ -3761,9 +3770,7 @@ Q4,4390"></textarea>
   if (chartToggle) {
     chartToggle.addEventListener('click', function(){
       if (!chartPanel.hidden) { chartPanel.hidden = true; return; }
-      showPanel(chartPanel);
-      csvInput.focus();
-      chartPanel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      showPanel(chartPanel, csvInput);
     });
   }
 
@@ -5367,12 +5374,11 @@ Q4,4390"></textarea>
   function openImagePanel(){
     var slide = deckSlides[activeIndex];
     if (!slide || !imagePanel) return;
-    showPanel(imagePanel);
     imageResults.innerHTML = '';
     imageHits = [];
     imageQuery.value = slide.image || '';
     paintImageNote();
-    imageQuery.focus();
+    showPanel(imagePanel, imageQuery);
     if (slide.image) searchImages(slide.image);
   }
 
@@ -5385,13 +5391,35 @@ Q4,4390"></textarea>
   // Six of them share the strip under the deck. Opening one used to leave the
   // last still sitting there, so the answer to a question you had forgotten
   // asking stayed on screen under the one you just asked.
-  function showPanel(panel){
+  function showPanel(panel, focusOn){
     ['chartPanel', 'imagePanel', 'notesPanel', 'reworkPanel', 'critiquePanel', 'verifyPanel']
       .forEach(function(id){
         var el = document.getElementById(id);
         if (el && el !== panel) el.hidden = true;
       });
-    if (panel) panel.hidden = false;
+    if (!panel) return;
+    panel.hidden = false;
+
+    // The panels sit under the deck, which on a phone is a screen and a half
+    // further down, so opening one has to bring it into view or nothing appears
+    // to have happened. Three things this needs to get right:
+    //
+    // 'start', not 'nearest' — nearest brings the top edge level with the
+    // bottom of the screen, which still reads as nothing.
+    //
+    // No 'smooth'. It silently does nothing here: the same call scrolls to 704
+    // with the default behaviour and stays at 0 with smooth. Not worth
+    // depending on for the only thing that tells you the panel opened.
+    //
+    // And no requestAnimationFrame around it either, tempting as that is for
+    // letting layout settle: rAF does not run while the page is not painting,
+    // so the scroll simply never happened in a background tab. Reading the
+    // panel's position forces the layout it needs anyway. focus() gets
+    // preventScroll so it does not fight the scroll that follows.
+    if (focusOn && focusOn.focus) {
+      try { focusOn.focus({ preventScroll: true }); } catch (e) { focusOn.focus(); }
+    }
+    panel.scrollIntoView({ block: 'start' });
   }
   if (imageSearchBtn) imageSearchBtn.addEventListener('click', function(){ searchImages(imageQuery.value); });
   if (imageQuery) imageQuery.addEventListener('keydown', function(e){
@@ -5747,9 +5775,7 @@ Q4,4390"></textarea>
   if (notesBtn) notesBtn.addEventListener('click', function(){
     if (!notesPanel.hidden) { notesPanel.hidden = true; return; }
     paintNotes();
-    showPanel(notesPanel);
-    notesPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    notesText.focus();
+    showPanel(notesPanel, notesText);
   });
   if (notesOneBtn) notesOneBtn.addEventListener('click', function(){ writeNotes(false); });
   if (notesAllBtn) notesAllBtn.addEventListener('click', function(){ writeNotes(true); });
@@ -5772,9 +5798,7 @@ Q4,4390"></textarea>
 
   if (reworkBtn) reworkBtn.addEventListener('click', function(){
     if (!reworkPanel.hidden) { reworkPanel.hidden = true; return; }
-    showPanel(reworkPanel);
-    reworkPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    reworkInput.focus();
+    showPanel(reworkPanel, reworkInput);
   });
   if (reworkGoBtn) reworkGoBtn.addEventListener('click', runRework);
   if (reworkInput) reworkInput.addEventListener('keydown', function(e){
