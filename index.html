@@ -2979,13 +2979,13 @@ Q4,4390"></textarea>
     if (themeTrigger) themeTrigger.setAttribute('aria-expanded', 'false');
   }
 
+  // measure once shown, then keep it inside the viewport on both axes
   function placeThemes(){
+    placePop(themeTrigger, themePick);
     var r = themeTrigger.getBoundingClientRect();
-    themePick.style.top = Math.round(r.bottom + 8) + 'px';
-    // measure once shown, then keep it inside the viewport
     var w = themePick.offsetWidth || 280;
-    var left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8);
-    themePick.style.left = Math.round(left) + 'px';
+    themePick.style.left =
+      Math.round(Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8)) + 'px';
   }
 
   if (themeTrigger) {
@@ -5056,10 +5056,17 @@ Q4,4390"></textarea>
 
   function closeLayouts(){ if (layoutPick) layoutPick.hidden = true; }
 
+  // A fixed popup hung off a button near the foot of the page lands below the
+  // viewport, where it is open but invisible. Flip it above the button when
+  // there is no room under it, then clamp on both axes.
   function placePop(trigger, pop){
     var r = trigger.getBoundingClientRect();
-    pop.style.top = Math.round(r.bottom + 8) + 'px';
     var w = pop.offsetWidth || 320;
+    var h = pop.offsetHeight || 260;
+    var top = r.bottom + 8;
+    if (top + h > window.innerHeight - 8) top = r.top - h - 8;
+    top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
+    pop.style.top = Math.round(top) + 'px';
     pop.style.left = Math.round(Math.min(Math.max(8, r.left), window.innerWidth - w - 8)) + 'px';
   }
 
