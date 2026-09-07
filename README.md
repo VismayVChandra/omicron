@@ -311,6 +311,39 @@ whose `Referer` or `Origin` is this deployment. That stops a crawler spending
 the day's allowance; it is not a serious access control, and a determined
 person can forge a header.
 
+## Slides, or a page
+
+The same deck, read two ways. **Slides** is the fixed 16:9 view you click
+through and present from. **Page** is the whole deck as one scrolling column,
+each slide a band sized by its own content.
+
+This was written off as a rewrite of the rendering layer and turned out not to
+be one, because of a decision made much earlier: the slides are built almost
+entirely out of container-query units — 163 of them — so every size is a
+fraction of the box a slide sits in rather than of the window. Exactly one line
+pinned a slide to 16:9. Releasing it and giving each section a container of its
+own is the whole mechanism. Same markup, same layouts, same ten themes, same
+brand, flowing instead of fitting.
+
+Two things did need saying explicitly. Every page rule carries `.page-slide` as
+well as `.page-deck`, because the themes reach a slide through
+`[data-deck-theme="x"] .deck-slide.split` at the same specificity and later in
+the file — Noir was quietly winning, so a page on a phone still put the
+photograph in a column beside the text.
+
+And the type is floored in `rem`, not left to `cqw`. A slide's sizes are a
+fraction of its box, which is right for a slide: it has to fit whatever box it is
+given. A page is the other way round — the reader's eye does not get smaller when
+the column does. On a 349px phone column the container units produced 12.8px
+headings and 9.9px body text, which is a shrunken slide rather than something
+anyone would read. The floors give 20.8px and 16px there, and `cqw` takes over
+once there is room.
+
+A shared link opens as a page on anything under 900px wide, because somebody sent
+a link is reading rather than presenting. The toggle is in the toolbar either way,
+and the choice is remembered. Page view is read-only: editing stays in the slide
+view, where one slide is in hand and an edit knows which slide it is editing.
+
 ## Charts
 
 Chart slides come from data you paste, never from the model. The CSV is parsed
@@ -402,6 +435,11 @@ a real deployment wants SMTP configured under Authentication → Emails.
 
 Real-time collaboration — two people editing the same deck at once — is not
 built and would need more than the database above.
+
+Page view reflows the deck, but the content types are still a deck's: there are
+no tables, video embeds, code blocks or expandable sections. Those are a
+different piece of work from the format, and the format was the part that made
+a deck unreadable on a phone.
 
 Editing has no rich text: a line is a line, with no bold, italic, links or
 inline formatting, and there are no tables and no embeds. Imported PDFs must

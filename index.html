@@ -575,6 +575,85 @@
   }
   .editor-note{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft)}
 
+  .view-pick{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:none}
+  .view-pick button{
+    cursor:pointer;background:transparent;border:none;padding:6px 11px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);
+  }
+  .view-pick button.active{background:var(--surface-2);color:var(--deep)}
+  .view-pick button:hover:not(.active){color:var(--deep)}
+
+  /* ---------- the deck as a page ----------
+     Not a second renderer. The slides were already built out of container-query
+     units — 163 of them — so every size is a fraction of the box the slide sits
+     in rather than of the viewport. Releasing the one aspect-ratio line and
+     giving each section its own container is the whole change: the same markup,
+     the same themes, the same brand, flowing instead of fitting. */
+  .page-deck{overflow-y:auto;background:var(--bg);min-height:0}
+  .page-deck .page-slide{
+    container-type:inline-size;max-width:900px;margin:0 auto;
+    border-bottom:1px solid var(--line);
+  }
+  .page-deck .page-slide:last-child{border-bottom:0}
+  /* Every selector below carries .page-slide as well as .page-deck, which is
+     not redundant: the themes reach a slide through [data-deck-theme="x"]
+     .deck-slide.split, and at equal specificity the later rule wins. Noir's
+     own split rule was quietly beating the page's, so a page on a phone still
+     put the photograph in a column beside the text. */
+  .page-deck .page-slide .deck-slide{
+    aspect-ratio:auto;min-height:0;border-radius:0;box-shadow:none;
+    animation:none;padding:7cqw;overflow:visible;
+  }
+  /* the full-bleed layouts stay full-bleed, as bands rather than slides */
+  .page-deck .page-slide .deck-slide.cover,
+  .page-deck .page-slide .deck-slide.section,
+  .page-deck .page-slide .deck-slide.statement{min-height:44cqw;justify-content:center}
+  /* a photograph beside the text has nowhere to be on a narrow page */
+  .page-deck .page-slide .deck-slide.split{grid-template-columns:1fr;padding:0}
+  .page-deck .page-slide .deck-slide.split .slide-text{padding:7cqw}
+  .page-deck .page-slide .deck-slide.split .slide-media{min-height:48cqw;order:-1}
+  /* Type floors, in rem rather than cqw.
+     A slide's sizes are all a fraction of the box it sits in, which is right
+     for a slide — it has to fit whatever box it is given. A page is the other
+     way round: the reader's eye does not get smaller when the column does. On
+     a 349px phone column the cqw sizes came out at 12.8px headings and 9.9px
+     body, which is a shrunken slide rather than something anyone would read.
+     These clamp a readable minimum and let cqw take over once there is room. */
+  .page-deck .page-slide .deck-slide.content h3{font-size:clamp(1.3rem,4.4cqw,2rem)}
+  .page-deck .page-slide .deck-slide.cover h3{font-size:clamp(1.7rem,7cqw,3rem)}
+  .page-deck .page-slide .deck-slide.cover p{font-size:clamp(1rem,2.6cqw,1.25rem)}
+  .page-deck .page-slide .deck-slide.section h3{font-size:clamp(1.5rem,6cqw,2.6rem)}
+  .page-deck .page-slide .deck-slide .slide-body{font-size:clamp(1rem,2.4cqw,1.12rem)}
+  .page-deck .page-slide .deck-slide.content li{font-size:clamp(0.95rem,2.2cqw,1.05rem)}
+  .page-deck .page-slide .deck-slide .s-lead{font-size:clamp(1.05rem,2.6cqw,1.2rem)}
+  .page-deck .page-slide .deck-slide .s-detail{font-size:clamp(0.9rem,2cqw,1rem)}
+  .page-deck .page-slide .deck-slide .step-text{font-size:clamp(0.95rem,2.2cqw,1.05rem)}
+  .page-deck .page-slide .deck-slide .statement-text{font-size:clamp(1.3rem,5cqw,2.2rem)}
+  .page-deck .page-slide .deck-slide .quote-text{font-size:clamp(1.2rem,4.2cqw,2rem)}
+  .page-deck .page-slide .deck-slide .fig-value{font-size:clamp(2rem,7.2cqw,3.4rem)}
+  .page-deck .page-slide .deck-slide .fig-caption{font-size:clamp(0.9rem,2cqw,1rem)}
+  .page-deck .page-slide .deck-slide .cmp-col li{font-size:clamp(0.92rem,2.1cqw,1rem)}
+  /* and room to breathe, since a page is read rather than glanced at */
+  .page-deck .page-slide .deck-slide.content ul{gap:1.1rem}
+  .page-deck .page-slide .deck-slide{padding:clamp(24px,7cqw,64px)}
+
+  .page-deck .page-slide .deck-slide.cards .card-grid{
+    grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));
+  }
+  .page-deck .page-slide .deck-slide.figures .fig-row{
+    grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));
+  }
+  .page-deck .page-slide .deck-slide.steps.timeline .step-list{
+    grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));
+  }
+  .page-deck .slide-foot{display:none}
+  body.page-mode .deck-body{display:none}
+  body.page-mode #prevSlideBtn,
+  body.page-mode #nextSlideBtn,
+  body.page-mode #slideCounter,
+  body.page-mode .slide-tools{display:none !important}
+  .app-body .page-deck{flex:1;min-height:0}
+
   .deck-body{display:grid;grid-template-columns:168px 1fr}
   .deck-rail{
     border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:10px;
@@ -2045,6 +2124,10 @@
             </div>
             <button type="button" class="deck-icon-btn" id="undoBtn" aria-label="Undo" title="Undo (Ctrl+Z)">&#8630;</button>
             <button type="button" class="deck-icon-btn" id="redoBtn" aria-label="Redo" title="Redo (Ctrl+Shift+Z)">&#8631;</button>
+            <div class="view-pick" id="viewPick" role="group" aria-label="How to read this deck">
+              <button type="button" data-view="slides" class="active">Slides</button>
+              <button type="button" data-view="page">Page</button>
+            </div>
             <span id="slideCounter" class="slide-counter tabular">1 / 5</span>
             <button type="button" class="deck-icon-btn" id="redoSlideBtn" aria-label="Regenerate this slide" title="Regenerate this slide">&#8635;</button>
             <button type="button" class="deck-icon-btn" id="prevSlideBtn" aria-label="Previous slide">&larr;</button>
@@ -2075,6 +2158,7 @@
             <div class="deck-slide-frame" id="deckStage"></div>
           </div>
         </div>
+        <div class="page-deck" id="pageDeck" hidden></div>
       </div>
       <p id="genStatus2" class="editor-note">Example deck shown above &mdash; five slides, drafted about a tide-powered charging dock.</p>
 
@@ -3142,6 +3226,7 @@ Q4,4390"></textarea>
   }
 
   function renderStage(){
+    refreshPage();
     // a shared deck is somebody else's; typing into it would go nowhere
     deckStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, !readingShare);
     attachMedia(deckStage);
@@ -6764,6 +6849,62 @@ Q4,4390"></textarea>
     setStatus('Photograph cleared — Ctrl+Z brings it back.', 'info');
   });
 
+  // ---- the same deck, read as a page ------------------------------------
+  //
+  // A slide is a fixed box you click through; a page is a column you scroll.
+  // Gamma's decks are both, and this is how they stop being a slideshow when
+  // somebody opens a link on a phone.
+  //
+  // It needed far less than expected. The slides were already built out of
+  // container-query units, so every size is a fraction of the box a slide sits
+  // in rather than of the window. Releasing the single aspect-ratio line and
+  // giving each section a container of its own is the whole mechanism — same
+  // markup, same layouts, same themes, same brand.
+  var VIEW_KEY = 'swell.view';
+  var pageDeck = document.getElementById('pageDeck');
+  var viewPick = document.getElementById('viewPick');
+  var pageMode = false;
+
+  function renderPage(){
+    if (!pageDeck) return;
+    pageDeck.innerHTML = deckSlides.map(function(s, i){
+      // read-only: the caret belongs in the slide view, where one slide is in
+      // hand and the edit knows which slide it is editing
+      return '<section class="page-slide" data-slide="' + i + '">' +
+        slideMarkup(s, i, false) + '</section>';
+    }).join('');
+    attachMedia(pageDeck);
+  }
+
+  function paintViewPick(){
+    if (!viewPick) return;
+    Array.prototype.forEach.call(viewPick.querySelectorAll('button'), function(b){
+      b.classList.toggle('active', (b.getAttribute('data-view') === 'page') === pageMode);
+    });
+  }
+
+  function setPageMode(on, remember){
+    pageMode = !!on;
+    document.body.classList.toggle('page-mode', pageMode);
+    if (pageDeck) pageDeck.hidden = !pageMode;
+    if (pageMode) renderPage();
+    paintViewPick();
+    if (remember !== false) writeStore(VIEW_KEY, pageMode ? 'page' : 'slides');
+  }
+
+  if (viewPick) {
+    viewPick.addEventListener('click', function(e){
+      var btn = e.target.closest ? e.target.closest('button[data-view]') : null;
+      if (!btn) return;
+      setPageMode(btn.getAttribute('data-view') === 'page');
+    });
+  }
+
+  // anything that changes the deck has to reach the page too, when it is up
+  function refreshPage(){
+    if (pageMode) renderPage();
+  }
+
   // ---- hosted share links ----------------------------------------------
   //
   // The fragment links built elsewhere in this file carry the whole deck in the
@@ -6993,6 +7134,11 @@ Q4,4390"></textarea>
         'how far it was read and for how long — no name, no account, nothing that identifies you.';
     }
     if (commentDock) commentDock.hidden = false;
+
+    // A 16:9 slide on a phone is a postage stamp. Someone who was sent a link
+    // is reading, not presenting, so narrow screens open as a page — and the
+    // toggle is right there if they would rather click through.
+    if (window.innerWidth < 900) setPageMode(true, false);
 
     Promise.resolve(cloud.from('share_views').insert({
       share_id: share.id, viewer: viewerToken(), furthest: 0, seconds: 0
@@ -7890,6 +8036,7 @@ Q4,4390"></textarea>
   // undefined key and quietly finds nothing.
   loadBrand();
   if (deckTheme === 'brand') { applyTheme(); renderStage(); }
+  if (readStore(VIEW_KEY, 'slides') === 'page') setPageMode(true, false);
   cloudReady.then(function(){ openSharedIfAsked(); });
 
   resetHistory();   // the deck on screen is the floor undo cannot go below
