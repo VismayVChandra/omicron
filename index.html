@@ -1862,11 +1862,13 @@ Q4,4390"></textarea>
 
       <div class="critique-panel" id="imagePanel" hidden>
         <h4>The photograph on this slide</h4>
-        <p class="lede">Search Wikimedia Commons and pick one, or clear it. Everything here is
-          openly licensed &mdash; the credit travels with the picture onto the slide.</p>
+        <p class="lede">Search Wikimedia Commons and pick one, or have one made. Photographs
+          carry their credit onto the slide; a generated one is lit and coloured to match the
+          deck&rsquo;s theme, so a Noir deck and an Orchard deck do not get the same picture.</p>
         <div class="img-search">
           <input type="text" id="imageQuery" spellcheck="false" placeholder="harbour at dawn">
-          <button type="button" class="btn btn-primary" id="imageSearchBtn">Search</button>
+          <button type="button" class="btn btn-primary" id="imageSearchBtn">Search Commons</button>
+          <button type="button" class="btn btn-ghost" id="imageGenBtn" hidden>Generate one</button>
           <button type="button" class="btn btn-ghost" id="imageClearBtn">Clear the photo</button>
         </div>
         <div class="img-results" id="imageResults"></div>
@@ -3121,6 +3123,9 @@ Q4,4390"></textarea>
     btn.addEventListener('click', function(){
       deckTheme = btn.getAttribute('data-theme') || 'tide';
       applyTheme();
+      // a generated picture was lit for the theme it was made under, so switching
+      // themes re-draws it for the new one; a Commons photograph is left alone
+      restyleGenerated();
       saveWorking();
       pushHistory();
       closeThemes();
@@ -3184,6 +3189,10 @@ Q4,4390"></textarea>
     return fetch('/api/config')
       .then(function(r){ return r.ok ? r.json() : { enabled: false }; })
       .then(function(cfg){
+        // the image generator is configured separately from accounts, and one
+        // can be on while the other is off
+        imageGen = (cfg && cfg.imagegen) || null;
+        if (imageGenBtn) imageGenBtn.hidden = !imageGen;
         if (!cfg || !cfg.enabled) return null;
         return loadScript(SUPA_SRC).then(function(){
           if (!window.supabase || !window.supabase.createClient) return null;
@@ -5374,6 +5383,7 @@ Q4,4390"></textarea>
   var imageResults = document.getElementById('imageResults');
   var imageNote = document.getElementById('imageNote');
   var imageHits = [];
+  var imageGenBtn = document.getElementById('imageGenBtn');
   var imageToken = 0;   // two searches can be in flight; only the last one counts
 
   // the layouts that actually render a picture; the rest keep one in state so
@@ -5430,6 +5440,83 @@ Q4,4390"></textarea>
         if (token !== imageToken) return;
         imageResults.innerHTML = '<p class="drafts-empty">Could not reach the image search.</p>';
       });
+  }
+
+  // ---- pictures that did not exist until you asked ----------------------
+  // The bytes never enter the deck. A generated picture is stored as its prompt
+  // and its seed and drawn from /api/imagegen, which is deterministic for that
+  // pair — so the slide holds about sixty bytes, share links stay short, the
+  // exports fetch it like any other URL, and a second viewer hits the edge
+  // cache rather than the quota.
+  var imageGen = null;
+
+  function genUrl(subject, seed){
+    return '/api/imagegen?q=' + encodeURIComponent(subject) +
+      '&s=' + seed + '&t=' + encodeURIComponent(deckTheme);
+  }
+
+  function generateImage(){
+    var slide = deckSlides[activeIndex];
+    var subject = (imageQuery.value || '').trim();
+    if (!slide) return;
+    if (!imageGen) { panelSay(imagePanel, 'No image generator is configured for this site.', true); return; }
+    if (!subject) {
+      panelSay(imagePanel, 'Say what the picture should be of first.', true);
+      imageQuery.focus();
+      return;
+    }
+    if (genBusy) return;
+
+    genBusy = true;
+    if (imageGenBtn) imageGenBtn.disabled = true;
+    panelSay(imagePanel, 'Drawing it…');
+    imageResults.innerHTML = '<p class="drafts-empty">Drawing it — this takes a few seconds.</p>';
+
+    // a fresh seed each press, so "generate one" twice gives two pictures
+    var seed = Math.floor(Math.random() * 4294967290) + 1;
+    var url = genUrl(subject, seed);
+    var probe = new Image();
+
+    probe.onload = function(){
+      genBusy = false;
+      if (imageGenBtn) imageGenBtn.disabled = false;
+      imageHits = [{ url: url, credit: 'Generated', license: '', generated: true }];
+      imageResults.innerHTML =
+        '<button type="button" data-pick="0" title="Use this one">' +
+        '<img src="' + escapeHtml(url) + '" alt=""></button>';
+      panelSay(imagePanel, 'Made one. Click it to put it on the slide, or press Generate again for another.');
+    };
+    probe.onerror = function(){
+      genBusy = false;
+      if (imageGenBtn) imageGenBtn.disabled = false;
+      imageResults.innerHTML = '';
+      // the endpoint answers JSON on failure, so ask it what went wrong
+      fetch(url).then(function(r){
+        return r.json().catch(function(){ return {}; }).then(function(b){
+          panelSay(imagePanel, b.error === 'rate_limited'
+            ? "That is today's free image allowance used up. Commons search still works."
+            : 'Could not draw that one — try different words.', true);
+        });
+      }).catch(function(){
+        panelSay(imagePanel, 'Could not reach the image generator.', true);
+      });
+    };
+    probe.src = url;
+  }
+
+  var genBusy = false;
+
+  // Repoint every generated picture at the current theme. The seed is kept, so
+  // it is the same photograph relit rather than a different one.
+  function restyleGenerated(){
+    var touched = false;
+    deckSlides.forEach(function(s){
+      if (!s.pick || !s.pick.gen || !s.pick.url) return;
+      var was = s.pick.url;
+      s.pick.url = was.replace(/([?&]t=)[^&]*/, '$1' + encodeURIComponent(deckTheme));
+      if (s.pick.url !== was) touched = true;
+    });
+    if (touched) { renderStage(); prefetchImages(); }
   }
 
   function openImagePanel(){
@@ -5512,6 +5599,7 @@ Q4,4390"></textarea>
     panel.scrollIntoView({ block: 'start' });
   }
   if (imageSearchBtn) imageSearchBtn.addEventListener('click', function(){ searchImages(imageQuery.value); });
+  if (imageGenBtn) imageGenBtn.addEventListener('click', generateImage);
   if (imageQuery) imageQuery.addEventListener('keydown', function(e){
     if (e.key === 'Enter') { e.preventDefault(); searchImages(imageQuery.value); }
   });
@@ -5524,6 +5612,7 @@ Q4,4390"></textarea>
     flushHistory();
     slide.image = (imageQuery.value || '').trim() || slide.image || 'photograph';
     slide.pick = { url: hit.url, credit: hit.credit || '', license: hit.license || '' };
+    if (hit.generated) slide.pick.gen = true;
     renderStage();
     saveWorking();
     pushHistory();

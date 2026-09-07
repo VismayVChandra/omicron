@@ -46,6 +46,9 @@ length are selectable and feed every request.
   diagrams and NC/ND-licensed files and widening the query if nothing matches.
   `?n=8` returns a set to choose from instead of a single verdict, which is what
   the editor's image picker shows.
+- `api/imagegen.js` — draws a slide photograph instead of finding one, in the
+  deck theme's own light and colour. Optional: without a key the button is
+  hidden and nothing else changes.
 
 All run on the Edge runtime and use `openai/gpt-oss-120b` with
 `reasoning_effort: 'low'` — that model reasons silently before answering, and
@@ -153,6 +156,44 @@ Every theme travels with a deck into saved drafts, share links and both exports,
 and each was checked for contrast on a real slide: headings 10.9:1 or better,
 body text 5.2:1 or better.
 
+## Generated pictures
+
+Optional, and off until a key is set. Commons is fine for "Tokyo" and useless
+for "operational resilience", which is the gap this closes.
+
+The bytes never enter the deck. A generated picture is stored as its prompt and
+its seed — about sixty bytes — and drawn from `/api/imagegen`, which is
+deterministic for that pair. So the slide stays small, share links stay near a
+kilobyte, both exports fetch it like any other URL, and the second person to
+open a shared deck hits the edge cache rather than the day's quota. Putting a
+megabyte of base64 on the slide instead would have broken `localStorage`, the
+share link and the `jsonb` column in one go.
+
+The deck's theme decides how the picture is lit: a Noir deck asks for deep
+shadows and a single hard source, a Mist deck for something pale and high-key,
+so ten slides do not look like ten different stock libraries. Switching theme
+relights every generated picture, keeping its seed — the same photograph under
+new light, not a different one.
+
+| Provider | Free tier | Set |
+|---|---|---|
+| **Cloudflare Workers AI** (FLUX-1-schnell) | 10,000 neurons a day, 4.8 per tile — around 200 images, no card | `CF_ACCOUNT_ID`, `CF_API_TOKEN` |
+| **Together AI** (FLUX.1-schnell) | a free endpoint, historically promotional — check before relying on it | `TOGETHER_API_KEY` |
+| **Google Gemini image** (Nano Banana) | none. Google's pricing page lists Free Tier as "not available" for all four of its image models | `GEMINI_API_KEY` |
+
+The first one configured is the one used. Cloudflare is the default because it
+is the only one of the three with a free tier that survives reading the docs
+rather than the blog posts about them.
+
+Every prompt asks for no text, no letters and no logos, because these models
+write gibberish signage into a picture whenever they think a label belongs
+there, and the slide has real words on it already.
+
+`/api/imagegen` is a public GET that spends quota, so it serves only requests
+whose `Referer` or `Origin` is this deployment. That stops a crawler spending
+the day's allowance; it is not a serious access control, and a determined
+person can forge a header.
+
 ## Charts
 
 Chart slides come from data you paste, never from the model. The CSV is parsed
@@ -205,8 +246,7 @@ a real deployment wants SMTP configured under Authentication → Emails.
 ## Not built
 
 Real-time collaboration and view analytics on shared links need infrastructure
-beyond the database above and are not built. AI-generated slide images need a
-paid image API; the free generators cannot sustain a deck's worth of requests.
+beyond the database above and are not built.
 
 Editing has no rich text: a line is a line, with no bold, italic, links or
 inline formatting, and there are no tables and no embeds. A deck cannot be
@@ -225,6 +265,12 @@ logo.
    - `GROQ_API_KEY` — the key from step 1.
 4. Deploy. `index.html` is served as the site; `api/generate.js` runs as a
    serverless function at `/api/generate`.
+
+Optionally add `CF_ACCOUNT_ID` and `CF_API_TOKEN` from
+[dash.cloudflare.com](https://dash.cloudflare.com) — Workers & Pages for the
+account id, My Profile → API Tokens → the **Workers AI** template for the token
+— and slides can have their pictures drawn rather than searched. See
+[Generated pictures](#generated-pictures) for the alternatives.
 
 ## Run locally
 

@@ -12,13 +12,27 @@
 
 export const config = { runtime: 'edge' };
 
+// Which image generator, if any, is configured. Only the name goes to the
+// browser — never the key — and it is here so the editor can hide the Generate
+// button rather than offer something that will answer 501.
+function imageProvider() {
+  if (process.env.CF_ACCOUNT_ID && process.env.CF_API_TOKEN) return 'cloudflare';
+  if (process.env.TOGETHER_API_KEY) return 'together';
+  if (process.env.GEMINI_API_KEY) return 'gemini';
+  return null;
+}
+
 export default async function handler() {
   const url = process.env.SUPABASE_URL || '';
   const anonKey = process.env.SUPABASE_ANON_KEY || '';
   const enabled = Boolean(url && anonKey);
+  const imagegen = imageProvider();
 
   return new Response(
-    JSON.stringify(enabled ? { enabled: true, url, anonKey } : { enabled: false }),
+    JSON.stringify(Object.assign(
+      enabled ? { enabled: true, url, anonKey } : { enabled: false },
+      { imagegen: imagegen || false }
+    )),
     {
       status: 200,
       headers: {
