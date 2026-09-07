@@ -7,9 +7,10 @@ via Vercel Edge Functions backed by Groq.
 Drafting is two steps, as in Gamma: a topic produces an editable outline, and
 only once that outline is approved are the slides written.
 
-You can optionally paste your own material — notes, a report, a transcript —
-and the deck is built from that instead of from the model's own knowledge, with
-every figure required to come from what you pasted. With nothing pasted the
+You can optionally give it your own material — notes, a report, a transcript, a
+PDF, a Word file, a deck, or a link — and the deck is built from that instead of
+from the model's own knowledge, with every figure required to come from what you
+gave it. With nothing pasted the
 model is explicitly told not to invent statistics, market sizes or dated
 forecasts, because it has no source to draw them from. Audience, tone and
 length are selectable and feed every request.
@@ -33,6 +34,8 @@ length are selectable and feed every request.
   you highlighted inside one. Shorter, longer, plainer, punchier, or whatever
   you type. It may not introduce facts.
 - `api/notes.js` — writes speaker notes for the whole deck in one request.
+- `api/fetch.js` — reads a web page and returns its prose, so a deck can be
+  built from a link. The interesting part is what it refuses.
 - `api/critique.js` — reads a finished deck back as its toughest audience and
   returns what will get challenged, tied to the slides it is about.
 - `api/voice.js` — reads samples of your own writing and returns your habits as
@@ -54,6 +57,48 @@ All run on the Edge runtime and use `openai/gpt-oss-120b` with
 `reasoning_effort: 'low'` — that model reasons silently before answering, and
 without that setting it spends its whole token budget thinking and returns
 nothing.
+
+## Bringing your own material
+
+Drop a **PDF**, **`.docx`** or **`.pptx`** on the source box, or paste a **link**.
+Everything ends up in the same place — text in the source box — which the outline
+and the slide writer already know what to do with.
+
+`.docx` and `.pptx` are zip files, so both come apart with JSZip; PDFs go through
+pdf.js, which reconstructs lines from the text positions rather than running the
+words together. Both libraries are fetched the first time you actually import
+something, not on page load. A `.pptx` comes back slide by slide, which is how
+you restyle an existing deck: import it, and the ten themes are yours.
+
+`/api/fetch` is a server that retrieves a URL somebody typed, which is the
+textbook shape of a server-side request forgery. It refuses anything that is not
+http or https, and any hostname that is loopback, link-local, private, `.internal`
+or `.local` — the cloud metadata endpoint at `169.254.169.254` being the one that
+matters most. It will not follow redirects, because the address at the end of one
+is not the address that was checked. It is honest about its limits: hostnames are
+checked rather than resolved addresses, so a name that resolves to a private
+address still gets through.
+
+### Long documents
+
+The source box takes 12,000 characters and a report is happily five times that.
+Truncating would mean the deck argues from page three and silently ignores the
+rest, so anything longer is condensed first — **in the browser, without the
+model**.
+
+That was going to be a summarising endpoint until measurement killed it. Groq's
+free tier allows **8,000 tokens a minute**; a fifty-page document is thirteen
+thousand, so reading it once would spend two minutes of the entire budget before
+a single slide got written. And an abstractive summary paraphrases, which is the
+last thing wanted from the one feature whose whole purpose is that the deck stops
+inventing figures.
+
+So it is extractive instead: score every sentence on how much of the document's
+own vocabulary it carries, favour the ones with figures, names and headings,
+discard the navigation residue, and keep the best of them **in the order they
+appeared**. On a 52,000-character encyclopedia article it kept 77 of 1,176
+sentences — including the two largest installations and their capacities in
+megawatts — in the author's own words, instantly and for no tokens at all.
 
 ## Editing a deck
 
@@ -269,9 +314,9 @@ Real-time collaboration and view analytics on shared links need infrastructure
 beyond the database above and are not built.
 
 Editing has no rich text: a line is a line, with no bold, italic, links or
-inline formatting, and there are no tables and no embeds. A deck cannot be
-started from an existing PDF, `.pptx` or URL. Speaker notes are written and
-exported but there is no presenter view — seeing them while you present needs a
+inline formatting, and there are no tables and no embeds. Imported PDFs must
+contain real text — a scan needs OCR, which is not built. Speaker notes are
+written and exported but there is no presenter view — seeing them while you present needs a
 second screen, which one browser page cannot give you. The ten themes above are
 the whole set; there is no way to build one from your own colours, fonts and
 logo.

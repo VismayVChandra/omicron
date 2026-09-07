@@ -394,6 +394,26 @@
     background:var(--surface);color:var(--deep);font:inherit;font-size:0.86rem;
   }
   .rework-eg{margin:12px 0 0;font-size:0.8rem;color:var(--ink-soft)}
+
+  .import-row{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  .import-drop{
+    display:block;padding:14px;border:1px dashed var(--line);border-radius:10px;
+    text-align:center;cursor:pointer;font-size:0.82rem;color:var(--ink-soft);
+    transition:border-color .15s, background .15s;
+  }
+  .import-drop:hover,
+  .import-drop.over{border-color:var(--wave);background:var(--surface-2);color:var(--deep)}
+  .import-drop b{color:var(--deep);font-weight:600}
+  .import-url{display:flex;gap:8px}
+  .import-url input{
+    flex:1;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface);color:var(--deep);font:inherit;font-size:0.84rem;
+  }
+  .import-note{
+    margin:0;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+    color:var(--tide);line-height:1.5;
+  }
+  .import-note.bad{color:#e0776d}
   .panel-status{
     margin:14px 0 0;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;
     color:var(--tide);line-height:1.5;
@@ -1590,6 +1610,17 @@
           </button>
           <textarea id="sourceText" hidden rows="5" spellcheck="false"
             placeholder="Paste meeting notes, a report, a transcript — anything the deck should be built from. Leave empty and Swell writes from the topic alone."></textarea>
+          <div class="import-row" id="importRow" hidden>
+            <label class="import-drop" id="importDrop">
+              <input type="file" id="importFile" accept=".pdf,.docx,.pptx,.txt,.md,.markdown,.csv" hidden>
+              <span>Drop a PDF, Word or PowerPoint file here, or <b>choose one</b></span>
+            </label>
+            <div class="import-url">
+              <input type="url" id="importUrl" spellcheck="false" placeholder="…or paste a link to a page">
+              <button type="button" class="btn btn-ghost" id="importUrlBtn">Read it</button>
+            </div>
+            <p class="import-note" id="importNote" hidden></p>
+          </div>
           <span class="source-count" id="sourceCount" hidden></span>
         </div>
         <div class="prompt-source">
@@ -4803,12 +4834,15 @@ Q4,4390"></textarea>
   var tonePick = document.getElementById('tonePick');
   var lengthPick = document.getElementById('lengthPick');
   var SOURCE_MAX = 12000;
+  var importRowEl = document.getElementById('importRow');
 
   if (sourceToggle) {
     sourceToggle.addEventListener('click', function(){
       var open = sourceToggle.getAttribute('aria-expanded') === 'true';
       sourceToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
       sourceText.hidden = open;
+      // the ways of getting material in belong with the box it goes into
+      if (importRowEl) importRowEl.hidden = open;
       sourceCount.hidden = open || !sourceText.value.length;
       if (!open) sourceText.focus();
     });
@@ -4828,6 +4862,360 @@ Q4,4390"></textarea>
   // Kept separate from source material on purpose: source supplies the facts,
   // voice supplies the habits. It also outlives a single deck, so it lives in
   // localStorage rather than the deck state.
+  // ---- reading a document instead of pasting it -------------------------
+  // Everything here ends in the same place: text in the source box, which the
+  // outline and the slide writer already know what to do with. A .docx and a
+  // .pptx are zip files, so both come apart with JSZip; a PDF needs pdf.js.
+  // Both libraries are fetched the first time someone actually imports
+  // something rather than on page load.
+  var JSZIP_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  var PDFJS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  var importRow = document.getElementById('importRow');
+  var importDrop = document.getElementById('importDrop');
+  var importFile = document.getElementById('importFile');
+  var importUrl = document.getElementById('importUrl');
+  var importUrlBtn = document.getElementById('importUrlBtn');
+  var importNote = document.getElementById('importNote');
+  var importing = false;
+
+  function say(text, bad){
+    if (!importNote) return;
+    importNote.textContent = text || '';
+    importNote.className = 'import-note' + (bad ? ' bad' : '');
+    importNote.hidden = !text;
+  }
+
+  var zipLoader = null;
+  function loadZip(){
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+    if (!zipLoader) zipLoader = loadScript(JSZIP_SRC).then(function(){ return window.JSZip; });
+    return zipLoader;
+  }
+
+  var pdfLoader = null;
+  function loadPdf(){
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (!pdfLoader) {
+      pdfLoader = loadScript(PDFJS_SRC).then(function(){
+        if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+        return window.pdfjsLib;
+      });
+    }
+    return pdfLoader;
+  }
+
+  function xmlText(xml, tag){
+    // the text nodes of an Office XML part, in document order
+    var out = [];
+    var re = new RegExp('<' + tag + '[^>]*>([\\s\\S]*?)<\\/' + tag + '>', 'g');
+    var m;
+    while ((m = re.exec(xml))) out.push(m[1]);
+    return out;
+  }
+
+  function unescapeXml(s){
+    return String(s)
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+      .replace(/&amp;/g, '&');
+  }
+
+  function fromDocx(file){
+    return loadZip().then(function(JSZip){
+      if (!JSZip) throw new Error('zip');
+      return JSZip.loadAsync(file);
+    }).then(function(zip){
+      var part = zip.file('word/document.xml');
+      if (!part) throw plainly('that .docx has no document part in it');
+      return part.async('string');
+    }).then(function(xml){
+      // paragraphs are the unit; runs inside them are just formatting
+      var paras = xml.split(/<\/w:p>/);
+      return paras.map(function(p){
+        return xmlText(p, 'w:t').map(unescapeXml).join('');
+      }).map(function(l){ return l.trim(); }).filter(Boolean).join('\n');
+    });
+  }
+
+  function fromPptx(file){
+    return loadZip().then(function(JSZip){
+      if (!JSZip) throw new Error('zip');
+      return JSZip.loadAsync(file);
+    }).then(function(zip){
+      var names = Object.keys(zip.files).filter(function(n){
+        return /^ppt\/slides\/slide\d+\.xml$/.test(n);
+      }).sort(function(a, b){
+        // slide10 must not sort before slide2
+        var na = parseInt((a.match(/(\d+)/) || [])[1], 10);
+        var nb = parseInt((b.match(/(\d+)/) || [])[1], 10);
+        return na - nb;
+      });
+      if (!names.length) throw plainly('no slides in that .pptx');
+      return Promise.all(names.map(function(n){ return zip.file(n).async('string'); }));
+    }).then(function(parts){
+      return parts.map(function(xml, i){
+        var lines = xml.split(/<\/a:p>/).map(function(p){
+          return xmlText(p, 'a:t').map(unescapeXml).join('').trim();
+        }).filter(Boolean);
+        return lines.length ? ('Slide ' + (i + 1) + '\n' + lines.join('\n')) : '';
+      }).filter(Boolean).join('\n\n');
+    });
+  }
+
+  function fromPdf(file){
+    return loadPdf().then(function(lib){
+      if (!lib) throw new Error('pdf reader');
+      return file.arrayBuffer();
+    }).then(function(buf){
+      return window.pdfjsLib.getDocument({ data: buf }).promise;
+    }).then(function(doc){
+      var pages = [];
+      var n = Math.min(doc.numPages, 120);
+      function readPage(i){
+        if (i > n) return Promise.resolve();
+        return doc.getPage(i).then(function(page){
+          return page.getTextContent();
+        }).then(function(content){
+          var last = null;
+          var line = [];
+          var lines = [];
+          content.items.forEach(function(item){
+            if (!item.str) return;
+            var y = item.transform ? Math.round(item.transform[5]) : null;
+            if (last !== null && y !== null && Math.abs(y - last) > 2) {
+              lines.push(line.join('').trim());
+              line = [];
+            }
+            last = y;
+            line.push(item.str);
+          });
+          if (line.length) lines.push(line.join('').trim());
+          pages.push(lines.filter(Boolean).join('\n'));
+          return readPage(i + 1);
+        });
+      }
+      return readPage(1).then(function(){ return pages.join('\n\n'); });
+    });
+  }
+
+  // Our own refusals are worth reading; a library's internals are not. JSZip
+  // answers a damaged file with "Can't find end of central directory : is this
+  // a zip file ?" and a link to its own documentation, which is no help to
+  // somebody who just dragged in the wrong thing.
+  function plainly(message){
+    var err = new Error(message);
+    err.plain = true;
+    return err;
+  }
+
+  function readFile(file){
+    var name = (file.name || '').toLowerCase();
+    var ext = (name.match(/\.([a-z0-9]+)$/) || [])[1] || '';
+    var read;
+    if (/\.(txt|md|markdown|csv)$/.test(name)) read = file.text();
+    else if (/\.docx$/.test(name)) read = fromDocx(file);
+    else if (/\.pptx$/.test(name)) read = fromPptx(file);
+    else if (/\.pdf$/.test(name)) read = fromPdf(file);
+    else if (/\.(doc|ppt)$/.test(name)) {
+      return Promise.reject(plainly('the old .doc and .ppt formats are not readable — save it as .docx or .pptx'));
+    } else {
+      return Promise.reject(plainly('that file type cannot be read'));
+    }
+    return read.catch(function(e){
+      if (e && e.plain) throw e;
+      throw plainly('that .' + ext + ' could not be read — it may be damaged, or not really a .' + ext);
+    });
+  }
+
+  // Cutting a long document down to what the source box takes.
+  //
+  // This was going to ask the model to summarise it, and that was wrong twice
+  // over. Groq's free tier allows 8,000 tokens a minute; a fifty-page report is
+  // thirteen thousand, so reading it once would spend two minutes of the whole
+  // budget before a single slide got written. And an abstractive summary
+  // paraphrases — which is the last thing wanted from the one feature whose
+  // entire purpose is that the deck stops making figures up.
+  //
+  // So it is extractive and local: score the sentences, keep the best ones in
+  // the order they appeared, throw nothing else away. The words that reach the
+  // slide writer are the author's own, it costs no tokens, and it is instant.
+  var STOPWORDS = (
+    'a an the and or but if then than that this these those of in on at to for from by with without ' +
+    'is are was were be been being it its as into over under about above below not no nor so such ' +
+    'can could may might will would shall should must do does did done have has had having he she ' +
+    'they we you i them him her his their our your my me us who whom which what when where why how ' +
+    'also more most other some any each both few many much very there here also however thus hence'
+  ).split(' ');
+
+  function contentWords(line){
+    var words = String(line).toLowerCase().match(/[a-z][a-z'’-]{1,}/g) || [];
+    return words.filter(function(w){ return w.length > 2 && STOPWORDS.indexOf(w) === -1; });
+  }
+
+  function intoSentences(line){
+    // keep it simple and conservative: split on terminal punctuation followed
+    // by a capital, so "3.5 million" and "Ltd." do not become two sentences
+    var parts = String(line).split(/(?<=[.!?])\s+(?=[A-Z(“"])/);
+    return parts.length ? parts : [line];
+  }
+
+  function condenseLocally(text, budget){
+    var lines = String(text).split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+
+    // how often each content word appears across the whole document
+    var freq = {};
+    lines.forEach(function(l){
+      contentWords(l).forEach(function(w){ freq[w] = (freq[w] || 0) + 1; });
+    });
+
+    var units = [];
+    var order = 0;
+    lines.forEach(function(line, li){
+      // a short line with no terminal punctuation is a heading: keep it, and
+      // score it high enough to survive, because it is what gives the rest shape
+      var heading = line.length < 90 && !/[.!?:]$/.test(line) && /[A-Za-z]/.test(line);
+      intoSentences(line).forEach(function(s){
+        s = s.trim();
+        if (s.length < 25 && !heading) return;
+        if (s.length > 600) s = s.slice(0, 600);
+        var words = contentWords(s);
+        if (!words.length) return;
+
+        var score = 0;
+        words.forEach(function(w){ score += Math.log(1 + (freq[w] || 0)); });
+        score = score / Math.sqrt(words.length);            //long sentences should not win on length alone
+        if (/\d/.test(s)) score *= 1.35;                    // figures are the point of a source
+        if (/\d+\s*(%|per cent|percent)/i.test(s)) score *= 1.15;
+        if (/[A-Z][a-z]+\s+[A-Z][a-z]+/.test(s)) score *= 1.08;   // named things
+        if (heading) score *= 1.5;
+        if (li < lines.length * 0.15) score *= 1.1;          // the opening usually states the case
+        if (/^(retrieved|archived|see also|references|external links|categories|jump to|edit\b)/i.test(s)) score *= 0.15;
+        if (/\bcookies?\b|\bsubscribe\b|\bnewsletter\b|\ball rights reserved\b/i.test(s)) score *= 0.2;
+
+        units.push({ order: order++, text: s, score: score, len: s.length + 1 });
+      });
+    });
+
+    if (!units.length) return String(text).slice(0, budget);
+
+    var ranked = units.slice().sort(function(a, b){ return b.score - a.score; });
+    var keep = [];
+    var used = 0;
+    for (var i = 0; i < ranked.length; i++) {
+      if (used + ranked[i].len > budget) continue;
+      keep.push(ranked[i]);
+      used += ranked[i].len;
+      if (used > budget * 0.98) break;
+    }
+    keep.sort(function(a, b){ return a.order - b.order; });   // back into reading order
+    return {
+      text: keep.map(function(u){ return u.text; }).join('\n'),
+      kept: keep.length,
+      total: units.length
+    };
+  }
+
+  function fitSource(text, label){
+    var clean = String(text || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    if (!clean) return Promise.reject(plainly('nothing readable in there — it may be a scan rather than text'));
+    if (clean.length <= SOURCE_MAX) {
+      return Promise.resolve({ text: clean, condensed: false, from: clean.length, to: clean.length });
+    }
+    var got = condenseLocally(clean, SOURCE_MAX - 200);
+    if (typeof got === 'string') got = { text: got, kept: 0, total: 0 };
+    return Promise.resolve({
+      text: got.text, condensed: true, from: clean.length, to: got.text.length,
+      kept: got.kept, total: got.total
+    });
+  }
+
+  function acceptSource(text, label){
+    if (importing) return;
+    importing = true;
+    say('Reading ' + label + '…');
+    fitSource(text, label).then(function(got){
+      sourceText.value = got.text;
+      sourceText.hidden = false;
+      sourceToggle.setAttribute('aria-expanded', 'true');
+      sourceToggle.classList.add('open');
+      sourceText.dispatchEvent(new Event('input', { bubbles: true }));
+      say(got.condensed
+        ? 'Read ' + label + ' — kept the ' + (got.kept || 0).toLocaleString() + ' most substantial of ' +
+          (got.total || 0).toLocaleString() + ' sentences, in the order they appeared. ' +
+          'Their own words, not a paraphrase.'
+        : 'Read ' + label + ' — ' + got.text.length.toLocaleString() +
+          ' characters. The deck will be built from this.');
+    }).catch(function(e){
+      say((e && e.message) || 'could not read that', true);
+    }).finally(function(){ importing = false; });
+  }
+
+  function takeFile(file){
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) { say('that file is over 25MB', true); return; }
+    if (importing) return;
+    importing = true;
+    say('Reading ' + file.name + '…');
+    readFile(file).then(function(text){
+      importing = false;
+      acceptSource(text, file.name);
+    }).catch(function(e){
+      importing = false;
+      say((e && e.message) || 'could not read that file', true);
+    });
+  }
+
+  if (importFile) {
+    importFile.addEventListener('change', function(){
+      takeFile(importFile.files && importFile.files[0]);
+      importFile.value = '';   // so the same file can be chosen again
+    });
+  }
+  if (importDrop) {
+    ['dragenter', 'dragover'].forEach(function(ev){
+      importDrop.addEventListener(ev, function(e){
+        e.preventDefault();
+        importDrop.classList.add('over');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function(ev){
+      importDrop.addEventListener(ev, function(){ importDrop.classList.remove('over'); });
+    });
+    importDrop.addEventListener('drop', function(e){
+      e.preventDefault();
+      takeFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+    });
+  }
+
+  function readUrl(){
+    var value = (importUrl.value || '').trim();
+    if (!value) { say('paste a link first', true); importUrl.focus(); return; }
+    if (importing) return;
+    importing = true;
+    say('Fetching that page…');
+    fetch('/api/fetch?url=' + encodeURIComponent(value))
+      .then(function(r){
+        return r.json().catch(function(){ return {}; }).then(function(b){
+          if (!r.ok) throw new Error(b.message || 'could not read that page');
+          return b;
+        });
+      })
+      .then(function(b){
+        importing = false;
+        acceptSource(b.text, b.title || value);
+      })
+      .catch(function(e){
+        importing = false;
+        say((e && e.message) || 'could not reach that page', true);
+      });
+  }
+  if (importUrlBtn) importUrlBtn.addEventListener('click', readUrl);
+  if (importUrl) importUrl.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); readUrl(); }
+  });
+
   var VOICE_KEY = 'swell.voice';
   var voiceToggle = document.getElementById('voiceToggle');
   var voiceBox = document.getElementById('voiceBox');
