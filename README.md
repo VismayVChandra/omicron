@@ -266,11 +266,13 @@ logo.
 4. Deploy. `index.html` is served as the site; `api/generate.js` runs as a
    serverless function at `/api/generate`.
 
-Optionally add `CF_ACCOUNT_ID` and `CF_API_TOKEN` from
-[dash.cloudflare.com](https://dash.cloudflare.com) — Workers & Pages for the
-account id, My Profile → API Tokens → the **Workers AI** template for the token
-— and slides can have their pictures drawn rather than searched. See
-[Generated pictures](#generated-pictures) for the alternatives.
+Optionally add `CF_ACCOUNT_ID` and `CF_API_TOKEN` and slides can have their
+pictures drawn rather than searched. Both come from one screen:
+[dash.cloudflare.com](https://dash.cloudflare.com) → **Workers AI** → **Use REST
+API**. The token template grants Workers AI *Read* and *Edit* and the REST API
+needs both, so keep both rows; set **Account Resources** to your account or the
+token will not authorise anything. See [Generated
+pictures](#generated-pictures) for the alternatives.
 
 ## Run locally
 
