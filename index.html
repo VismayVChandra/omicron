@@ -537,7 +537,10 @@
   .layout-pick .lp-name{display:block;color:var(--deep);font-size:0.74rem}
   .layout-pick .lp-hint{display:block;font-size:0.65rem;opacity:0.72;margin-top:2px;line-height:1.35}
 
-  .img-results{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .img-results{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));
+    gap:10px;margin-top:14px;
+  }
   .img-results button{
     padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;
     background:var(--surface-2);cursor:pointer;aspect-ratio:4/3;
@@ -551,6 +554,9 @@
   }
   .img-hint{font-size:0.8rem;color:var(--ink-soft);margin:12px 0 0}
   @media (max-width:620px){ .img-results{grid-template-columns:repeat(2,1fr)} }
+  /* a panel is a drawer under the deck, not a second page: give it a ceiling
+     and let it scroll rather than pushing the deck off the top */
+  .app-panels .critique-panel{max-height:36vh;overflow:auto}
 
   .drafts-drawer input.d-rename{
     flex:1;min-width:0;padding:4px 8px;border:1px solid var(--wave);border-radius:7px;
@@ -572,7 +578,7 @@
   .deck-body{display:grid;grid-template-columns:168px 1fr}
   .deck-rail{
     border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:10px;
-    max-height:440px;overflow-y:auto;
+    max-height:min(560px,70vh);overflow-y:auto;
   }
   .deck-thumb{
     border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer;background:var(--surface);
@@ -591,7 +597,7 @@
   .deck-stage-wrap{padding:28px 32px;display:flex;align-items:center;justify-content:center;background:var(--bg)}
   /* container queries so slide type scales with the slide box, not the viewport
      — the same markup has to read correctly at 640px and in full-screen present */
-  .deck-slide-frame{width:100%;max-width:640px;container-type:inline-size}
+  .deck-slide-frame{width:100%;max-width:min(900px,100%);container-type:inline-size}
   .deck-slide{
     width:100%;aspect-ratio:16/9;border-radius:14px;box-shadow:var(--shadow-lift);
     position:relative;overflow:hidden;display:flex;flex-direction:column;padding:clamp(20px,5%,44px);
@@ -1519,7 +1525,19 @@
     flex:1;min-height:0;display:flex;align-items:stretch;justify-content:center;
     padding:18px 22px;overflow:auto;
   }
-  .app-body .deck-mock{width:100%;max-width:1240px;display:flex;flex-direction:column;min-height:0}
+  /* A real floor, not min-height:0. The panels below are a flex sibling, so an
+     open panel took its height straight out of the deck — opening the image
+     picker shrank the slide from 945x532 to 395x222, which is most of what
+     "I can't see the slides" meant. The deck keeps its size now and .app-body
+     scrolls instead.
+
+     And a plain pixel floor, not min(520px,100%): that 100% resolves against
+     the already-squeezed parent, so the floor collapsed to exactly the height
+     it existed to prevent. */
+  .app-body .deck-mock{
+    width:100%;max-width:1600px;display:flex;flex-direction:column;
+    min-height:520px;
+  }
   .app-body .deck-body{flex:1;min-height:0;grid-template-columns:186px 1fr}
   .app-body .deck-rail{max-height:none}
   /* The slide takes the room the screen actually has. Sized from the available
@@ -1527,13 +1545,13 @@
      viewport, which then scrolls instead of fitting. */
   .app-body .deck-stage-wrap{flex:1;min-height:0;padding:22px;align-items:center}
   .app-body .deck-slide-frame{
-    max-width:min(1080px, 100%);
+    max-width:min(1320px, 100%);
     height:100%;max-height:100%;width:auto;aspect-ratio:16/9;
   }
   .app-body .outline-panel{width:100%;max-width:760px;margin:0 auto;align-self:center}
 
   .app-panels{
-    flex:none;max-height:42vh;overflow:auto;padding:0 22px 18px;
+    flex:none;max-height:min(360px,38vh);overflow:auto;padding:0 22px 18px;
     background:var(--bg);
   }
   .app-panels .deck-extras{margin-top:0;padding-top:14px}
@@ -1555,7 +1573,8 @@
     .app-prompt-slot .prompt-card{max-width:none}
 
     .app-body{display:block;padding:12px;overflow:visible}
-    .app-body .deck-mock{max-width:none;display:block}
+    /* the desktop floor would force a 520px deck above the fold on a phone */
+    .app-body .deck-mock{max-width:none;display:block;min-height:0}
     .app-body .deck-body{display:block}
     .app-body .deck-stage-wrap{padding:12px;display:block}
     /* size from width on a phone: there is no spare height to size from */
