@@ -83,11 +83,28 @@ function sniffType(bytes) {
 }
 
 async function viaCloudflare(prompt, seed) {
+  // Cloudflare prefixes its credentials, and two of them are easy to confuse on
+  // a dashboard: cfut_ is a scoped User API Token, which is what the Workers AI
+  // template makes and what this wants; cfk_ is the Global API Key, which has
+  // full access to the whole account and authenticates with X-Auth-Email and
+  // X-Auth-Key rather than a bearer token. Sent as a bearer it just returns
+  // "Authentication error", which sends you looking at scopes and account ids
+  // for an hour. Say what it actually is.
+  const token = env('CF_API_TOKEN');
+  if (token.indexOf('cfk_') === 0) {
+    throw {
+      code: 'bad_credentials',
+      detail: 'CF_API_TOKEN is a Global API Key (cfk_), not an API token. ' +
+        'Create a scoped token instead — it starts cfut_. Do not use the ' +
+        'Global API Key here: it grants full access to the whole account.',
+    };
+  }
+
   const url = `https://api.cloudflare.com/client/v4/accounts/${env('CF_ACCOUNT_ID')}/ai/run/${CF_MODEL}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env('CF_API_TOKEN')}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ prompt, seed, steps: 4 }),

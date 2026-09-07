@@ -177,13 +177,22 @@ new light, not a different one.
 
 | Provider | Free tier | Set |
 |---|---|---|
-| **Cloudflare Workers AI** (FLUX-1-schnell) | 10,000 neurons a day, 4.8 per tile — around 200 images, no card | `CF_ACCOUNT_ID`, `CF_API_TOKEN` |
+| **Cloudflare Workers AI** (FLUX-1-schnell) | 10,000 neurons a day, 4.8 per tile — around 200 images, no card | `CF_ACCOUNT_ID`, `CF_API_TOKEN` (must start `cfut_`) |
 | **Together AI** (FLUX.1-schnell) | a free endpoint, historically promotional — check before relying on it | `TOGETHER_API_KEY` |
 | **Google Gemini image** (Nano Banana) | none. Google's pricing page lists Free Tier as "not available" for all four of its image models | `GEMINI_API_KEY` |
 
 The first one configured is the one used. Cloudflare is the default because it
 is the only one of the three with a free tier that survives reading the docs
 rather than the blog posts about them.
+
+Cloudflare prefixes its credentials, and the dashboard offers two that are easy
+to mistake for each other. **`cfut_`** is a scoped User API Token — that is the
+one this wants, and the one the Workers AI template creates. **`cfk_`** is the
+Global API Key: full access to the entire account, a different auth scheme
+(`X-Auth-Email` and `X-Auth-Key`, not a bearer token), and no business being in
+a deployed app's environment. Sent as a bearer token it answers "Authentication
+error" and tells you nothing, so `/api/imagegen` checks the prefix and says
+which one you have.
 
 Every prompt asks for no text, no letters and no logos, because these models
 write gibberish signage into a picture whenever they think a label belongs
