@@ -149,22 +149,38 @@ IMAGE: <2 to 5 plain words naming a photographable subject>
 
 Rules:
 - Begin every slide with a line of exactly ===
-- LAYOUT is one of: bullets, stat, quote, steps, compare, section, statement
+- LAYOUT is one of: cards, bullets, figures, stat, quote, steps, compare,
+  section, statement
 - Vary the layouts. A deck where every slide is "bullets" is a wall of text, and
   one that cycles through every layout for its own sake is a circus. Pick the
   layout the content actually wants:
+    cards     — two to four points that stand on their own and read better
+                side by side than stacked. This is the workhorse.
+    figures   — two to four numbers that belong together and invite comparison
     steps     — a real sequence or process, where order matters
     compare   — two things genuinely set against each other (before/after,
                 us/them, option A/option B)
     section   — a divider announcing the next part of a longer deck
     statement — the single line you would want left on screen in silence
-    stat      — one number that carries the whole point
+    stat      — one number that carries the whole point. The first BULLET is
+                the figure itself and nothing else: "600+ marinas", "9 days",
+                "£4.2m". Never a sentence — it is set in enormous type.
     quote     — one memorable line someone said
-    bullets   — everything else
-- Use stat, quote, statement and compare at most once each. Use section only in a
-  deck of 7 or more slides, at most twice, and never as the last slide. Skip any
-  of them entirely when the subject does not call for it — at least half the
-  slides should still be bullets.
+    bullets   — a list that is genuinely a list: points that only make sense
+                read in order, or too many to sit side by side
+- Use stat, quote, statement, figures and compare at most once each. Use section
+  only in a deck of 7 or more slides, at most twice, and never as the last slide.
+  Skip any of them entirely when the subject does not call for it.
+- cards is the default for ordinary content, not bullets. Reach for bullets only
+  when the points really are a list. A deck of five bullets slides is the thing
+  this is trying not to be.
+- cards and figures: each BULLET line is two parts joined by an em dash —
+  a short lead of 2 to 5 words, then the em dash, then one sentence.
+    BULLET: Storms take the grid — outages on exposed coastline run for days,
+    not hours.
+  For figures the lead is the number itself: "254 MW — total installed capacity".
+  Write 2 to 4 of these, never more. Do not use an em dash anywhere else on a
+  cards or figures slide.
 - bullets: a BODY line then 3 to 5 BULLET lines. stat: exactly 2 BULLET lines and
   no BODY. quote: exactly 1 BULLET line and no BODY. steps: a BODY line then 3 to
   5 BULLET lines in order. compare: a LEFT label then its BULLET lines, then a

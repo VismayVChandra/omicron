@@ -166,13 +166,37 @@ Everything here is one Ctrl+Z from being undone.
 
 ## Slide layouts
 
-Eight of them: a cover, `bullets` (split with a photograph when there is one),
-`steps` for a real sequence, `compare` for two things set against each other,
-`section` as a full-bleed divider in longer decks, `statement` for the one line
-worth leaving on screen alone, `stat` for a single number, `quote`, and `chart`
-from your own data. The model picks per slide and is told to keep at least half
-of them `bullets` — cycling through every layout for its own sake is as bad as
-using one for everything.
+A cover, then: `cards`, `bullets`, `figures`, `steps`, `compare`, `section`,
+`statement`, `stat`, `quote`, and `chart` from your own data. The model picks per
+slide — cycling through every layout for its own sake is as bad as using one for
+everything.
+
+**`cards` is the workhorse, and it used to be `bullets`.** The instruction was
+once "at least half the slides should still be bullets", and a bullets slide is a
+heading, a paragraph and a `<ul>` — the grammar of a Word document. Ten themes
+recoloured that same arrangement, which is why decks read as basic however good
+the palette was. A cards slide puts each point in a box of its own with an icon,
+a short lead and a sentence under it: the same words, laid out rather than
+listed. On a real generation the mix went from four bullets slides to zero.
+
+`figures` is two to four numbers side by side, which is a comparison the eye
+makes for itself and a list throws away. `steps` runs across the slide as a
+timeline when there are two to four of them, and stacks when there are more.
+
+A card is stored as one bullet string, `lead — detail`, so everything that
+already edits, rewrites, undoes and exports a bullet keeps working. Two things
+tidy themselves after generation: card-shaped content written onto a `bullets`
+slide is promoted to `cards`, and a `stat` slide whose headline is a sentence
+rather than a figure is demoted — that slot is set in enormous type, which is
+magnificent for "254 MW" and unreadable for a paragraph.
+
+### Icons
+
+Twenty glyphs, drawn inline as SVG rather than fetched: one 24-unit box, one
+stroke weight, no fills, so they read as a family. Each card's is chosen from the
+words in it, and a glyph already used on that slide is skipped — a deck about
+power matched "energy" three times and drew the same lightning bolt on all three
+cards before that.
 
 Ten deck themes, and they are not all the same kind of thing.
 

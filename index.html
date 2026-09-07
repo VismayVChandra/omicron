@@ -1107,6 +1107,90 @@
   .deck-slide .wave-accent{display:none;position:absolute;right:-10%;bottom:-18%;width:55%;opacity:0.5;pointer-events:none}
   [data-deck-theme="tide"] .deck-slide .wave-accent{display:block}
 
+  /* ---------- cards ----------
+     A list is a document's way of holding three things. Boxes across the slide
+     are a slide's way, and it is most of the difference between a deck that
+     looks made and one that looks typed. Same words, same edit model — the
+     bullet string is "lead — detail" and the two halves are laid out. */
+  .deck-slide.cards .card-grid{
+    display:grid;gap:2.2cqw;flex:1;align-content:center;
+    grid-template-columns:repeat(var(--cards,3),minmax(0,1fr));
+  }
+  .deck-slide .s-card{
+    background:var(--s-quote-bg);border-radius:1.5cqw;padding:2.6cqw 2.4cqw;
+    display:flex;flex-direction:column;gap:1.1cqw;min-width:0;
+  }
+  .deck-slide .s-icon{width:4.4cqw;height:4.4cqw;color:var(--s-accent);flex:none}
+  .deck-slide .s-icon svg{width:100%;height:100%;display:block}
+  .deck-slide .s-lead{
+    font-family:var(--s-display);font-weight:600;line-height:1.2;color:var(--s-ink);
+    font-size:clamp(0.58rem,2.15cqw,1.08rem);
+  }
+  .deck-slide .s-detail{
+    font-size:clamp(0.48rem,1.6cqw,0.86rem);color:var(--s-muted);line-height:1.45;
+  }
+  .deck-slide .s-lead:empty::before,.deck-slide .s-detail:empty::before{
+    content:attr(data-ph);color:var(--s-muted);opacity:0.45;
+  }
+
+  /* ---------- a row of figures ----------
+     One number is a stat slide. Two or three side by side is a comparison the
+     eye makes for itself, and a list would have thrown that away. */
+  .deck-slide.figures .fig-row{
+    display:grid;gap:3cqw;flex:1;align-content:center;
+    grid-template-columns:repeat(var(--figs,3),minmax(0,1fr));
+  }
+  .deck-slide .fig-value{
+    font-family:var(--s-display);font-weight:700;line-height:0.95;color:var(--s-accent);
+    font-size:clamp(1.1rem,7.2cqw,3.6rem);letter-spacing:-0.02em;
+  }
+  .deck-slide .fig-caption{
+    font-size:clamp(0.48rem,1.7cqw,0.9rem);color:var(--s-muted);
+    line-height:1.4;margin-top:1.1cqw;
+  }
+  .deck-slide .fig-value:empty::before,.deck-slide .fig-caption:empty::before{
+    content:attr(data-ph);color:var(--s-muted);opacity:0.45;
+  }
+
+  /* ---------- steps as a timeline ----------
+     Three or four steps read as a sequence when they run across the slide with
+     a rule through them; stacked, they are just a numbered list again. */
+  .deck-slide.steps.timeline .step-list{
+    display:grid;grid-template-columns:repeat(var(--steps,3),minmax(0,1fr));
+    gap:2.4cqw;position:relative;flex:1;align-content:center;
+  }
+  .deck-slide.steps.timeline .step-list::before{
+    content:"";position:absolute;left:2cqw;right:2cqw;top:2.1cqw;height:1px;
+    background:var(--s-rule,var(--s-muted));opacity:0.45;
+  }
+  .deck-slide.steps.timeline li{
+    display:flex;flex-direction:column;align-items:flex-start;gap:1.3cqw;
+    position:relative;min-width:0;
+  }
+  .deck-slide.steps.timeline .step-no{
+    width:4.2cqw;height:4.2cqw;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;background:var(--s-accent);color:var(--s-bg);
+    font-size:clamp(0.45rem,1.7cqw,0.9rem);font-weight:600;flex:none;position:relative;z-index:1;
+  }
+  .deck-slide.steps.timeline .step-text{
+    font-size:clamp(0.5rem,1.75cqw,0.92rem);color:var(--s-muted);line-height:1.45;
+  }
+
+  /* the themes with the strongest opinions get their own take on a card */
+  [data-deck-theme="press"] .deck-slide .s-card{
+    background:none;border:1px solid var(--s-rule);border-radius:0;
+  }
+  [data-deck-theme="graphite"] .deck-slide .s-card{border-radius:0.4cqw}
+  [data-deck-theme="amber"] .deck-slide .s-card{
+    background:none;border-radius:0;border-left:2px solid var(--s-accent);
+    padding-left:2cqw;
+  }
+  [data-deck-theme="noir"] .deck-slide .s-card{
+    background:rgba(255,255,255,0.04);border-radius:0;
+  }
+  [data-deck-theme="dune"] .deck-slide .s-card{text-align:center;align-items:center}
+  [data-deck-theme="plum"] .deck-slide .s-card{border-radius:1.5cqw 1.5cqw 4cqw 4cqw}
+
   /* split: copy on the left, photograph on the right */
   /* the photograph bleeds to the slide edges — floating it in padding leaves
      dead space and reads like a placeholder */
@@ -2662,10 +2746,39 @@ Q4,4390"></textarea>
   }
 
   // 'chart' is never produced by the model — only by pasting your own data
-  var LAYOUTS = ['bullets','stat','quote','chart','steps','compare','section','statement'];
+  var LAYOUTS = ['bullets','cards','figures','stat','quote','chart','steps','compare','section','statement'];
   function normalizeLayout(v){
     v = String(v || '').trim().toLowerCase();
     return LAYOUTS.indexOf(v) === -1 ? 'bullets' : v;
+  }
+
+  // The model sometimes writes card-shaped content — "Mainspring — the energy
+  // reservoir" — onto a bullets slide. Rendering that as a list throws away
+  // the shape it already wrote, so the slide is promoted instead. And a stat
+  // slide that picked up the same em dash gets split back into its number and
+  // its supporting line, rather than putting the whole sentence in 7cqw type.
+  function tidyLayout(slide){
+    if (!slide || slide.type !== 'content') return slide;
+    var bullets = slide.bullets || [];
+    var paired = bullets.filter(function(b){ return /\S\s+[—–]\s+\S/.test(String(b)); }).length;
+
+    if (normalizeLayout(slide.layout) === 'bullets' &&
+        bullets.length >= 2 && bullets.length <= 4 && paired === bullets.length) {
+      slide.layout = 'cards';
+    } else if (normalizeLayout(slide.layout) === 'stat' && bullets.length) {
+      // A stat slide sets its first line in 7cqw display type, which is
+      // magnificent for "254 MW" and unreadable for a sentence. The model
+      // writes prose there often enough to be worth catching.
+      var head = String(bullets[0] || '').trim();
+      var m = head.match(/^(.{1,28}?)\s+[—–]\s+(.+)$/);
+      if (m && /\d/.test(m[1])) {
+        slide.bullets = [m[1].trim(), bullets[1] || m[2].trim()];
+      } else if (!/\d/.test(head) || head.length > 30) {
+        // not a figure at all: show it as what it actually is
+        slide.layout = (paired === bullets.length && bullets.length >= 2) ? 'cards' : 'bullets';
+      }
+    }
+    return slide;
   }
 
   var deckSlides = defaultSlides();
@@ -2691,6 +2804,95 @@ Q4,4390"></textarea>
   }
 
   // `editable` is false for the present overlay — presenting is read-only
+  // ---- a small set of glyphs, drawn rather than fetched ------------------
+  // An icon per card is most of what makes a slide read as designed, and a
+  // whole icon font is a lot of network for twenty shapes. These are one
+  // family: 24-unit box, 2-unit stroke, round caps, no fills.
+  var ICONS = {
+    growth: 'M3 17l5-5 3 3 7-7M15 8h5v5',
+    money:  'M12 3v18M8 7h6a3 3 0 010 6H9a3 3 0 000 6h7',
+    time:   'M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2',
+    people: 'M8 11a3 3 0 100-6 3 3 0 000 6zM3 20a5 5 0 0110 0M16 11a3 3 0 100-6M17 20a5 5 0 00-2-4',
+    warning:'M12 4L2 20h20L12 4zM12 10v5M12 18v.5',
+    check:  'M4 12l5 5L20 6',
+    idea:   'M9 20h6M10 23h4M12 2a6 6 0 00-4 10.5c.7.8 1 1.6 1 2.5h6c0-.9.3-1.7 1-2.5A6 6 0 0012 2z',
+    tool:   'M14 6a4 4 0 105 5l-9 9-3.5.5.5-3.5 9-9a4 4 0 01-2-2z',
+    globe:  'M12 21a9 9 0 100-18 9 9 0 000 18zM3 12h18M12 3c2.5 2.5 3.5 6 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-6-3.5-9s1-6.5 3.5-9z',
+    lock:   'M6 11h12v9H6zM9 11V7a3 3 0 016 0v4',
+    speed:  'M12 20a8 8 0 118-8M12 12l5-4',
+    search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM16.5 16.5L21 21',
+    link:   'M10 14a4 4 0 006 0l3-3a4 4 0 10-6-6l-1 1M14 10a4 4 0 00-6 0l-3 3a4 4 0 106 6l1-1',
+    doc:    'M7 3h7l5 5v13H7zM14 3v5h5M10 13h7M10 17h7',
+    mail:   'M3 6h18v12H3zM3 7l9 6 9-6',
+    cycle:  'M4 12a8 8 0 0113-6M20 12a8 8 0 01-13 6M17 3v3h-3M7 21v-3h3',
+    target: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 16a4 4 0 100-8 4 4 0 000 8zM12 13v-1',
+    layers: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
+    spark:  'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18',
+    wave:   'M3 14c2.5 0 2.5-5 5-5s2.5 5 5 5 2.5-5 5-5 2.5 5 5 5'
+  };
+
+  var ICON_WORDS = [
+    ['growth', /grow|increas|rise|scal|expand|more|uplift|adopt/i],
+    ['money', /cost|price|budget|revenue|profit|spend|saving|fund|pay|invest|£|\$|dollar/i],
+    ['time', /time|hour|day|week|month|year|delay|wait|deadline|schedul|duration/i],
+    ['people', /team|people|customer|user|staff|audience|communit|student|patient|client|hiring/i],
+    ['warning', /risk|problem|fail|issue|threat|challeng|loss|outage|error|barrier|gap/i],
+    ['check', /solv|fix|complete|success|benefit|advantage|win|resolv|reliab|qualit/i],
+    ['idea', /idea|insight|learn|discover|research|understand|princip|theor|concept/i],
+    ['tool', /build|tool|process|system|engineer|maintain|repair|manufact|install|operat/i],
+    ['globe', /market|global|world|region|countr|internat|climate|environment/i],
+    ['lock', /secur|safe|privacy|protect|trust|complian|regulat|legal|risk-free/i],
+    ['speed', /speed|quick|fast|instant|latenc|performance|efficien|rapid/i],
+    ['search', /find|search|analys|analyz|measur|data|metric|monitor|track|test/i],
+    ['link', /connect|integrat|link|partner|network|supply|chain|api/i],
+    ['doc', /report|document|policy|record|paper|contract|standard|guidel/i],
+    ['mail', /contact|email|message|communicat|outreach|notif/i],
+    ['cycle', /cycle|repeat|loop|iterat|renew|recycl|sustain|circular|feedback/i],
+    ['target', /goal|target|aim|objectiv|focus|priorit|strateg|plan/i],
+    ['layers', /layer|stack|structur|component|part|module|architect|framework/i],
+    ['spark', /new|innovat|launch|energ|power|electric|spark|creat|invent/i]
+  ];
+
+  // `used` carries the names already spent on this slide. Without it a slide
+  // about power drew the same lightning glyph three times — every card matched
+  // "energy" or "power" perfectly well, which is exactly the problem.
+  function iconFor(text, index, used){
+    var s = String(text || '');
+    var i;
+    for (i = 0; i < ICON_WORDS.length; i++) {
+      if (ICON_WORDS[i][1].test(s) && used.indexOf(ICON_WORDS[i][0]) === -1) {
+        used.push(ICON_WORDS[i][0]);
+        return ICONS[ICON_WORDS[i][0]];
+      }
+    }
+    // matched nothing new: take the first unused neutral shape
+    var fallback = ['target', 'layers', 'idea', 'check', 'cycle', 'doc'];
+    for (i = 0; i < fallback.length; i++) {
+      if (used.indexOf(fallback[i]) === -1) {
+        used.push(fallback[i]);
+        return ICONS[fallback[i]];
+      }
+    }
+    return ICONS.wave;
+  }
+
+  function iconSvg(text, index, used){
+    return '<span class="s-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="' + iconFor(text, index, used || []) + '"></path></svg></span>';
+  }
+
+  // A card is one bullet string, "lead — detail", so everything that already
+  // edits, rewrites, undoes and exports a bullet keeps working untouched.
+  function splitCard(text){
+    var s = String(text || '').trim();
+    var m = s.match(/^(.{2,64}?)\s+[—–]\s+(.+)$/) ||
+            s.match(/^([^:]{2,64}):\s+(.+)$/) ||
+            s.match(/^(.{2,64}?)\s+-\s+(.+)$/);
+    if (m) return { lead: m[1].trim(), detail: m[2].trim() };
+    return { lead: s, detail: '' };
+  }
+
   function slideMarkup(slide, seed, editable){
     var ed = editable ? ' contenteditable="true" spellcheck="false"' : '';
     var foot = slideFoot(seed);
@@ -2743,7 +2945,9 @@ Q4,4390"></textarea>
           '<span class="step-text" data-field="bullet" data-index="' + i + '" data-ph="This step"' + ed + '>' +
           escapeHtml(b) + '</span></li>';
       }).join('');
-      return '<div class="deck-slide content steps">' +
+      var acrossOk = bullets.length >= 2 && bullets.length <= 4;
+      return '<div class="deck-slide content steps' + (acrossOk ? ' timeline' : '') + '"' +
+        (acrossOk ? ' style="--steps:' + bullets.length + '"' : '') + '>' +
         '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
         (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
         '<ol class="step-list">' + stepItems + '</ol>' + foot +
@@ -2777,6 +2981,43 @@ Q4,4390"></textarea>
       return '<div class="deck-slide content quote">' + waveAccentSvg(seed) +
         '<p class="quote-text" data-field="bullet" data-index="0" data-ph="The quotation"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
         '<p class="quote-attr" data-field="heading" data-ph="Who said it"' + ed + '>' + escapeHtml(slide.heading || '') + '</p>' + foot +
+        '</div>';
+    }
+
+    if (layout === 'cards') {
+      var columns = bullets.length === 4 ? 2 : Math.max(2, Math.min(3, bullets.length || 3));
+      var spent = [];
+      var cards = bullets.map(function(b, i){
+        var part = splitCard(b);
+        return '<div class="s-card">' + iconSvg(part.lead + ' ' + part.detail, i, spent) +
+          '<span class="s-lead" data-field="cardLead" data-index="' + i + '" data-ph="The point"' + ed + '>' +
+            escapeHtml(part.lead) + '</span>' +
+          '<span class="s-detail" data-field="cardDetail" data-index="' + i + '" data-ph="What it means"' + ed + '>' +
+            escapeHtml(part.detail) + '</span>' +
+          '</div>';
+      }).join('');
+      return '<div class="deck-slide content cards">' +
+        '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+        '<div class="card-grid" style="--cards:' + columns + '">' + cards + '</div>' + foot +
+        '</div>';
+    }
+
+    if (layout === 'figures') {
+      var figs = bullets.slice(0, 4).map(function(b, i){
+        var part = splitCard(b);
+        return '<div class="s-fig">' +
+          '<div class="fig-value" data-field="cardLead" data-index="' + i + '" data-ph="42%"' + ed + '>' +
+            escapeHtml(part.lead) + '</div>' +
+          '<div class="fig-caption" data-field="cardDetail" data-index="' + i + '" data-ph="What it counts"' + ed + '>' +
+            escapeHtml(part.detail) + '</div>' +
+          '</div>';
+      }).join('');
+      return '<div class="deck-slide content figures">' +
+        '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+        (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
+        '<div class="fig-row" style="--figs:' + Math.max(2, Math.min(4, bullets.length || 2)) + '">' +
+          figs + '</div>' + foot +
         '</div>';
     }
 
@@ -2956,6 +3197,27 @@ Q4,4390"></textarea>
     var slide = deckSlides[activeIndex];
     if (!slide) return;
     var text = el.textContent;
+
+    // A card is stored as one bullet, "lead — detail", but shown as two
+    // editable halves. Recombine from the DOM rather than trying to guess
+    // which half changed.
+    if (field === 'cardLead' || field === 'cardDetail') {
+      var holder = el.parentElement;
+      var lead = holder.querySelector('[data-field="cardLead"]');
+      var detail = holder.querySelector('[data-field="cardDetail"]');
+      var leadText = lead ? lead.textContent.trim() : '';
+      var detailText = detail ? detail.textContent.trim() : '';
+      var ci = parseInt(el.getAttribute('data-index'), 10);
+      if (!isNaN(ci)) {
+        if (!slide.bullets) slide.bullets = [];
+        slide.bullets[ci] = detailText ? (leadText + ' — ' + detailText) : leadText;
+      }
+      if (!text && el.innerHTML !== '') el.innerHTML = '';
+      saveWorking();
+      pushHistorySoon();
+      return;
+    }
+
     if (setField(slide, field, el.getAttribute('data-index'), text)) updateThumbTitle(activeIndex);
     // an emptied field keeps a stray <br>, which defeats :empty and its label
     if (!text && el.innerHTML !== '') el.innerHTML = '';
@@ -3015,6 +3277,8 @@ Q4,4390"></textarea>
     }
 
     if (line === '===') {
+      // the slide before this one is finished, so it can be tidied now
+      if (deckSlides.length) tidyLayout(deckSlides[deckSlides.length - 1]);
       deckSlides.push({ type:'content', layout:'bullets', heading:'', bullets:[] });
       activeIndex = deckSlides.length - 1;
       appendThumb(activeIndex);
@@ -3237,6 +3501,10 @@ Q4,4390"></textarea>
         prefetchImages();
         saveWorking();
         var s = surfaceCopy[currentSurface] || surfaceCopy.deck;
+        // nothing follows the last slide, so it is tidied here
+        if (deckSlides.length) tidyLayout(deckSlides[deckSlides.length - 1]);
+        renderThumbs(false);
+        renderStage();
         chromeUrl.textContent = 'swell.app/' + s.badge + '/' + slugify(topic);
         if (draftBadge) draftBadge.hidden = false;
         setStatus('Drafted just now.', 'info');
@@ -4972,6 +5240,80 @@ Q4,4390"></textarea>
           return;
         }
 
+        // Cards and figures, built as real shapes. Falling through to the
+        // bullet branch would have exported "Lead — detail" as a line of text
+        // with a round marker, which is the look this whole change exists to
+        // get away from.
+        if (layout === 'cards' || layout === 'figures') {
+          slide.background = { color: theme.bg };
+          slide.addText(String(s.heading || ''), {
+            x: 0.7, y: 0.62, w: 8.6, h: 0.6, fontSize: 26, bold: true,
+            color: theme.ink, fontFace: display
+          });
+          var topY = 1.45;
+          if (s.body && layout === 'cards') {
+            slide.addText(String(s.body), {
+              x: 0.7, y: topY, w: 8.6, h: 0.6, fontSize: 12,
+              color: theme.muted, fontFace: 'Calibri', valign: 'top'
+            });
+            topY += 0.75;
+          }
+
+          var many = bullets.length || 1;
+          var rows = (layout === 'cards' && many === 4) ? 2 : 1;
+          var cols = Math.ceil(many / rows);
+          var gap = 0.28;
+          var cardW = (8.6 - gap * (cols - 1)) / cols;
+          var cardH = Math.min(2.9, (4.85 - topY - gap * (rows - 1)) / rows);
+
+          bullets.forEach(function(b, i){
+            var text = String(b);
+            var cut = text.match(/^(.{2,64}?)\s+[\u2014\u2013]\s+(.+)$/) ||
+                      text.match(/^([^:]{2,64}):\s+(.+)$/);
+            var lead = cut ? cut[1].trim() : text;
+            var detail = cut ? cut[2].trim() : '';
+            var col = i % cols;
+            var row = Math.floor(i / cols);
+            var x = 0.7 + col * (cardW + gap);
+            var y = topY + row * (cardH + gap);
+
+            if (layout === 'cards') {
+              slide.addShape(pptx.ShapeType.roundRect, {
+                x: x, y: y, w: cardW, h: cardH,
+                fill: { color: theme.quote },
+                line: { color: theme.quote, width: 0 },
+                rectRadius: 0.06
+              });
+              slide.addShape(pptx.ShapeType.rect, {
+                x: x + 0.26, y: y + 0.3, w: 0.34, h: 0.05,
+                fill: { color: theme.accent }, line: { width: 0 }
+              });
+              slide.addText(lead, {
+                x: x + 0.24, y: y + 0.5, w: cardW - 0.48, h: 0.5,
+                fontSize: 15, bold: true, color: theme.ink, fontFace: display, valign: 'top'
+              });
+              if (detail) {
+                slide.addText(detail, {
+                  x: x + 0.24, y: y + 1.02, w: cardW - 0.48, h: cardH - 1.2,
+                  fontSize: 11, color: theme.muted, fontFace: 'Calibri', valign: 'top'
+                });
+              }
+            } else {
+              slide.addText(lead, {
+                x: x, y: y + 0.15, w: cardW, h: 1.1,
+                fontSize: 40, bold: true, color: theme.accent, fontFace: display, valign: 'bottom'
+              });
+              if (detail) {
+                slide.addText(detail, {
+                  x: x, y: y + 1.32, w: cardW, h: 0.9,
+                  fontSize: 11, color: theme.muted, fontFace: 'Calibri', valign: 'top'
+                });
+              }
+            }
+          });
+          return;
+        }
+
         // bullets, with the photograph bleeding off the right edge when present
         slide.background = { color: theme.bg };
         var textW = pic ? 5.1 : 8.4;
@@ -5880,7 +6222,22 @@ Q4,4390"></textarea>
       // leaving compare behind: stale columns would resurface on the way back
       delete slide.left;
       delete slide.right;
-      if (to === 'stat') slide.bullets = [pool[0] || '', pool[1] || (slide.body || '')];
+      if (to === 'cards' || to === 'figures') {
+        // Turning a written-out point into a lead and a detail is guesswork, so
+        // it only splits where the sentence offers a real seam. A short point
+        // becomes the lead on its own, which reads fine; a long one that will
+        // not divide cleanly stays whole rather than being cut mid-clause into
+        // "Diesel generators are loud" and "costly, and need fuel runs".
+        slide.bullets = (pool.length ? pool.slice(0, 4) : ['']).map(function(p){
+          if (/\s[—–]\s/.test(p) || /^[^:]{2,64}:\s/.test(p)) return p;
+          if (p.split(/\s+/).length <= 10) return p;
+          var seam = p.match(/^(\S+(?:\s+\S+){1,5})\s*(?:[;:]|\s+(?:because|so that|which means|meaning|while|whereas))\s+(.{12,})$/i);
+          if (!seam) return p;
+          var detail = seam[2].trim();
+          return seam[1].trim() + ' — ' + detail.charAt(0).toUpperCase() + detail.slice(1);
+        });
+      }
+      else if (to === 'stat') slide.bullets = [pool[0] || '', pool[1] || (slide.body || '')];
       else if (to === 'quote' || to === 'statement') slide.bullets = [longest];
       else if (to === 'section') slide.bullets = [];
       else slide.bullets = pool.length ? pool.slice(0, 6) : [''];
@@ -5893,6 +6250,8 @@ Q4,4390"></textarea>
   }
 
   var LAYOUT_INFO = [
+    ['cards',     'Cards',     'each point in a box of its own, with an icon'],
+    ['figures',   'Figures',   'two to four numbers side by side'],
     ['bullets',   'Bullets',   'points, with a photograph beside them'],
     ['steps',     'Steps',     'a numbered sequence'],
     ['compare',   'Compare',   'two columns set against each other'],
