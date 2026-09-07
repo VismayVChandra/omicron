@@ -5493,9 +5493,17 @@ Q4,4390"></textarea>
       // the endpoint answers JSON on failure, so ask it what went wrong
       fetch(url).then(function(r){
         return r.json().catch(function(){ return {}; }).then(function(b){
-          panelSay(imagePanel, b.error === 'rate_limited'
-            ? "That is today's free image allowance used up. Commons search still works."
-            : 'Could not draw that one — try different words.', true);
+          var say = 'Could not draw that one — try different words.';
+          if (b.error === 'rate_limited') {
+            say = "That is today's free image allowance used up. Commons search still works.";
+          } else if (b.error === 'bad_credentials') {
+            // "try different words" is the wrong advice when no words would help
+            say = 'The image provider rejected this site\u2019s key. Check the account id and ' +
+              'token, and that the token is scoped to that account.';
+          } else if (b.error === 'not_configured') {
+            say = 'No image generator is configured for this site.';
+          }
+          panelSay(imagePanel, say, true);
         });
       }).catch(function(){
         panelSay(imagePanel, 'Could not reach the image generator.', true);

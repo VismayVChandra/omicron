@@ -36,11 +36,26 @@ const STYLES = {
   noir: 'cinematic photograph, deep shadows, monochrome, single hard light source',
 };
 
+function env(name) {
+  // a pasted key picks up whitespace and a trailing newline more often than
+  // anyone expects, and the provider answers "authentication error" for it
+  return String(process.env[name] || '').trim();
+}
+
 function pickProvider() {
-  if (process.env.CF_ACCOUNT_ID && process.env.CF_API_TOKEN) return 'cloudflare';
-  if (process.env.TOGETHER_API_KEY) return 'together';
-  if (process.env.GEMINI_API_KEY) return 'gemini';
+  if (env('CF_ACCOUNT_ID') && env('CF_API_TOKEN')) return 'cloudflare';
+  if (env('TOGETHER_API_KEY')) return 'together';
+  if (env('GEMINI_API_KEY')) return 'gemini';
   return null;
+}
+
+// Providers say "authentication error" for a wrong key, a key scoped to the
+// wrong account, and a key that is fine but lacks the permission — three
+// different fixes behind one message. Worth separating from "the model could
+// not draw that", which is what the editor says otherwise.
+function looksLikeAuth(status, detail) {
+  if (status === 401 || status === 403) return true;
+  return /authentication|unauthor|invalid api|forbidden|permission|"code":\s*10000/i.test(String(detail));
 }
 
 function json(obj, status) {
@@ -68,21 +83,31 @@ function sniffType(bytes) {
 }
 
 async function viaCloudflare(prompt, seed) {
-  const url = `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/ai/run/${CF_MODEL}`;
+  const url = `https://api.cloudflare.com/client/v4/accounts/${env('CF_ACCOUNT_ID')}/ai/run/${CF_MODEL}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.CF_API_TOKEN}`,
+      Authorization: `Bearer ${env('CF_API_TOKEN')}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ prompt, seed, steps: 4 }),
   });
   if (res.status === 429) throw { code: 'rate_limited' };
+
+  const raw = await res.text();
   if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw { code: 'upstream_error', detail: detail.slice(0, 300) };
+    if (looksLikeAuth(res.status, raw)) throw { code: 'bad_credentials', detail: raw.slice(0, 300) };
+    throw { code: 'upstream_error', detail: raw.slice(0, 300) };
   }
-  const data = await res.json();
+  // Cloudflare answers 200 with success:false for an authentication failure,
+  // so the status line alone does not tell you whether this worked
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { throw { code: 'upstream_error', detail: raw.slice(0, 300) }; }
+  if (data && data.success === false) {
+    const detail = JSON.stringify(data.errors || []).slice(0, 300);
+    if (looksLikeAuth(200, detail)) throw { code: 'bad_credentials', detail };
+    throw { code: 'upstream_error', detail };
+  }
   const b64 = data && data.result && data.result.image;
   if (!b64) throw { code: 'empty_completion' };
   return base64ToBytes(b64);
@@ -92,7 +117,7 @@ async function viaTogether(prompt, seed) {
   const res = await fetch('https://api.together.xyz/v1/images/generations', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+      Authorization: `Bearer ${env('TOGETHER_API_KEY')}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -109,6 +134,7 @@ async function viaTogether(prompt, seed) {
   if (res.status === 429) throw { code: 'rate_limited' };
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
+    if (looksLikeAuth(res.status, detail)) throw { code: 'bad_credentials', detail: detail.slice(0, 300) };
     throw { code: 'upstream_error', detail: detail.slice(0, 300) };
   }
   const data = await res.json();
@@ -120,7 +146,7 @@ async function viaTogether(prompt, seed) {
 async function viaGemini(prompt) {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent` +
-    `?key=${process.env.GEMINI_API_KEY}`;
+    `?key=${env('GEMINI_API_KEY')}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -129,6 +155,7 @@ async function viaGemini(prompt) {
   if (res.status === 429) throw { code: 'rate_limited' };
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
+    if (looksLikeAuth(res.status, detail)) throw { code: 'bad_credentials', detail: detail.slice(0, 300) };
     throw { code: 'upstream_error', detail: detail.slice(0, 300) };
   }
   const data = await res.json();
@@ -177,7 +204,8 @@ export default async function handler(request) {
     else bytes = await viaGemini(prompt);
   } catch (e) {
     const code = (e && e.code) || 'upstream_error';
-    return json({ error: code, message: (e && e.detail) || '' }, code === 'rate_limited' ? 429 : 502);
+    const status = code === 'rate_limited' ? 429 : (code === 'bad_credentials' ? 401 : 502);
+    return json({ error: code, provider: provider, message: (e && e.detail) || '' }, status);
   }
 
   const type = sniffType(bytes);
