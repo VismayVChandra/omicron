@@ -82,7 +82,7 @@ function sniffType(bytes) {
   return 'application/octet-stream';
 }
 
-async function viaCloudflare(prompt, seed) {
+async function viaCloudflare(prompt) {
   // Cloudflare prefixes its credentials, and two of them are easy to confuse on
   // a dashboard: cfut_ is a scoped User API Token, which is what the Workers AI
   // template makes and what this wants; cfk_ is the Global API Key, which has
@@ -107,7 +107,12 @@ async function viaCloudflare(prompt, seed) {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ prompt, seed, steps: 4 }),
+    // seed, width and height are all rejected by this model with "Additional or
+    // unevaluated properties not allowed" — prompt and steps are the whole of
+    // its input. The seed still rides in the request URL, where it works as a
+    // cache key rather than as a promise: a new seed is a new URL and so a new
+    // draw, and the same URL keeps returning the first bytes from the edge.
+    body: JSON.stringify({ prompt, steps: 4 }),
   });
   if (res.status === 429) throw { code: 'rate_limited' };
 
@@ -216,7 +221,7 @@ export default async function handler(request) {
 
   let bytes;
   try {
-    if (provider === 'cloudflare') bytes = await viaCloudflare(prompt, seed);
+    if (provider === 'cloudflare') bytes = await viaCloudflare(prompt);
     else if (provider === 'together') bytes = await viaTogether(prompt, seed);
     else bytes = await viaGemini(prompt);
   } catch (e) {
