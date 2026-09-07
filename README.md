@@ -161,19 +161,30 @@ body text 5.2:1 or better.
 Optional, and off until a key is set. Commons is fine for "Tokyo" and useless
 for "operational resilience", which is the gap this closes.
 
-The bytes never enter the deck. A generated picture is stored as its prompt and
-its seed — about sixty bytes — and drawn from `/api/imagegen`, which is
-deterministic for that pair. So the slide stays small, share links stay near a
-kilobyte, both exports fetch it like any other URL, and the second person to
-open a shared deck hits the edge cache rather than the day's quota. Putting a
-megabyte of base64 on the slide instead would have broken `localStorage`, the
-share link and the `jsonb` column in one go.
+`flux-1-schnell` takes no seed — its whole input is a prompt and a step count —
+so the same words asked three times give three different pictures. There is no
+way to ask for the same one again.
+
+That decides the storage. Picking a generated image keeps its actual pixels on
+the slide: 768px wide, JPEG at 0.72, which measures about 40KB. Rendering, the
+PDF and the `.pptx` all use the kept copy. Had the slide stored only the URL,
+the picture would have been stable exactly as long as the edge cache held it,
+and a deck saved today could quietly show a different photograph next month.
+
+Share links are the exception: 40KB per picture does not fit in a URL, so they
+carry the prompt and the theme instead. The recipient's copy draws its own — the
+same subject in the same light, not the same photograph. Their copy then keeps
+its own pixels from there.
+
+About one call in four fails with an empty body and succeeds a moment later, so
+a transient failure is retried once. A rejected key or a spent allowance is not:
+those are answers rather than hiccups. A drawing takes ten to twenty seconds.
 
 The deck's theme decides how the picture is lit: a Noir deck asks for deep
 shadows and a single hard source, a Mist deck for something pale and high-key,
 so ten slides do not look like ten different stock libraries. Switching theme
-relights every generated picture, keeping its seed — the same photograph under
-new light, not a different one.
+redraws every generated picture in the new theme's light — the one case where
+the picture is meant to change, so the kept copy is deliberately dropped.
 
 | Provider | Free tier | Set |
 |---|---|---|
