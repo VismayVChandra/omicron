@@ -101,6 +101,12 @@ number*, *cut this to three points* — and revises the slide it already has,
 leaving alone whatever the instruction did not mention. Regenerating without an
 instruction still redraws from scratch, as before.
 
+It works on the cover too, which is the slide you are looking at the moment a
+deck finishes and the first thing anyone wants to change. The few tools that
+genuinely do not apply there — a cover has no layout to switch and a deck has
+one of them — say so when you tap them, rather than sitting greyed out looking
+broken.
+
 **Speaker notes** are what you say while a slide is up, not what is on it. They
 can be typed or written for you, and the whole deck goes to the model in one
 request rather than one call per slide — notes written independently repeat each

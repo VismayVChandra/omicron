@@ -68,6 +68,13 @@ function flexibleShape(shape) {
 function slideToLines(slide) {
   if (!slide || typeof slide !== 'object') return '';
   const out = [];
+  if (slide.type === 'cover') {
+    out.push('LAYOUT: cover');
+    if (slide.title) out.push(`TITLE: ${String(slide.title).slice(0, 200)}`);
+    if (slide.tagline) out.push(`TAGLINE: ${String(slide.tagline).slice(0, 400)}`);
+    if (slide.image) out.push(`IMAGE: ${String(slide.image).slice(0, 80)}`);
+    return out.join('\n');
+  }
   if (slide.layout) out.push(`LAYOUT: ${String(slide.layout).slice(0, 20)}`);
   if (slide.heading) out.push(`HEADING: ${String(slide.heading).slice(0, 200)}`);
   if (slide.body) out.push(`BODY: ${String(slide.body).slice(0, 600)}`);
@@ -90,6 +97,10 @@ function slideToLines(slide) {
 
 function buildPrompt({ topic, title, heading, layout, audience, tone, source, voice, instruction, current }) {
   const shape = {
+    cover:
+      'LAYOUT: cover\nTITLE: <short title, under 6 words>\n' +
+      'TAGLINE: <one sentence subtitle>\n' +
+      'IMAGE: <2 to 5 plain searchable words naming a photographable subject>',
     stat:
       'LAYOUT: stat\nHEADING: <heading, under 6 words>\n' +
       'BULLET: <one striking number, under 8 words>\n' +
@@ -121,7 +132,7 @@ function buildPrompt({ topic, title, heading, layout, audience, tone, source, vo
       'BULLET: <point, under 18 words>\nBULLET: <point, under 18 words>\n' +
       'BULLET: <point, under 18 words>\n' +
       'IMAGE: <2 to 5 plain searchable words naming a photographable subject>',
-  }[LAYOUTS.includes(layout) ? layout : 'bullets'];
+  }[layout === 'cover' ? 'cover' : (LAYOUTS.includes(layout) ? layout : 'bullets')];
 
   const grounding = source
     ? `Take the facts from this material and nothing else:\n\n"""\n${source}\n"""\n\n`
@@ -175,8 +186,9 @@ const MAX_BULLETS = { bullets: 5, stat: 2, quote: 1, steps: 5, compare: 6, secti
 const KEEPS_BODY = ['bullets', 'steps'];
 const KEEPS_IMAGE = ['bullets', 'section', 'statement'];
 
-function parseSlide(text) {
+function parseSlide(text, wantCover) {
   const out = { layout: 'bullets', heading: '', body: '', image: '', bullets: [] };
+  if (wantCover) { out.title = ''; out.tagline = ''; }
   let seenLayout = false;
   let side = null;
   for (const raw of String(text).split('\n')) {
@@ -188,7 +200,12 @@ function parseSlide(text) {
     if (key === 'LAYOUT') {
       if (seenLayout) break; // a second block: the slide ended at the first
       seenLayout = true;
-      if (LAYOUTS.includes(value)) out.layout = value;
+      if (value === 'cover') out.layout = 'cover';
+      else if (LAYOUTS.includes(value)) out.layout = value;
+    } else if (key === 'TITLE') {
+      if (wantCover && !out.title) out.title = value;
+    } else if (key === 'TAGLINE') {
+      if (wantCover && !out.tagline) out.tagline = value;
     } else if (key === 'HEADING') {
       if (!out.heading) out.heading = value;
     } else if (key === 'BODY') {
@@ -203,6 +220,10 @@ function parseSlide(text) {
       else out.bullets.push(value);
     }
   }
+  if (wantCover) {
+    // a cover carries a title, a line under it and a picture; nothing else
+    return { layout: 'cover', title: out.title, tagline: out.tagline, image: out.image };
+  }
   out.bullets = out.bullets.slice(0, MAX_BULLETS[out.layout] || 5);
   if (!KEEPS_BODY.includes(out.layout)) out.body = '';
   if (!KEEPS_IMAGE.includes(out.layout)) out.image = '';
@@ -211,6 +232,7 @@ function parseSlide(text) {
 
 // A regenerated slide is usable if it carries whatever its own layout needs.
 function slideIsUsable(slide) {
+  if (slide.layout === 'cover') return !!slide.title;
   if (slide.layout === 'section') return !!slide.heading;
   if (slide.layout === 'statement') return slide.bullets.length > 0;
   if (slide.layout === 'compare') {
@@ -233,6 +255,7 @@ export default async function handler(request) {
   }
 
   const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
+  const wantCover = body.layout === 'cover';
   let heading = typeof body.heading === 'string' ? body.heading.trim() : '';
 
   // A statement slide has no heading — that is the whole point of the layout —
@@ -240,9 +263,12 @@ export default async function handler(request) {
   // 400 came back as a message the person could not see. Name the slide by
   // what is on it instead.
   if (!heading && body.current && typeof body.current === 'object') {
-    const first = Array.isArray(body.current.bullets) ? body.current.bullets[0] : '';
+    const first = wantCover
+      ? body.current.title
+      : (Array.isArray(body.current.bullets) ? body.current.bullets[0] : '');
     heading = String(first || '').trim().slice(0, 60);
   }
+  if (!heading && wantCover) heading = topic;
   if (!topic) {
     return json({ error: 'invalid_request', message: 'Missing topic.' }, 400);
   }
@@ -305,7 +331,7 @@ export default async function handler(request) {
       : '';
   if (!content) return json({ error: 'empty_completion' }, 502);
 
-  const slide = parseSlide(content);
+  const slide = parseSlide(content, wantCover);
   if (!slideIsUsable(slide)) {
     return json({ error: 'invalid_json', message: 'Model returned an unusable slide.' }, 502);
   }

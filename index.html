@@ -343,6 +343,12 @@
   }
   .slide-tool:hover:not(:disabled){border-color:var(--wave);color:var(--deep)}
   .slide-tool:disabled{opacity:0.35;cursor:default}
+  /* Off, not disabled. A disabled button dispatches no click at all, so tapping
+     one to find out why it is grey tells you nothing — which is exactly how a
+     contextual state comes to look like a broken feature. */
+  .slide-tool[aria-disabled="true"]{opacity:0.4}
+  .slide-tool[aria-disabled="true"]:hover{border-color:var(--line);color:var(--ink-soft)}
+  .slide-tools .st-label.why{color:var(--tide);text-transform:none;letter-spacing:0.01em}
   .slide-tool.danger:hover:not(:disabled){border-color:#c0524a;color:#c0524a}
 
   /* The bar that appears over a selection. Body level and fixed, because the
@@ -5222,16 +5228,24 @@ Q4,4390"></textarea>
   }
   if (addSlideBtn) addSlideBtn.addEventListener('click', function(e){
     e.stopPropagation();
+    if (toolBlocked(addSlideBtn)) return;
     if (layoutPick && !layoutPick.hidden && layoutMode === 'add') { closeLayouts(); return; }
     openLayouts(addSlideBtn, 'add');
   });
   if (layoutBtn) layoutBtn.addEventListener('click', function(e){
     e.stopPropagation();
+    if (toolBlocked(layoutBtn)) return;
     if (layoutPick && !layoutPick.hidden && layoutMode === 'change') { closeLayouts(); return; }
     openLayouts(layoutBtn, 'change');
   });
-  if (dupSlideBtn) dupSlideBtn.addEventListener('click', duplicateSlide);
-  if (delSlideBtn) delSlideBtn.addEventListener('click', deleteSlide);
+  if (dupSlideBtn) dupSlideBtn.addEventListener('click', function(){
+    if (toolBlocked(dupSlideBtn)) return;
+    duplicateSlide();
+  });
+  if (delSlideBtn) delSlideBtn.addEventListener('click', function(){
+    if (toolBlocked(delSlideBtn)) return;
+    deleteSlide();
+  });
   document.addEventListener('click', function(e){
     if (layoutPick && !layoutPick.hidden && !layoutPick.contains(e.target)) closeLayouts();
   });
@@ -5241,16 +5255,57 @@ Q4,4390"></textarea>
     if (layoutPick && !layoutPick.hidden && layoutAnchor) placePop(layoutAnchor, layoutPick);
   });
 
+  // A greyed-out button with nothing to say is indistinguishable from a broken
+  // one, and generating a deck leaves you on the cover, where four of the seven
+  // were grey. They are marked off rather than disabled now, so tapping one
+  // answers instead of swallowing the tap.
+  var stLabel = document.querySelector('#slideTools .st-label');
+  var whyTimer = null;
+
+  function setToolOff(btn, reason){
+    if (!btn) return;
+    if (reason) {
+      btn.setAttribute('aria-disabled', 'true');
+      btn.setAttribute('data-why', reason);
+      btn.title = reason;
+    } else {
+      btn.removeAttribute('aria-disabled');
+      btn.removeAttribute('data-why');
+      btn.title = btn.getAttribute('data-title') || '';
+    }
+  }
+
+  function sayWhy(reason){
+    if (!stLabel) { setStatus(reason, 'error'); return; }
+    clearTimeout(whyTimer);
+    stLabel.textContent = reason;
+    stLabel.classList.add('why');
+    whyTimer = setTimeout(function(){
+      stLabel.textContent = 'This slide';
+      stLabel.classList.remove('why');
+    }, 4000);
+  }
+
+  // returns true when the tool is off and has now explained itself
+  function toolBlocked(btn){
+    var why = btn && btn.getAttribute('data-why');
+    if (!why) return false;
+    sayWhy(why);
+    return true;
+  }
+
   function updateSlideTools(){
     var slide = deckSlides[activeIndex];
     var isCover = !slide || slide.type === 'cover';
-    if (addSlideBtn) addSlideBtn.disabled = generating;
-    if (imageBtn) imageBtn.disabled = generating;
-    if (layoutBtn) layoutBtn.disabled = isCover || generating;
-    if (dupSlideBtn) dupSlideBtn.disabled = isCover || generating;
-    if (delSlideBtn) delSlideBtn.disabled = isCover || generating || deckSlides.length <= 2;
-    if (notesBtn) notesBtn.disabled = generating;
-    if (reworkBtn) reworkBtn.disabled = isCover || generating;
+    var busy = generating ? 'Still drafting — one moment.' : '';
+    setToolOff(addSlideBtn, busy);
+    setToolOff(imageBtn, busy);
+    setToolOff(notesBtn, busy);
+    setToolOff(reworkBtn, busy);
+    setToolOff(layoutBtn, busy || (isCover ? 'The cover has a shape of its own — layouts are for the slides.' : ''));
+    setToolOff(dupSlideBtn, busy || (isCover ? 'A deck has one cover.' : ''));
+    setToolOff(delSlideBtn, busy || (isCover ? 'A deck has one cover.' :
+      (deckSlides.length <= 2 ? 'A deck needs at least one slide after the cover.' : '')));
     // the notes panel is per-slide, so it follows the deck — unless it is being
     // typed into, in which case repainting it would eat the sentence in progress
     if (notesPanel && !notesPanel.hidden && document.activeElement !== notesText) paintNotes();
@@ -5389,6 +5444,7 @@ Q4,4390"></textarea>
   }
 
   if (imageBtn) imageBtn.addEventListener('click', function(){
+    if (toolBlocked(imageBtn)) return;
     if (imagePanel.hidden) openImagePanel();
     else imagePanel.hidden = true;
   });
@@ -5819,6 +5875,7 @@ Q4,4390"></textarea>
   }
 
   if (notesBtn) notesBtn.addEventListener('click', function(){
+    if (toolBlocked(notesBtn)) return;
     if (!notesPanel.hidden) { notesPanel.hidden = true; return; }
     paintNotes();
     panelSay(notesPanel, '');
@@ -5848,18 +5905,27 @@ Q4,4390"></textarea>
       return;
     }
     var slide = deckSlides[activeIndex];
-    if (!slide || slide.type !== 'content') {
-      panelSay(reworkPanel, 'Rework works on the slides, not the cover. Pick one from the strip above.', true);
+    if (!slide) {
+      panelSay(reworkPanel, 'No slide to rework.', true);
       return;
     }
-    panelSay(reworkPanel, 'Reworking slide ' + (activeIndex + 1) + '…');
+    panelSay(reworkPanel, slide.type === 'cover'
+      ? 'Reworking the cover…'
+      : 'Reworking slide ' + (activeIndex + 1) + '…');
     if (reworkGoBtn) reworkGoBtn.disabled = true;
     handleRegenerateSlide(value, reworkPanel);
   }
 
   if (reworkBtn) reworkBtn.addEventListener('click', function(){
+    if (toolBlocked(reworkBtn)) return;
     if (!reworkPanel.hidden) { reworkPanel.hidden = true; return; }
     panelSay(reworkPanel, '');
+    var here = deckSlides[activeIndex];
+    if (reworkInput) {
+      reworkInput.placeholder = here && here.type === 'cover'
+        ? 'make the title less generic, and warm up the line under it'
+        : 'cut this to three points, and make the last one concrete';
+    }
     showPanel(reworkPanel, reworkInput);
   });
   if (reworkGoBtn) reworkGoBtn.addEventListener('click', runRework);
@@ -5871,7 +5937,15 @@ Q4,4390"></textarea>
   function handleRegenerateSlide(instruction, panel){
     if (generating) return;
     var slide = deckSlides[activeIndex];
-    if (!slide || slide.type !== 'content') return;
+    if (!slide) return;
+    // The cover is the first thing you want to change and was the one slide
+    // this could not touch — which mattered because generating a deck leaves
+    // you looking at it. It only reworks with an instruction; the plain redraw
+    // button still keeps to the content slides, where "same subject, fresh
+    // wording" means something.
+    var onCover = slide.type === 'cover';
+    if (!onCover && slide.type !== 'content') return;
+    if (onCover && typeof instruction !== 'string') return;
 
     // the ↻ button passes a click event, so only a real string counts
     var ask = typeof instruction === 'string' ? instruction.trim() : '';
@@ -5885,8 +5959,8 @@ Q4,4390"></textarea>
       body: JSON.stringify(Object.assign({
         topic: deckTopic || (promptInput.value || '').trim(),
         title: deckSlides[0] ? deckSlides[0].title : '',
-        heading: slide.heading,
-        layout: slide.layout,
+        heading: onCover ? (slide.title || '') : slide.heading,
+        layout: onCover ? 'cover' : slide.layout,
         instruction: ask,
         current: ask ? slide : null
       }, draftOptions()))
@@ -5904,6 +5978,18 @@ Q4,4390"></textarea>
         var target = deckSlides[index];
         if (!target) return;
         flushHistory();
+        if (onCover) {
+          if (data.title) target.title = data.title;
+          if (typeof data.tagline === 'string' && data.tagline) target.tagline = data.tagline;
+          if (data.image) { target.image = data.image; delete target.pick; }
+          updateThumbTitle(index);
+          if (activeIndex === index) renderStage();
+          saveWorking();
+          pushHistory();
+          setStatus('Cover reworked — Ctrl+Z puts it back.', 'info');
+          if (panel) { panelSay(panel, 'Cover reworked. Ctrl+Z puts it back.'); revealDeck(); }
+          return;
+        }
         if (data.heading) target.heading = data.heading;
         if (data.left) target.left = data.left;
         if (data.right) target.right = data.right;
