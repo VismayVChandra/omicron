@@ -298,10 +298,43 @@ data attached, so they stay editable in PowerPoint.
 
 ## Sharing and export
 
-Share links carry the whole deck in the URL fragment, deflated with
-`CompressionStream` and base64url'd, so sharing needs no database and the deck
-never reaches the server (fragments aren't sent). Slide images travel as their
-search terms rather than image data, which keeps a link around 1KB.
+There are two kinds of link, and they trade opposite things.
+
+**A fragment link** carries the whole deck in the URL, deflated with
+`CompressionStream` and base64url'd. It needs no database, and the deck never
+reaches a server at all, because fragments are not sent with a request. Slide
+images travel as their search terms rather than image data, which keeps it near
+a kilobyte. What it cannot do is tell you anything — nobody can know it was
+opened, precisely because nothing was ever sent.
+
+**A hosted link** is the other trade: a row in Postgres, a short URL, and a
+record of the reading. It needs `supabase/shares.sql` run once. A share is a
+snapshot rather than a pointer, so editing the deck afterwards does not quietly
+change what somebody was sent, and a link can be paused or deleted without
+touching the deck it came from.
+
+The reader gets the deck with the editing removed — they can move through it,
+present it and export it, but not change it — and a line at the foot of the page
+that says the sender can see it was opened and how far it was read. That is
+stated on the page rather than buried in a policy, because somebody reading a
+deck should be able to tell they are being counted.
+
+What is counted is deliberately thin: how many readers, the furthest slide
+reached, and how long the page was open. The reader is identified by a random
+string their own browser made up and kept — no IP, no user agent, no account.
+It exists so that opening a deck twice does not read as two people, and it
+cannot be traced back to anyone.
+
+These are indicative counts, not an audited log. The policies have to accept
+writes from readers who are not signed in, so anybody holding a link could
+inflate their own row. That is the honest cost of anonymous reading, and it is
+not worth a login wall to fix.
+
+Comments are per slide and visible to everyone who can open the link, which is
+what makes them a conversation rather than a suggestion box. The owner sees them
+gathered under the link in **Shared links** and can delete any of them. There is
+no moderation queue, no notification and no spam handling beyond a length limit,
+so a link that reaches somewhere hostile is a link worth deleting.
 
 `.pptx` export builds a real OOXML file in the browser with PptxGenJS, pinned to
 **4.0.1** — 3.12.0's bundle never settles its `write()` promise in the browser.
@@ -328,6 +361,11 @@ accounts existed.
    - `SUPABASE_ANON_KEY`
 6. Redeploy.
 
+For hosted share links, run [`supabase/shares.sql`](supabase/shares.sql) as well.
+It is a separate file because a deployment that only wants accounts and saved
+decks should not have to take a publicly readable table. Without it, everything
+else works and the **Shared links** button says what is missing.
+
 The anon key is meant to be public — it carries no privileges of its own. Every
 rule that matters is the row level security in `schema.sql`, which compares
 `auth.uid()` to each row's `user_id`, so a signed-in person can only ever read
@@ -338,8 +376,8 @@ a real deployment wants SMTP configured under Authentication → Emails.
 
 ## Not built
 
-Real-time collaboration and view analytics on shared links need infrastructure
-beyond the database above and are not built.
+Real-time collaboration — two people editing the same deck at once — is not
+built and would need more than the database above.
 
 Editing has no rich text: a line is a line, with no bold, italic, links or
 inline formatting, and there are no tables and no embeds. Imported PDFs must

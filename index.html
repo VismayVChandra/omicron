@@ -452,6 +452,74 @@
      override only what the palette owns */
   .deck-slide{font-family:var(--s-body,inherit)}
   .theme-dot[data-theme="brand"]{background:linear-gradient(135deg,var(--tide),var(--coral))}
+
+  .read-note{
+    position:fixed;left:0;right:0;bottom:0;z-index:150;
+    padding:10px 18px;background:var(--surface);border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
+    text-align:center;line-height:1.5;
+  }
+  .comment-dock{position:fixed;right:18px;bottom:56px;z-index:151;width:min(340px,calc(100vw - 36px))}
+  .comment-open{
+    cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:11px;
+    padding:9px 15px;font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--ink-soft);
+    box-shadow:var(--shadow-lift);float:right;
+  }
+  .comment-open:hover{border-color:var(--wave);color:var(--deep)}
+  .comment-body{
+    clear:both;margin-top:8px;background:var(--surface);border:1px solid var(--line);
+    border-radius:13px;padding:14px;box-shadow:var(--shadow-lift);max-height:60vh;overflow:auto;
+  }
+  .comment-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .comment-list p{margin:0;font-size:0.85rem;line-height:1.5;color:var(--deep)}
+  .comment-list .who{
+    display:block;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft);
+    margin-bottom:2px;
+  }
+  .comment-list .empty{font-size:0.82rem;color:var(--ink-soft)}
+  .comment-form{display:flex;flex-direction:column;gap:8px}
+  .comment-form input,.comment-form textarea{
+    padding:8px 10px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface-2);color:var(--deep);font:inherit;font-size:0.84rem;resize:vertical;
+  }
+
+  .share-row{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:11px 0;border-top:1px solid var(--line);
+  }
+  .share-row:first-child{border-top:0}
+  .share-row .s-link{
+    font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--deep);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;
+  }
+  .share-row .s-stat{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft)}
+  .share-row .s-stat b{color:var(--tide);font-weight:500}
+  .share-row button{
+    cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);
+  }
+  .share-row button:hover{border-color:var(--wave);color:var(--deep)}
+  .share-comments{margin:2px 0 0;padding:8px 0 0;border-top:1px dashed var(--line);width:100%}
+  .share-comments p{margin:0 0 6px;font-size:0.82rem;line-height:1.5;color:var(--deep)}
+  .share-comments .who{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft)}
+
+  /* The reader's page. Hiding the whole toolbar was wrong: it holds the arrows
+     and Present, so a reader had no way through the deck at all. Only the
+     controls that edit or own the deck go. */
+  body.reading .slide-tools,
+  body.reading .deck-extras,
+  body.reading .prompt-card,
+  body.reading .editor-note,
+  body.reading .drafts-drawer,
+  body.reading .theme-wrap,
+  body.reading #undoBtn,
+  body.reading #redoBtn,
+  body.reading #redoSlideBtn,
+  body.reading #saveDraftBtn,
+  body.reading #draftsBtn,
+  body.reading #shareBtn,
+  body.reading #appOptsBtn{display:none !important}
+  body.reading{padding-bottom:52px}
   .deck-slide .deck-brand-mark{
     position:absolute;left:5cqw;bottom:5cqw;max-height:7cqw;max-width:26cqw;
     object-fit:contain;z-index:3;
@@ -1887,6 +1955,7 @@
           <button type="button" class="btn btn-ghost" id="verifyBtn">Check the facts</button>
           <button type="button" class="btn btn-ghost" id="chartToggle">Add a chart</button>
           <button type="button" class="btn btn-ghost" id="brandToggle">Your brand</button>
+          <button type="button" class="btn btn-ghost" id="sharesToggle" hidden>Shared links</button>
         </div>
         <div class="variant-row" id="variantRow">
           <span>Rewrite for</span>
@@ -1913,6 +1982,18 @@ Q4,4390"></textarea>
           <button type="button" class="btn btn-primary" id="addChartBtn">Add the slide</button>
         </div>
       </div>
+      <div class="critique-panel" id="sharesPanel" hidden>
+        <h4>Shared links</h4>
+        <p class="lede">A hosted link is a snapshot: editing this deck afterwards will not
+          change what someone was sent. You can see that it was opened and how far it was
+          read &mdash; and so can they, because the page says so.</p>
+        <div class="notes-actions">
+          <button type="button" class="btn btn-primary" id="shareHostBtn">Publish this deck</button>
+          <span class="notes-count" id="shareHint"></span>
+        </div>
+        <div id="sharesList"></div>
+      </div>
+
       <div class="critique-panel" id="brandPanel" hidden>
         <h4>Your brand</h4>
         <p class="lede">A brand borrows the shape of one of the ten themes and repaints it in
@@ -2120,6 +2201,20 @@ Q4,4390"></textarea>
       <button type="submit" class="btn btn-primary" id="authSubmit">Email me a link</button>
     </form>
     <p class="auth-note" id="authNote" hidden></p>
+  </div>
+</div>
+
+<div class="read-note" id="readNote" hidden></div>
+
+<div class="comment-dock" id="commentDock" hidden>
+  <button type="button" class="comment-open" id="commentOpen">Comments</button>
+  <div class="comment-body" id="commentBody" hidden>
+    <div class="comment-list" id="commentList"></div>
+    <form class="comment-form" id="commentForm">
+      <input type="text" id="commentName" maxlength="60" placeholder="Your name (optional)">
+      <textarea id="commentText" rows="2" maxlength="800" placeholder="A note on this slide…"></textarea>
+      <button type="submit" class="btn btn-primary">Leave it</button>
+    </form>
   </div>
 </div>
 
@@ -2761,7 +2856,8 @@ Q4,4390"></textarea>
   }
 
   function renderStage(){
-    deckStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, true);
+    // a shared deck is somebody else's; typing into it would go nowhere
+    deckStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, !readingShare);
     attachMedia(deckStage);
     if (presentOverlay && !presentOverlay.hidden) {
       presentStage.innerHTML = slideMarkup(deckSlides[activeIndex], activeIndex, false);
@@ -2773,6 +2869,7 @@ Q4,4390"></textarea>
   function setActive(i){
     activeIndex = Math.max(0, Math.min(deckSlides.length - 1, i));
     renderStage();
+    noteProgress();
   }
 
   // Writing one edited field back into the deck. Shared, because typing and an
@@ -3336,6 +3433,8 @@ Q4,4390"></textarea>
   }
 
   function paintAccount(){
+    var st = document.getElementById('sharesToggle');
+    if (st) st.hidden = !signedIn();
     if (!accountBtn) return;
     accountBtn.hidden = !cloud;                 // hidden entirely when unconfigured
     accountBtn.classList.toggle('signed-in', signedIn());
@@ -3798,6 +3897,7 @@ Q4,4390"></textarea>
   // Runs at the very end of this script, not here: it needs the variant state
   // below to exist, or a restored variant loses track of its original.
   function bootDeck(){
+    if (openedShareId()) return;   // a hosted link is opened once the client exists
     if (loadSharedDeck()) return;
     var saved = readStore(WORKING_KEY, null);
     if (!saved || !Array.isArray(saved.slides) || saved.slides.length < 2) {
@@ -5000,7 +5100,10 @@ Q4,4390"></textarea>
   if (generateBtn) generateBtn.addEventListener('click', handleGenerate);
 
   bootDeck();   // last: every feature block above is initialised by now
-  initCloud();  // optional: no-ops entirely when Supabase is not configured
+  // A hosted link needs the Supabase client, which only exists once initCloud
+  // resolves. The call is made here; what waits on it is at the end of the
+  // file, next to everything else that needs the whole script to have run.
+  var cloudReady = initCloud();
 
   // ---- optional source material + style controls ------------------------
   var sourceToggle = document.getElementById('sourceToggle');
@@ -6186,7 +6289,7 @@ Q4,4390"></textarea>
   }
 
   function showPanel(panel, focusOn){
-    ['chartPanel', 'imagePanel', 'notesPanel', 'reworkPanel', 'brandPanel', 'critiquePanel', 'verifyPanel']
+    ['chartPanel', 'imagePanel', 'notesPanel', 'reworkPanel', 'brandPanel', 'sharesPanel', 'critiquePanel', 'verifyPanel']
       .forEach(function(id){
         var el = document.getElementById(id);
         if (el && el !== panel) el.hidden = true;
@@ -6256,6 +6359,318 @@ Q4,4390"></textarea>
     paintImageNote();
     setStatus('Photograph cleared — Ctrl+Z brings it back.', 'info');
   });
+
+  // ---- hosted share links ----------------------------------------------
+  //
+  // The fragment links built elsewhere in this file carry the whole deck in the
+  // URL and need no database at all, which is why they stay. What they cannot
+  // do is tell you anything: nobody knows a fragment was opened, because the
+  // fragment never reaches a server. A hosted link is the other trade — a row
+  // in Postgres, a short URL, and a record of the reading.
+  //
+  // A share is a snapshot rather than a pointer. Editing the deck afterwards
+  // must not quietly change what somebody was sent, so updating the shared copy
+  // is its own deliberate button.
+  var VIEWER_KEY = 'swell.viewer';
+  var sharesToggle = document.getElementById('sharesToggle');
+  var sharesPanel = document.getElementById('sharesPanel');
+  var sharesList = document.getElementById('sharesList');
+  var shareHostBtn = document.getElementById('shareHostBtn');
+  var shareHint = document.getElementById('shareHint');
+  var sharesBusy = false;
+
+  function shareId(){
+    var alphabet = 'abcdefghijkmnopqrstuvwxyz23456789';   // no l, no 1, no 0/o
+    var out = '';
+    var bytes = new Uint8Array(10);
+    (window.crypto || window.msCrypto).getRandomValues(bytes);
+    for (var i = 0; i < bytes.length; i++) out += alphabet[bytes[i] % alphabet.length];
+    return out;
+  }
+
+  function shareUrl(id){
+    return location.origin + location.pathname + '?s=' + id;
+  }
+
+  // A reader is anonymous. This is a random string their own browser made up
+  // and kept — no IP, no user agent, no account behind it. It exists only so
+  // that opening a deck twice does not read as two people.
+  function viewerToken(){
+    var got = readStore(VIEWER_KEY, '');
+    if (typeof got === 'string' && got.length > 8) return got;
+    var made = shareId() + shareId();
+    writeStore(VIEWER_KEY, made);
+    return made;
+  }
+
+  function publishDeck(){
+    if (!signedIn()) { panelSay(sharesPanel, 'Sign in first — a hosted link belongs to an account.', true); return; }
+    if (sharesBusy) return;
+    sharesBusy = true;
+    if (shareHostBtn) shareHostBtn.disabled = true;
+    panelSay(sharesPanel, 'Publishing…');
+
+    var id = shareId();
+    var row = {
+      id: id,
+      user_id: cloudUser.id,
+      deck_id: (deckOrigin === 'cloud' && deckId) ? deckId : null,
+      title: jsonSafeText(draftName()),
+      theme: deckTheme || 'tide',
+      slides: jsonSafe(deckSlides)
+    };
+    Promise.resolve(cloud.from('shares').insert(row)).then(function(res){
+      if (res && res.error) throw res.error;
+      var link = shareUrl(id);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).catch(function(){});
+      }
+      panelSay(sharesPanel, 'Published, and the link is on your clipboard: ' + link);
+      setStatus('Share link published.', 'info');
+      renderShares();
+    }).catch(function(err){
+      var message = (err && err.message) || '';
+      panelSay(sharesPanel, /relation .*shares.* does not exist|schema cache/i.test(message)
+        ? 'Hosted links need one more table — run supabase/shares.sql in the SQL editor first.'
+        : (message || 'Could not publish that.'), true);
+    }).finally(function(){
+      sharesBusy = false;
+      if (shareHostBtn) shareHostBtn.disabled = false;
+    });
+  }
+
+  function shareStatLine(v){
+    var readers = v.length;
+    var furthest = 0, seconds = 0;
+    v.forEach(function(row){
+      furthest = Math.max(furthest, row.furthest || 0);
+      seconds += row.seconds || 0;
+    });
+    var mins = Math.round(seconds / 60);
+    return readers
+      ? '<b>' + readers + '</b> ' + (readers === 1 ? 'reader' : 'readers') +
+        ' · furthest slide <b>' + (furthest + 1) + '</b>' +
+        ' · <b>' + (mins >= 1 ? mins + ' min' : Math.max(seconds, 1) + ' sec') + '</b> reading'
+      : 'not opened yet';
+  }
+
+  function renderShares(){
+    if (!sharesList) return;
+    if (!signedIn()) { sharesList.innerHTML = '<p class="drafts-empty">Sign in to publish a link.</p>'; return; }
+    sharesList.innerHTML = '<p class="drafts-empty">Loading…</p>';
+
+    Promise.resolve(
+      cloud.from('shares').select('id,title,visibility,created_at').order('created_at', { ascending: false }).limit(20)
+    ).then(function(res){
+      if (res && res.error) throw res.error;
+      var rows = res.data || [];
+      if (!rows.length) { sharesList.innerHTML = '<p class="drafts-empty">Nothing published yet.</p>'; return; }
+      var ids = rows.map(function(r){ return r.id; });
+      return Promise.all([
+        Promise.resolve(cloud.from('share_views').select('share_id,furthest,seconds').in('share_id', ids)),
+        Promise.resolve(cloud.from('share_comments').select('share_id,slide,name,body,created_at').in('share_id', ids).order('created_at', { ascending: true }))
+      ]).then(function(both){
+        var views = {}, notes = {};
+        ((both[0] && both[0].data) || []).forEach(function(v){
+          (views[v.share_id] = views[v.share_id] || []).push(v);
+        });
+        ((both[1] && both[1].data) || []).forEach(function(c){
+          (notes[c.share_id] = notes[c.share_id] || []).push(c);
+        });
+        sharesList.innerHTML = rows.map(function(r){
+          var mine = notes[r.id] || [];
+          return '<div class="share-row">' +
+            '<span class="s-link">' + escapeHtml(shareUrl(r.id)) + '</span>' +
+            '<span class="s-stat">' + shareStatLine(views[r.id] || []) + '</span>' +
+            '<button type="button" data-copy="' + r.id + '">Copy</button>' +
+            '<button type="button" data-pause="' + r.id + '">' +
+              (r.visibility === 'link' ? 'Pause' : 'Resume') + '</button>' +
+            '<button type="button" data-unshare="' + r.id + '">Delete</button>' +
+            (mine.length ? '<div class="share-comments">' + mine.map(function(c){
+              return '<p><span class="who">' + escapeHtml(c.name || 'Anonymous') +
+                ' on slide ' + ((c.slide || 0) + 1) + '</span><br>' + escapeHtml(c.body) + '</p>';
+            }).join('') + '</div>' : '') +
+            '</div>';
+        }).join('');
+      });
+    }).catch(function(err){
+      var message = (err && err.message) || '';
+      sharesList.innerHTML = '<p class="drafts-empty">' + escapeHtml(
+        /relation .*shares.* does not exist|schema cache/i.test(message)
+          ? 'Hosted links need one more table — run supabase/shares.sql in the SQL editor.'
+          : (message || 'Could not load your links.')) + '</p>';
+    });
+  }
+
+  if (sharesList) sharesList.addEventListener('click', function(e){
+    var el = e.target;
+    if (!el || !el.getAttribute) return;
+    var copy = el.getAttribute('data-copy');
+    var pause = el.getAttribute('data-pause');
+    var kill = el.getAttribute('data-unshare');
+    if (copy) {
+      if (navigator.clipboard) navigator.clipboard.writeText(shareUrl(copy)).catch(function(){});
+      panelSay(sharesPanel, 'Copied ' + shareUrl(copy));
+      return;
+    }
+    if (pause) {
+      var next = el.textContent === 'Pause' ? 'paused' : 'link';
+      Promise.resolve(cloud.from('shares').update({ visibility: next }).eq('id', pause))
+        .then(function(){ renderShares(); });
+      return;
+    }
+    if (kill) {
+      Promise.resolve(cloud.from('shares').delete().eq('id', kill)).then(function(){
+        panelSay(sharesPanel, 'Link deleted. Anyone holding it now gets nothing.');
+        renderShares();
+      });
+    }
+  });
+
+  if (shareHostBtn) shareHostBtn.addEventListener('click', publishDeck);
+  if (sharesToggle) sharesToggle.addEventListener('click', function(){
+    if (!sharesPanel.hidden) { sharesPanel.hidden = true; return; }
+    panelSay(sharesPanel, '');
+    showPanel(sharesPanel, null);
+    renderShares();
+  });
+
+  // ---- the reader's side ------------------------------------------------
+  var readNote = document.getElementById('readNote');
+  var commentDock = document.getElementById('commentDock');
+  var commentOpen = document.getElementById('commentOpen');
+  var commentBody = document.getElementById('commentBody');
+  var commentList = document.getElementById('commentList');
+  var commentForm = document.getElementById('commentForm');
+  var commentName = document.getElementById('commentName');
+  var commentText = document.getElementById('commentText');
+  // Safe to initialise, unlike `brand` above: renderStage reads this during
+  // boot when it is still undefined, which is falsy either way, and nothing
+  // sets it until a share is actually opened at the end of the script.
+  var readingShare = null;
+  var readFurthest = 0;
+  var readStarted = 0;
+  var readTimer = null;
+
+  function openedShareId(){
+    var m = (location.search || '').match(/[?&]s=([a-z0-9]{6,40})/i);
+    return m ? m[1] : '';
+  }
+
+  function recordProgress(){
+    if (!readingShare || !cloud) return;
+    var seconds = Math.min(60 * 60, Math.round((Date.now() - readStarted) / 1000));
+    Promise.resolve(cloud.from('share_views')
+      .update({ furthest: readFurthest, seconds: seconds })
+      .eq('share_id', readingShare)
+      .eq('viewer', viewerToken())).catch(function(){});
+  }
+
+  function startReading(share){
+    readingShare = share.id;
+    readStarted = Date.now();
+    document.body.classList.add('reading');
+
+    deckSlides = share.slides;
+    deckTopic = share.title || '';
+    deckTheme = share.theme || 'tide';
+    activeIndex = 0;
+    applyTheme();
+    renderThumbs(false);
+    renderStage();
+    prefetchImages();
+    enterApp();
+
+    // Said out loud rather than buried in a policy: somebody reading this is
+    // being counted, and they should be able to see that from the page.
+    if (readNote) {
+      readNote.hidden = false;
+      readNote.textContent = 'Shared with you. The person who sent it can see that it was opened, ' +
+        'how far it was read and for how long — no name, no account, nothing that identifies you.';
+    }
+    if (commentDock) commentDock.hidden = false;
+
+    Promise.resolve(cloud.from('share_views').insert({
+      share_id: share.id, viewer: viewerToken(), furthest: 0, seconds: 0
+    })).catch(function(){});   // a second visit collides on the unique key, which is fine
+
+    readTimer = setInterval(recordProgress, 15000);
+    document.addEventListener('visibilitychange', function(){
+      if (document.visibilityState === 'hidden') recordProgress();
+    });
+    window.addEventListener('pagehide', recordProgress);
+    loadComments();
+  }
+
+  function loadComments(){
+    if (!readingShare || !commentList) return;
+    Promise.resolve(cloud.from('share_comments')
+      .select('slide,name,body,created_at')
+      .eq('share_id', readingShare)
+      .order('created_at', { ascending: true })
+    ).then(function(res){
+      var rows = (res && res.data) || [];
+      var here = rows.filter(function(c){ return (c.slide || 0) === activeIndex; });
+      commentList.innerHTML = here.length
+        ? here.map(function(c){
+            return '<p><span class="who">' + escapeHtml(c.name || 'Anonymous') + '</span>' +
+              escapeHtml(c.body) + '</p>';
+          }).join('')
+        : '<p class="empty">Nothing on this slide yet.</p>';
+    }).catch(function(){});
+  }
+
+  if (commentOpen) commentOpen.addEventListener('click', function(){
+    commentBody.hidden = !commentBody.hidden;
+    if (!commentBody.hidden) loadComments();
+  });
+  if (commentForm) commentForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var body = (commentText.value || '').trim();
+    if (!body || !readingShare) return;
+    Promise.resolve(cloud.from('share_comments').insert({
+      share_id: readingShare, slide: activeIndex,
+      name: jsonSafeText((commentName.value || '').trim()).slice(0, 60),
+      body: jsonSafeText(body).slice(0, 800)
+    })).then(function(){
+      commentText.value = '';
+      loadComments();
+    }).catch(function(){});
+  });
+
+  // a reader moving through the deck is the measurement
+  function noteProgress(){
+    if (!readingShare) return;
+    readFurthest = Math.max(readFurthest, activeIndex);
+    if (commentBody && !commentBody.hidden) loadComments();
+  }
+
+  function openSharedIfAsked(){
+    var id = openedShareId();
+    if (!id) return false;
+    if (!cloud) {
+      // configured or not, the reader deserves to know why nothing appeared
+      if (deckCaption) deckCaption.textContent = 'That link needs this site to have accounts configured.';
+      return false;
+    }
+    Promise.resolve(cloud.from('shares').select('id,title,theme,slides,visibility').eq('id', id).single())
+      .then(function(res){
+        if (res && res.error) throw res.error;
+        var share = res.data;
+        if (!share || !Array.isArray(share.slides) || !share.slides.length) throw new Error('empty');
+        startReading(share);
+      })
+      .catch(function(err){
+        if (!deckCaption) return;
+        var message = (err && err.message) || '';
+        // "paused or deleted" is the right thing to tell a reader, and the wrong
+        // thing to tell the owner while they are still setting the site up
+        deckCaption.textContent = /relation .*share.* does not exist|schema cache/i.test(message)
+          ? 'This site has not finished setting up hosted links — supabase/shares.sql has not been run.'
+          : 'That link has been paused or deleted by whoever shared it.';
+      });
+    return true;
+  }
 
   // ---- your own colours and type ---------------------------------------
   //
@@ -7071,6 +7486,7 @@ Q4,4390"></textarea>
   // undefined key and quietly finds nothing.
   loadBrand();
   if (deckTheme === 'brand') { applyTheme(); renderStage(); }
+  cloudReady.then(function(){ openSharedIfAsked(); });
 
   resetHistory();   // the deck on screen is the floor undo cannot go below
   paintSaveState();
