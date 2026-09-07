@@ -197,6 +197,34 @@ its own so they do not read as variants of one another:
 The wave decoration belongs to Tide alone; leaving it on by default put a stray
 teal crest through nine themes that have a motif of their own.
 
+### Your own
+
+An eleventh option appears once you set one up: **Yours**.
+
+A brand does not invent a theme. The geometry above is the part that took the
+design work — Press its running foot and ruled headings, Plum its arch-topped
+photograph — and no colour picker produces any of that. So a brand *borrows* one
+theme's shape and repaints it. The deck carries `data-deck-theme` of the base,
+which brings the geometry, plus `data-brand`, which an injected stylesheet uses
+to override the palette tokens and nothing else.
+
+Three colours — page, text, accent — fill nine tokens. Muted text is the ink
+walked a third of the way toward the page; the cover inverts, because all ten
+built-in themes invert theirs. Two fonts, from a list of eleven, loaded only when
+chosen. A logo is resampled to 260px and sits on the cover, not on every slide,
+where it would be wallpaper.
+
+**Contrast is shown while you choose**, because this project checked every theme
+it shipped and a colour picker that silently allows 2:1 grey on grey would undo
+that. Headings and body are held to 4.5:1, the accent to 3:1, and anything under
+is called out rather than quietly accepted.
+
+The brand belongs to you rather than to a deck, so it applies to every deck you
+open. It lives in this browser, and when there is an account it also rides in the
+account's own metadata — no table, no SQL to run — so signing in elsewhere brings
+it with you. The export takes the same three colours through the same arithmetic,
+so a `.pptx` opens in your colours with your logo on the cover.
+
 Every theme travels with a deck into saved drafts, share links and both exports,
 and each was checked for contrast on a real slide: headings 10.9:1 or better,
 body text 5.2:1 or better.
@@ -315,7 +343,9 @@ beyond the database above and are not built.
 
 Editing has no rich text: a line is a line, with no bold, italic, links or
 inline formatting, and there are no tables and no embeds. Imported PDFs must
-contain real text — a scan needs OCR, which is not built. Speaker notes are
+contain real text — a scan needs OCR, which is not built. A brand repaints a
+built-in theme rather than defining new geometry, and it carries one logo rather
+than a full identity system. Speaker notes are
 written and exported but there is no presenter view — seeing them while you present needs a
 second screen, which one browser page cannot give you. The ten themes above are
 the whole set; there is no way to build one from your own colours, fonts and

@@ -414,6 +414,49 @@
     color:var(--tide);line-height:1.5;
   }
   .import-note.bad{color:#e0776d}
+
+  .brand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  .brand-field{display:flex;flex-direction:column;gap:6px}
+  .brand-field span{
+    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.08em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .brand-field select{
+    padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface);color:var(--deep);font:inherit;font-size:0.84rem;
+  }
+  .brand-field input[type="color"]{
+    width:100%;height:40px;padding:3px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface);cursor:pointer;
+  }
+  .brand-contrast{
+    margin:0 0 14px;font-family:'IBM Plex Mono',monospace;font-size:0.74rem;
+    color:var(--ink-soft);line-height:1.6;
+  }
+  .brand-contrast b{color:var(--tide);font-weight:500}
+  .brand-contrast b.bad{color:#e0776d}
+  .brand-logo-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .brand-logo-pick{
+    display:inline-block;padding:8px 14px;border:1px dashed var(--line);border-radius:9px;
+    cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--ink-soft);
+  }
+  .brand-logo-pick:hover{border-color:var(--wave);color:var(--deep)}
+  .brand-logo-preview{
+    display:inline-flex;align-items:center;justify-content:center;
+    height:40px;padding:4px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);
+  }
+  .brand-logo-preview img{max-height:32px;max-width:150px;display:block}
+  @media (max-width:620px){ .brand-grid{grid-template-columns:1fr} }
+
+  /* the deck wearing a brand: the base theme keeps its geometry and these
+     override only what the palette owns */
+  .deck-slide{font-family:var(--s-body,inherit)}
+  .theme-dot[data-theme="brand"]{background:linear-gradient(135deg,var(--tide),var(--coral))}
+  .deck-slide .deck-brand-mark{
+    position:absolute;left:5cqw;bottom:5cqw;max-height:7cqw;max-width:26cqw;
+    object-fit:contain;z-index:3;
+  }
+  .deck-slide.cover.has-image .deck-brand-mark{filter:drop-shadow(0 1px 6px rgba(0,0,0,0.45))}
   .panel-status{
     margin:14px 0 0;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;
     color:var(--tide);line-height:1.5;
@@ -500,6 +543,9 @@
        put a blue cast on every warm deck */
     --s-scrim:6,26,28;
     --s-display:'Fraunces',Georgia,serif;
+    /* unset by every built-in theme, so this inherits exactly as before; it
+       exists so a brand has somewhere to put its own face */
+    --s-body:inherit;
   }
   [data-deck-theme="dune"] .deck-slide{
     --s-bg:#f7f1e6; --s-ink:#3b2a1c; --s-muted:#6f5844; --s-accent:#c2643c;
@@ -1797,6 +1843,7 @@
                 <button type="button" data-theme="press"><span class="theme-dot" data-theme="press"></span>Press</button>
                 <button type="button" data-theme="noir"><span class="theme-dot" data-theme="noir"></span>Noir</button>
                 <button type="button" data-theme="amber"><span class="theme-dot" data-theme="amber"></span>Amber</button>
+                <button type="button" data-theme="brand" id="brandThemeBtn" hidden><span class="theme-dot" data-theme="brand" id="brandThemeDot"></span>Yours</button>
               </div>
             </div>
             <button type="button" class="deck-icon-btn" id="undoBtn" aria-label="Undo" title="Undo (Ctrl+Z)">&#8630;</button>
@@ -1839,6 +1886,7 @@
           <button type="button" class="btn btn-ghost" id="critiqueBtn">Pressure-test this deck</button>
           <button type="button" class="btn btn-ghost" id="verifyBtn">Check the facts</button>
           <button type="button" class="btn btn-ghost" id="chartToggle">Add a chart</button>
+          <button type="button" class="btn btn-ghost" id="brandToggle">Your brand</button>
         </div>
         <div class="variant-row" id="variantRow">
           <span>Rewrite for</span>
@@ -1865,6 +1913,59 @@ Q4,4390"></textarea>
           <button type="button" class="btn btn-primary" id="addChartBtn">Add the slide</button>
         </div>
       </div>
+      <div class="critique-panel" id="brandPanel" hidden>
+        <h4>Your brand</h4>
+        <p class="lede">A brand borrows the shape of one of the ten themes and repaints it in
+          your colours and type. The geometry is the part that took the design work; the
+          palette is the part that should be yours.</p>
+
+        <div class="brand-grid">
+          <label class="brand-field">
+            <span>Borrow the shape of</span>
+            <select id="brandBase"></select>
+          </label>
+          <label class="brand-field">
+            <span>Headings</span>
+            <select id="brandDisplay"></select>
+          </label>
+          <label class="brand-field">
+            <span>Body</span>
+            <select id="brandBody"></select>
+          </label>
+        </div>
+
+        <div class="brand-grid">
+          <label class="brand-field">
+            <span>Page</span>
+            <input type="color" id="brandBg" value="#ffffff">
+          </label>
+          <label class="brand-field">
+            <span>Text</span>
+            <input type="color" id="brandInk" value="#0e3b3e">
+          </label>
+          <label class="brand-field">
+            <span>Accent</span>
+            <input type="color" id="brandAccent" value="#177f78">
+          </label>
+        </div>
+
+        <p class="brand-contrast" id="brandContrast"></p>
+
+        <div class="brand-logo-row">
+          <label class="brand-logo-pick">
+            <input type="file" id="brandLogoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden>
+            <span>Add a logo</span>
+          </label>
+          <span class="brand-logo-preview" id="brandLogoPreview" hidden></span>
+          <button type="button" class="link-btn" id="brandLogoClear" hidden>Remove it</button>
+        </div>
+
+        <div class="notes-actions">
+          <button type="button" class="btn btn-primary" id="brandApply">Use this on the deck</button>
+          <button type="button" class="btn btn-ghost" id="brandReset">Start over</button>
+        </div>
+      </div>
+
       <div class="critique-panel" id="notesPanel" hidden>
         <h4>Speaker notes</h4>
         <p class="lede">What you say while this slide is up &mdash; not what is on it.
@@ -2434,6 +2535,13 @@ Q4,4390"></textarea>
   // Running furniture — deck title and slide number. Hidden by default; a theme
   // that wants a footer turns it on. Absolutely positioned so it never joins
   // the layout of whichever slide type it sits on.
+  // The logo rides on the cover only. On every slide it becomes wallpaper, and
+  // the themes that already carry a running foot would be fighting it.
+  function brandMark(){
+    if (deckTheme !== 'brand' || !brand || !brand.logo) return '';
+    return '<img class="deck-brand-mark" alt="" src="' + escapeHtml(brand.logo) + '">';
+  }
+
   function slideFoot(seed){
     var t = (deckSlides[0] && deckSlides[0].title) || '';
     var n = seed + 1;
@@ -2449,7 +2557,7 @@ Q4,4390"></textarea>
     if (slide.type === 'cover') {
       var coverMedia = hasImage(slide) ? mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' : '';
       return '<div class="deck-slide cover' + (hasImage(slide) ? ' has-image' : '') + '">' +
-        coverMedia + (hasImage(slide) ? '' : waveAccentSvg(seed)) +
+        coverMedia + (hasImage(slide) ? '' : waveAccentSvg(seed)) + brandMark() +
         '<span class="eyebrow-mini">Swell draft</span>' +
         '<h3 data-field="title" data-ph="Deck title"' + ed + '>' + escapeHtml(slide.title || 'Untitled') + '</h3>' +
         '<p data-field="tagline" data-ph="A line under the title"' + ed + '>' + escapeHtml(slide.tagline || '') + '</p>' +
@@ -3100,16 +3208,33 @@ Q4,4390"></textarea>
   var deckTheme = 'tide';
 
   function applyTheme(){
+    // "brand" is not a theme of its own: it is a base theme's geometry with the
+    // palette overridden, so the attribute that carries the shape names the
+    // base and a second one turns the repaint on.
+    var wearing = deckTheme;
+    var branded = deckTheme === 'brand' && brandExists();
+    if (deckTheme === 'brand') wearing = branded ? brand.base : 'tide';
+
     ['deckStage', 'presentStage', 'printDeck'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) {
         var host = id === 'deckStage' ? el.parentElement : el;
-        (host || el).setAttribute('data-deck-theme', deckTheme);
+        (host || el).setAttribute('data-deck-theme', wearing);
+        if (branded) (host || el).setAttribute('data-brand', '1');
+        else (host || el).removeAttribute('data-brand');
       }
     });
     var deckMock = document.getElementById('deckMock');
-    if (deckMock) deckMock.setAttribute('data-deck-theme', deckTheme);
-    if (presentOverlay) presentOverlay.setAttribute('data-deck-theme', deckTheme);
+    if (deckMock) {
+      deckMock.setAttribute('data-deck-theme', wearing);
+      if (branded) deckMock.setAttribute('data-brand', '1');
+      else deckMock.removeAttribute('data-brand');
+    }
+    if (presentOverlay) {
+      presentOverlay.setAttribute('data-deck-theme', wearing);
+      if (branded) presentOverlay.setAttribute('data-brand', '1');
+      else presentOverlay.removeAttribute('data-brand');
+    }
     var active = null;
     document.querySelectorAll('#themePick button').forEach(function(b){
       var on = b.getAttribute('data-theme') === deckTheme;
@@ -3161,6 +3286,10 @@ Q4,4390"></textarea>
       // a generated picture was lit for the theme it was made under, so switching
       // themes re-draws it for the new one; a Commons photograph is left alone
       restyleGenerated();
+      // Themes used to be pure CSS, so repainting was enough. A brand puts a logo
+      // in the markup, and leaving the old markup up meant it stayed on the cover
+      // after switching to a theme that has no logo at all.
+      renderStage();
       saveWorking();
       pushHistory();
       closeThemes();
@@ -3183,6 +3312,21 @@ Q4,4390"></textarea>
   var authNote = document.getElementById('authNote');
 
   function signedIn(){ return !!(cloud && cloudUser); }
+
+  // A brand belongs to the person, so signing in on a second machine should
+  // bring it along. It rides in the account's own metadata, which means no
+  // table to create and nothing to run — and the browser copy stays the one
+  // that is read, so this only ever fills a gap.
+  function adoptCloudBrand(){
+    if (!cloudUser || !cloudUser.user_metadata) return;
+    var theirs = cloudUser.user_metadata.brand;
+    if (!theirs || !theirs.bg || !theirs.ink) return;
+    if (brandExists()) return;
+    brand = Object.assign(defaultBrand(), theirs);
+    writeStore(BRAND_KEY, brand);
+    paintBrandStyle();
+    showBrandInPicker();
+  }
 
   function setAuthNote(text, isError){
     if (!authNote) return;
@@ -3236,11 +3380,13 @@ Q4,4390"></textarea>
           });
           cloud.auth.onAuthStateChange(function(_event, session){
             cloudUser = session ? session.user : null;
+            adoptCloudBrand();
             paintAccount();
             if (!draftsDrawer.hidden) renderDrafts();
           });
           return cloud.auth.getSession().then(function(res){
             cloudUser = res && res.data && res.data.session ? res.data.session.user : null;
+            adoptCloudBrand();
             paintAccount();
           });
         });
@@ -4335,9 +4481,30 @@ Q4,4390"></textarea>
     setBusy(true);
     setStatus('Building the PowerPoint…', 'info');
 
-    var theme = PPTX_THEMES[deckTheme] || PPTX_THEMES.tide;
-    // keep in step with the themes whose --s-display is a sans face
-    var display = (deckTheme === 'graphite' || deckTheme === 'amber') ? 'Arial' : 'Georgia';
+    // A brand that stops at the screen is not a brand, so the export takes the
+    // same three colours through the same arithmetic the stylesheet uses, and
+    // the base theme's furniture underneath it.
+    var exportTheme = deckTheme;
+    var theme;
+    if (deckTheme === 'brand' && brandExists()) {
+      exportTheme = brand.base;
+      var t = brandTokens(brand);
+      var bare = function(hex){ return String(hex).replace('#', '').toUpperCase(); };
+      theme = {
+        bg: bare(t['--s-bg']), ink: bare(t['--s-ink']), muted: bare(t['--s-muted']),
+        accent: bare(t['--s-accent']), cover: bare(t['--s-cover-bg']), quote: bare(t['--s-quote-bg'])
+      };
+    } else {
+      theme = PPTX_THEMES[deckTheme] || PPTX_THEMES.tide;
+    }
+    // PowerPoint wants a face it can name; the web stack is not much use to it
+    var display = 'Georgia';
+    if (deckTheme === 'brand' && brandExists()) {
+      display = /serif/i.test(fontById(brand.display).stack) && !/sans/i.test(fontById(brand.display).stack)
+        ? 'Georgia' : 'Arial';
+    } else if (deckTheme === 'graphite' || deckTheme === 'amber') {
+      display = 'Arial';
+    }
 
     // resolve every image to bytes first
     var jobs = deckSlides.map(function(s){
@@ -4364,10 +4531,11 @@ Q4,4390"></textarea>
       // running foot, Azure its left bar and numbered chip, Amber its ghosted
       // folio. Palette-only themes add nothing here, which is the difference.
       function themeFurniture(slide, index, lay) {
+        var themeName = exportTheme;
         var folio = (index + 1 < 10 ? '0' : '') + (index + 1);
         var isFullBleed = lay === 'cover' || lay === 'section' || lay === 'statement';
 
-        if (deckTheme === 'press') {
+        if (themeName === 'press') {
           if (isFullBleed) return;
           slide.addShape(pptx.ShapeType.rect, {
             x: 0, y: 0, w: '100%', h: 0.08,
@@ -4388,7 +4556,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'azure') {
+        if (themeName === 'azure') {
           // the left bar runs on every slide, full-bleed ones included
           slide.addShape(pptx.ShapeType.rect, {
             x: 0, y: 0, w: 0.16, h: '100%',
@@ -4403,7 +4571,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'amber') {
+        if (themeName === 'amber') {
           if (isFullBleed) return;
           slide.addText(folio, {
             x: 6.4, y: 0.15, w: 3.2, h: 2.2, fontSize: 150, bold: true,
@@ -4414,7 +4582,7 @@ Q4,4390"></textarea>
 
         if (isFullBleed) return;
 
-        if (deckTheme === 'tide') {
+        if (themeName === 'tide') {
           // the wave crest along the foot
           slide.addShape(pptx.ShapeType.rect, {
             x: 0, y: 5.42, w: '100%', h: 0.2,
@@ -4423,7 +4591,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'dune') {
+        if (themeName === 'dune') {
           // the hairlines that hold the heading
           [1.02, 1.92].forEach(function (y) {
             slide.addShape(pptx.ShapeType.line, {
@@ -4434,7 +4602,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'orchard') {
+        if (themeName === 'orchard') {
           slide.addShape(pptx.ShapeType.rect, {
             x: 0, y: 0.55, w: 0.62, h: 0.3,
             fill: { color: theme.accent }, line: { width: 0 }
@@ -4446,7 +4614,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'plum') {
+        if (themeName === 'plum') {
           // the single rule that holds the list
           slide.addShape(pptx.ShapeType.line, {
             x: 0.78, y: 2.1, w: 0, h: 2.5,
@@ -4455,7 +4623,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'mist') {
+        if (themeName === 'mist') {
           // the floating card the content sits on
           slide.addShape(pptx.ShapeType.roundRect, {
             x: 0.34, y: 0.28, w: 9.32, h: 5.07, rectRadius: 0.16,
@@ -4464,7 +4632,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'graphite') {
+        if (themeName === 'graphite') {
           slide.addShape(pptx.ShapeType.line, {
             x: 0.6, y: 5.05, w: 8.8, h: 0,
             line: { color: theme.muted, width: 0.5, transparency: 75 }
@@ -4480,7 +4648,7 @@ Q4,4390"></textarea>
           return;
         }
 
-        if (deckTheme === 'noir') {
+        if (themeName === 'noir') {
           // letterbox bars
           [0, 5.315].forEach(function (y) {
             slide.addShape(pptx.ShapeType.rect, {
@@ -4499,6 +4667,14 @@ Q4,4390"></textarea>
 
         if (s.type === 'cover') {
           slide.background = pic ? { data: pic } : { color: theme.cover };
+          if (deckTheme === 'brand' && brandExists() && brand.logo && brand.logoW && brand.logoH) {
+            // bottom left, matching where it sits on screen; height is fixed and
+            // the width follows the logo's own proportions so it is not stretched
+            var logoH = 0.55;
+            var logoW = logoH * (brand.logoW / brand.logoH);
+            if (logoW > 3) { logoW = 3; logoH = logoW * (brand.logoH / brand.logoW); }
+            slide.addImage({ data: brand.logo, x: 0.5, y: 5.625 - 0.5 - logoH, w: logoW, h: logoH });
+          }
           // scrim so the title stays legible over a photograph
           slide.addShape(pptx.ShapeType.rect, {
             x: 0, y: 0, w: '100%', h: '100%',
@@ -6010,7 +6186,7 @@ Q4,4390"></textarea>
   }
 
   function showPanel(panel, focusOn){
-    ['chartPanel', 'imagePanel', 'notesPanel', 'reworkPanel', 'critiquePanel', 'verifyPanel']
+    ['chartPanel', 'imagePanel', 'notesPanel', 'reworkPanel', 'brandPanel', 'critiquePanel', 'verifyPanel']
       .forEach(function(id){
         var el = document.getElementById(id);
         if (el && el !== panel) el.hidden = true;
@@ -6079,6 +6255,336 @@ Q4,4390"></textarea>
     pushHistory();
     paintImageNote();
     setStatus('Photograph cleared — Ctrl+Z brings it back.', 'info');
+  });
+
+  // ---- your own colours and type ---------------------------------------
+  //
+  // A brand does not invent a theme. The ten built-in ones each have geometry
+  // that took real design work — Press its running foot and ruled headings,
+  // Plum its arch-topped photograph — and a colour picker cannot produce any of
+  // that. So a brand borrows one theme's shape and repaints it: the deck gets
+  // data-deck-theme of the base, which brings the geometry, plus data-brand,
+  // which an injected stylesheet uses to override the palette tokens and
+  // nothing else.
+  var BRAND_KEY = 'swell.brand';
+
+  var FONTS = [
+    { id: 'fraunces',  label: 'Fraunces',          stack: "'Fraunces',Georgia,serif",           google: '' },
+    { id: 'karla',     label: 'Karla',             stack: "'Karla',system-ui,sans-serif",       google: '' },
+    { id: 'plexmono',  label: 'IBM Plex Mono',     stack: "'IBM Plex Mono',monospace",          google: '' },
+    { id: 'playfair',  label: 'Playfair Display',  stack: "'Playfair Display',Georgia,serif",   google: 'Playfair+Display:ital,wght@0,400;0,600;0,700;1,400' },
+    { id: 'sourceserif', label: 'Source Serif 4',  stack: "'Source Serif 4',Georgia,serif",     google: 'Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400' },
+    { id: 'baskerville', label: 'Libre Baskerville', stack: "'Libre Baskerville',Georgia,serif", google: 'Libre+Baskerville:ital,wght@0,400;0,700;1,400' },
+    { id: 'spacegrotesk', label: 'Space Grotesk',  stack: "'Space Grotesk',system-ui,sans-serif", google: 'Space+Grotesk:wght@400;500;700' },
+    { id: 'dmsans',    label: 'DM Sans',           stack: "'DM Sans',system-ui,sans-serif",     google: 'DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400' },
+    { id: 'inter',     label: 'Inter',             stack: "'Inter',system-ui,sans-serif",       google: 'Inter:wght@400;500;600;700' },
+    { id: 'georgia',   label: 'Georgia (no download)', stack: 'Georgia,serif',                  google: '' },
+    { id: 'system',    label: 'System sans (no download)', stack: 'system-ui,-apple-system,sans-serif', google: '' }
+  ];
+
+  function fontById(id){
+    for (var i = 0; i < FONTS.length; i++) if (FONTS[i].id === id) return FONTS[i];
+    return FONTS[0];
+  }
+
+  var loadedFonts = {};
+  function ensureFont(id){
+    var font = fontById(id);
+    if (!font.google || loadedFonts[id]) return;
+    loadedFonts[id] = true;
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=' + font.google + '&display=swap';
+    document.head.appendChild(link);
+  }
+
+  // ---- colour arithmetic, so three choices can fill nine tokens ---------
+  function hexToRgb(hex){
+    var h = String(hex || '').replace('#', '').trim();
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    if (!/^[0-9a-f]{6}$/i.test(h)) return [0, 0, 0];
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  }
+  function rgbToHex(rgb){
+    return '#' + rgb.map(function(v){
+      var s = Math.max(0, Math.min(255, Math.round(v))).toString(16);
+      return s.length < 2 ? '0' + s : s;
+    }).join('');
+  }
+  function mix(a, b, amount){
+    var x = hexToRgb(a), y = hexToRgb(b);
+    return rgbToHex([0,1,2].map(function(i){ return x[i] + (y[i] - x[i]) * amount; }));
+  }
+  function luminance(hex){
+    var c = hexToRgb(hex).map(function(v){
+      v = v / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+  }
+  function contrast(a, b){
+    var la = luminance(a), lb = luminance(b);
+    var hi = Math.max(la, lb), lo = Math.min(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  // Nine tokens from three choices. Muted text is the ink walked toward the
+  // page until it reads as secondary but stays legible; the cover inverts,
+  // because every one of the ten themes does.
+  function brandTokens(brand){
+    var bg = brand.bg, ink = brand.ink, accent = brand.accent;
+    var pageIsDark = luminance(bg) < 0.4;
+    var cover = pageIsDark ? mix(bg, '#000000', 0.45) : mix(ink, '#000000', 0.12);
+    return {
+      '--s-bg': bg,
+      '--s-ink': ink,
+      '--s-muted': mix(ink, bg, 0.32),
+      '--s-accent': accent,
+      '--s-quote-bg': mix(bg, ink, 0.07),
+      '--s-cover-bg': cover,
+      '--s-scrim': hexToRgb(cover).join(','),
+      '--s-display': fontById(brand.display).stack,
+      '--s-body': fontById(brand.body).stack
+    };
+  }
+
+  function defaultBrand(){
+    return { base: 'tide', bg: '#ffffff', ink: '#0e3b3e', accent: '#177f78',
+             display: 'fraunces', body: 'karla', logo: '', logoW: 0, logoH: 0 };
+  }
+
+  // Declared without a value on purpose. loadBrand() is called further up, before
+  // this block is reached, and `var brand = null` here would run afterwards and
+  // throw away what it just loaded — the same hoisting trap that once left the
+  // undo buttons unpainted on first render.
+  var brand;
+
+  function brandStyleEl(){
+    var el = document.getElementById('brandStyle');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'brandStyle';
+      document.head.appendChild(el);   // last in head, so it wins on equal specificity
+    }
+    return el;
+  }
+
+  function paintBrandStyle(){
+    if (!brand) { brandStyleEl().textContent = ''; return; }
+    ensureFont(brand.display);
+    ensureFont(brand.body);
+    var tokens = brandTokens(brand);
+    var body = Object.keys(tokens).map(function(k){ return k + ':' + tokens[k] + ';'; }).join('');
+    brandStyleEl().textContent = '[data-brand] .deck-slide{' + body + '}';
+    var dot = document.getElementById('brandThemeDot');
+    if (dot) dot.style.background = 'linear-gradient(135deg,' + brand.accent + ',' + brand.ink + ')';
+  }
+
+  function brandExists(){ return !!brand; }
+
+  function showBrandInPicker(){
+    var btn = document.getElementById('brandThemeBtn');
+    if (btn) btn.hidden = !brandExists();
+  }
+
+  function loadBrand(){
+    var saved = readStore(BRAND_KEY, null);
+    if (saved && saved.bg && saved.ink) brand = Object.assign(defaultBrand(), saved);
+    paintBrandStyle();
+    showBrandInPicker();
+  }
+
+  function storeBrand(){
+    writeStore(BRAND_KEY, brand);
+    // A brand belongs to a person rather than to a deck, so when there is an
+    // account it rides along in the user's own metadata. No table, no schema to
+    // run — and if it will not fit or the call fails, the browser copy above is
+    // still the one that gets read.
+    if (signedIn()) {
+      try {
+        cloud.auth.updateUser({ data: { brand: brand } }).catch(function(){});
+      } catch (e) {}
+    }
+  }
+
+  // ---- the panel --------------------------------------------------------
+  var brandToggle = document.getElementById('brandToggle');
+  var brandPanel = document.getElementById('brandPanel');
+  var brandBase = document.getElementById('brandBase');
+  var brandDisplaySel = document.getElementById('brandDisplay');
+  var brandBodySel = document.getElementById('brandBody');
+  var brandBg = document.getElementById('brandBg');
+  var brandInk = document.getElementById('brandInk');
+  var brandAccent = document.getElementById('brandAccent');
+  var brandContrast = document.getElementById('brandContrast');
+  var brandLogoFile = document.getElementById('brandLogoFile');
+  var brandLogoPreview = document.getElementById('brandLogoPreview');
+  var brandLogoClear = document.getElementById('brandLogoClear');
+  var brandApply = document.getElementById('brandApply');
+  var brandReset = document.getElementById('brandReset');
+
+  var THEME_LABELS = {
+    tide: 'Tide — the wave', press: 'Press — a newspaper', azure: 'Azure — a board pack',
+    amber: 'Amber — a dark keynote', dune: 'Dune — a gallery brochure',
+    orchard: 'Orchard — a field notebook', plum: 'Plum — soft luxe',
+    mist: 'Mist — an airy card', graphite: 'Graphite — a blueprint', noir: 'Noir — a title card'
+  };
+
+  function fillBrandControls(){
+    if (!brandBase) return;
+    if (!brandBase.options.length) {
+      Object.keys(THEME_LABELS).forEach(function(id){
+        var o = document.createElement('option');
+        o.value = id; o.textContent = THEME_LABELS[id];
+        brandBase.appendChild(o);
+      });
+      [brandDisplaySel, brandBodySel].forEach(function(sel){
+        FONTS.forEach(function(f){
+          var o = document.createElement('option');
+          o.value = f.id; o.textContent = f.label;
+          sel.appendChild(o);
+        });
+      });
+    }
+    var b = brand || defaultBrand();
+    brandBase.value = b.base;
+    brandDisplaySel.value = b.display;
+    brandBodySel.value = b.body;
+    brandBg.value = b.bg;
+    brandInk.value = b.ink;
+    brandAccent.value = b.accent;
+    paintLogoPreview(b.logo);
+    paintContrast();
+  }
+
+  function draftBrand(){
+    var b = Object.assign(defaultBrand(), brand || {}, {
+      base: brandBase.value, display: brandDisplaySel.value, body: brandBodySel.value,
+      bg: brandBg.value, ink: brandInk.value, accent: brandAccent.value
+    });
+    return b;
+  }
+
+  // This project has checked contrast on every theme it shipped; a colour
+  // picker that lets you choose 2:1 grey on grey and says nothing would undo
+  // that quietly. 4.5 is the readable-body threshold, 3 the large-text one.
+  function paintContrast(){
+    if (!brandContrast) return;
+    var b = draftBrand();
+    var tokens = brandTokens(b);
+    var pairs = [
+      ['Headings', contrast(b.ink, b.bg), 4.5],
+      ['Body', contrast(tokens['--s-muted'], b.bg), 4.5],
+      ['Accent', contrast(b.accent, b.bg), 3]
+    ];
+    brandContrast.innerHTML = pairs.map(function(p){
+      var ok = p[1] >= p[2];
+      return p[0] + ' ' + '<b class="' + (ok ? '' : 'bad') + '">' + p[1].toFixed(1) + ':1</b>' +
+        (ok ? '' : ' (under ' + p[2] + ')');
+    }).join(' &nbsp;·&nbsp; ') +
+      (pairs.every(function(p){ return p[1] >= p[2]; })
+        ? ' — readable.'
+        : ' — the flagged one will be hard to read on a projector.');
+  }
+
+  function paintLogoPreview(dataUrl){
+    if (!brandLogoPreview) return;
+    if (dataUrl) {
+      brandLogoPreview.innerHTML = '<img alt="" src="' + escapeHtml(dataUrl) + '">';
+      brandLogoPreview.hidden = false;
+      if (brandLogoClear) brandLogoClear.hidden = false;
+    } else {
+      brandLogoPreview.innerHTML = '';
+      brandLogoPreview.hidden = true;
+      if (brandLogoClear) brandLogoClear.hidden = true;
+    }
+  }
+
+  if (brandBase) {
+    [brandBase, brandDisplaySel, brandBodySel, brandBg, brandInk, brandAccent].forEach(function(el){
+      el.addEventListener('input', paintContrast);
+      el.addEventListener('change', paintContrast);
+    });
+  }
+
+  if (brandLogoFile) {
+    brandLogoFile.addEventListener('change', function(){
+      var file = brandLogoFile.files && brandLogoFile.files[0];
+      brandLogoFile.value = '';
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) { panelSay(brandPanel, 'that logo is over 3MB', true); return; }
+      var reader = new FileReader();
+      reader.onload = function(){
+        var raw = String(reader.result || '');
+        // an SVG has no pixels to resample, so it is kept as it came
+        if (/^data:image\/svg/.test(raw)) {
+          brand = Object.assign(draftBrand(), { logo: raw, logoW: 0, logoH: 0 });
+          paintLogoPreview(raw);
+          panelSay(brandPanel, 'Logo added. Press "Use this on the deck" to see it.');
+          return;
+        }
+        var img = new Image();
+        img.onload = function(){
+          // 260px is more than a corner mark ever needs, and keeps this to a
+          // few kilobytes rather than carrying a print-resolution asset around
+          var scale = Math.min(1, 260 / (img.naturalWidth || 260));
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round((img.naturalWidth || 260) * scale);
+          canvas.height = Math.round((img.naturalHeight || 100) * scale);
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          var out = canvas.toDataURL('image/png');
+          brand = Object.assign(draftBrand(), { logo: out, logoW: canvas.width, logoH: canvas.height });
+          paintLogoPreview(out);
+          panelSay(brandPanel, 'Logo added, ' + canvas.width + '×' + canvas.height +
+            '. Press "Use this on the deck" to see it.');
+        };
+        img.onerror = function(){ panelSay(brandPanel, 'that image could not be read', true); };
+        img.src = raw;
+      };
+      reader.onerror = function(){ panelSay(brandPanel, 'that image could not be read', true); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (brandLogoClear) brandLogoClear.addEventListener('click', function(){
+    brand = Object.assign(draftBrand(), { logo: '', logoW: 0, logoH: 0 });
+    paintLogoPreview('');
+    panelSay(brandPanel, 'Logo removed.');
+  });
+
+  if (brandApply) brandApply.addEventListener('click', function(){
+    brand = draftBrand();
+    storeBrand();
+    paintBrandStyle();
+    showBrandInPicker();
+    flushHistory();
+    deckTheme = 'brand';
+    applyTheme();
+    restyleGenerated();
+    renderStage();
+    saveWorking();
+    pushHistory();
+    panelSay(brandPanel, 'Applied. It is "Yours" in the theme list from now on, on any deck.');
+    revealDeck();
+  });
+
+  if (brandReset) brandReset.addEventListener('click', function(){
+    brand = null;
+    try { localStorage.removeItem(BRAND_KEY); } catch (e) {}
+    if (signedIn()) { try { cloud.auth.updateUser({ data: { brand: null } }).catch(function(){}); } catch (e) {} }
+    paintBrandStyle();
+    showBrandInPicker();
+    if (deckTheme === 'brand') { deckTheme = 'tide'; applyTheme(); renderStage(); saveWorking(); }
+    fillBrandControls();
+    panelSay(brandPanel, 'Back to the ten built-in themes.');
+  });
+
+  if (brandToggle) brandToggle.addEventListener('click', function(){
+    if (!brandPanel.hidden) { brandPanel.hidden = true; return; }
+    fillBrandControls();
+    panelSay(brandPanel, '');
+    showPanel(brandPanel, null);
   });
 
   // ---- rewriting the words you highlighted ------------------------------
@@ -6559,6 +7065,13 @@ Q4,4390"></textarea>
   // Genuinely last. bootDeck() runs further up, before the editing block below
   // it has assigned its buttons, so the first paint of undo, redo and the slide
   // tools has to happen down here where those elements actually exist.
+  // The brand loads down here rather than beside bootDeck, because everything it
+  // needs — BRAND_KEY, FONTS, the brand variable itself — is assigned in a block
+  // further down the file. Called any earlier it reads localStorage under an
+  // undefined key and quietly finds nothing.
+  loadBrand();
+  if (deckTheme === 'brand') { applyTheme(); renderStage(); }
+
   resetHistory();   // the deck on screen is the floor undo cannot go below
   paintSaveState();
   updateNav();
