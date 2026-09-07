@@ -2290,10 +2290,10 @@ Q4,4390"></textarea>
   // so the exact URL and its credit ride along on the slide and short-circuit
   // the lookup entirely.
   function mediaMarkup(slide, cls){
-    var pick = slide.pick && slide.pick.url ? slide.pick : null;
+    var pick = slide.pick && (slide.pick.data || slide.pick.url) ? slide.pick : null;
     var credit = pick ? [pick.credit, pick.license].filter(Boolean).join(' · ') : '';
     return '<div class="' + cls + '" data-state="loading" data-query="' + escapeHtml(slide.image || '') + '"' +
-      (pick ? ' data-url="' + escapeHtml(pick.url) + '" data-credit="' + escapeHtml(credit) + '"' : '') +
+      (pick ? ' data-url="' + escapeHtml(pick.data || pick.url) + '" data-credit="' + escapeHtml(credit) + '"' : '') +
       '><img alt=""><span class="media-credit" hidden></span></div>';
   }
 
@@ -2325,10 +2325,11 @@ Q4,4390"></textarea>
 
   // warm the lookups one at a time so clicking through a finished deck is instant
   function prefetchImages(){
-    var queue = deckSlides.filter(function(s){ return s.image || (s.pick && s.pick.url); });
+    var queue = deckSlides.filter(function(s){ return s.image || (s.pick && (s.pick.url || s.pick.data)); });
     (function next(){
       var s = queue.shift();
       if (!s) return;
+      if (s.pick && s.pick.data) { next(); return; }   // already in hand
       if (s.pick && s.pick.url) { var chosen = new Image(); chosen.src = s.pick.url; next(); return; }
       Promise.resolve(resolveImage(s.image)).then(function(data){
         if (data && data.url) { var im = new Image(); im.src = data.url; }
@@ -2339,12 +2340,15 @@ Q4,4390"></textarea>
 
   // what a slide's picture resolves to, whichever way it was chosen
   function slideImage(slide){
+    if (slide.pick && slide.pick.data) {
+      return Promise.resolve({ url: slide.pick.data, credit: slide.pick.credit || '', license: '' });
+    }
     if (slide.pick && slide.pick.url) return Promise.resolve(slide.pick);
     if (!slide.image) return Promise.resolve(null);
     return Promise.resolve(resolveImage(slide.image));
   }
   function hasImage(slide){
-    return !!(slide && (slide.image || (slide.pick && slide.pick.url)));
+    return !!(slide && (slide.image || (slide.pick && (slide.pick.url || slide.pick.data))));
   }
 
   function defaultSlides(){
@@ -4115,7 +4119,16 @@ Q4,4390"></textarea>
   }
 
   function encodeDeck(){
-    var payload = JSON.stringify({ v: 1, t: deckTopic, th: deckTheme, s: deckSlides });
+    // The kept pixels are ~70KB each and a link has to fit in a URL, so they do
+    // not travel. The recipient's copy draws its own from the same prompt and
+    // theme: the same subject in the same light, not the same photograph.
+    var forLink = deckSlides.map(function(s){
+      if (!s.pick || !s.pick.data) return s;
+      var copy = JSON.parse(JSON.stringify(s));
+      delete copy.pick.data;
+      return copy;
+    });
+    var payload = JSON.stringify({ v: 1, t: deckTopic, th: deckTheme, s: forLink });
     var bytes = new TextEncoder().encode(payload);
     if (typeof CompressionStream === 'undefined') {
       return Promise.resolve('j' + bytesToBase64url(bytes));
@@ -5442,6 +5455,34 @@ Q4,4390"></textarea>
       });
   }
 
+  // Downscale a generated picture and keep the actual bytes on the slide.
+  //
+  // The endpoint cannot be deterministic: flux-1-schnell takes no seed, and the
+  // same prompt asked three times gives three different pictures. The URL is
+  // stable only while the edge cache holds it, so a deck saved today could show
+  // a different photograph next month — the same subject in the same light, but
+  // not the one that was chosen. That is a silent edit to someone's deck.
+  //
+  // 768px at quality 0.72 is around 70KB, which localStorage and a jsonb column
+  // both carry happily for a deck's worth. Share links are the exception and
+  // strip it: see encodeDeck.
+  function shrinkToDataUrl(img, maxWide){
+    try {
+      var scale = Math.min(1, maxWide / (img.naturalWidth || maxWide));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round((img.naturalWidth || maxWide) * scale);
+      canvas.height = Math.round((img.naturalHeight || maxWide) * scale);
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return '';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.72);
+    } catch (err) {
+      // a tainted canvas would throw; the picture is same-origin so it should
+      // not, but losing the copy is better than losing the picture
+      return '';
+    }
+  }
+
   // ---- pictures that did not exist until you asked ----------------------
   // The bytes never enter the deck. A generated picture is stored as its prompt
   // and its seed and drawn from /api/imagegen, which is deterministic for that
@@ -5469,8 +5510,8 @@ Q4,4390"></textarea>
 
     genBusy = true;
     if (imageGenBtn) imageGenBtn.disabled = true;
-    panelSay(imagePanel, 'Drawing it…');
-    imageResults.innerHTML = '<p class="drafts-empty">Drawing it — this takes a few seconds.</p>';
+    panelSay(imagePanel, 'Drawing it — ten to twenty seconds.');
+    imageResults.innerHTML = '<p class="drafts-empty">Drawing it — ten to twenty seconds.</p>';
 
     // a fresh seed each press, so "generate one" twice gives two pictures
     var seed = Math.floor(Math.random() * 4294967290) + 1;
@@ -5480,7 +5521,7 @@ Q4,4390"></textarea>
     probe.onload = function(){
       genBusy = false;
       if (imageGenBtn) imageGenBtn.disabled = false;
-      imageHits = [{ url: url, credit: 'Generated', license: '', generated: true }];
+      imageHits = [{ url: url, credit: 'Generated', license: '', generated: true, el: probe }];
       imageResults.innerHTML =
         '<button type="button" data-pick="0" title="Use this one">' +
         '<img src="' + escapeHtml(url) + '" alt=""></button>';
@@ -5522,7 +5563,11 @@ Q4,4390"></textarea>
       if (!s.pick || !s.pick.gen || !s.pick.url) return;
       var was = s.pick.url;
       s.pick.url = was.replace(/([?&]t=)[^&]*/, '$1' + encodeURIComponent(deckTheme));
-      if (s.pick.url !== was) touched = true;
+      if (s.pick.url === was) return;
+      // the kept copy is of the old light, so it has to go for the new one to
+      // be drawn — this is the one case where the picture legitimately changes
+      delete s.pick.data;
+      touched = true;
     });
     if (touched) { renderStage(); prefetchImages(); }
   }
@@ -5620,7 +5665,12 @@ Q4,4390"></textarea>
     flushHistory();
     slide.image = (imageQuery.value || '').trim() || slide.image || 'photograph';
     slide.pick = { url: hit.url, credit: hit.credit || '', license: hit.license || '' };
-    if (hit.generated) slide.pick.gen = true;
+    if (hit.generated) {
+      slide.pick.gen = true;
+      // hold the pixels, not just the address that drew them
+      var kept = hit.el ? shrinkToDataUrl(hit.el, 768) : '';
+      if (kept) slide.pick.data = kept;
+    }
     renderStage();
     saveWorking();
     pushHistory();

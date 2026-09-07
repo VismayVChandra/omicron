@@ -219,11 +219,26 @@ export default async function handler(request) {
     `${subject}. ${style}. Photographic, no text, no words, no letters, ` +
     'no watermark, no logo, no charts or diagrams.';
 
+  const draw = () => {
+    if (provider === 'cloudflare') return viaCloudflare(prompt);
+    if (provider === 'together') return viaTogether(prompt, seed);
+    return viaGemini(prompt);
+  };
+
+  // Roughly one call in four comes back as a failure with an empty body — no
+  // status, no message, just nothing. Nothing about the request is wrong, and
+  // the same words succeed a second later, so one retry turns a coin-flip into
+  // a rarity. A rejected key or a spent allowance is not retried: those are
+  // answers, not hiccups, and asking twice only wastes the person's time.
   let bytes;
   try {
-    if (provider === 'cloudflare') bytes = await viaCloudflare(prompt);
-    else if (provider === 'together') bytes = await viaTogether(prompt, seed);
-    else bytes = await viaGemini(prompt);
+    try {
+      bytes = await draw();
+    } catch (first) {
+      const code = (first && first.code) || 'upstream_error';
+      if (code === 'bad_credentials' || code === 'rate_limited') throw first;
+      bytes = await draw();
+    }
   } catch (e) {
     const code = (e && e.code) || 'upstream_error';
     const status = code === 'rate_limited' ? 429 : (code === 'bad_credentials' ? 401 : 502);
