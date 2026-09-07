@@ -654,7 +654,12 @@
   body.page-mode .slide-tools{display:none !important}
   .app-body .page-deck{flex:1;min-height:0}
 
-  .deck-body{display:grid;grid-template-columns:168px 1fr}
+  /* minmax(0,1fr), not 1fr. A grid column will not shrink below its content's
+     minimum, and the slide frame derives its width from its own aspect ratio —
+     so the stage grew past the deck and 122px of every slide sat underneath the
+     side panel. The zero minimum lets the column shrink and the frame's
+     max-width bind. */
+  .deck-body{display:grid;grid-template-columns:168px minmax(0,1fr)}
   .deck-rail{
     border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:10px;
     max-height:min(560px,70vh);overflow-y:auto;
@@ -679,9 +684,18 @@
   .deck-slide-frame{width:100%;max-width:min(900px,100%);container-type:inline-size}
   .deck-slide{
     width:100%;aspect-ratio:16/9;border-radius:14px;box-shadow:var(--shadow-lift);
-    position:relative;overflow:hidden;display:flex;flex-direction:column;padding:clamp(20px,5%,44px);
+    position:relative;overflow:hidden;display:flex;flex-direction:column;
+    padding:clamp(18px,4.4%,40px) clamp(20px,5%,44px);
     animation:slideIn .35s ease both;
   }
+  /* A very faint wash of the accent, largest at one corner. Nothing you would
+     name if asked, and the difference between a flat fill and a surface. */
+  .deck-slide.content::after{
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(120% 90% at 100% 0%,
+      color-mix(in srgb, var(--s-accent) 9%, transparent) 0%, transparent 62%);
+  }
+  .deck-slide.content > *{position:relative;z-index:1}
   @keyframes slideIn{ from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
   /* Slide palettes are their own token set, separate from the site chrome, so a
      deck can be themed without touching the page around it. */
@@ -1165,18 +1179,38 @@
 
   .deck-slide.cover{background:var(--s-cover-bg);color:#fff;align-items:center;justify-content:center;text-align:center;gap:2cqw}
   .deck-slide.cover .eyebrow-mini{font-family:'IBM Plex Mono',monospace;font-size:clamp(0.55rem,1.5cqw,0.8rem);letter-spacing:.12em;text-transform:uppercase;color:var(--s-accent);position:relative;z-index:2}
-  .deck-slide.cover h3{font-family:var(--s-display);font-weight:600;font-size:clamp(1.3rem,6.2cqw,3rem);color:#fff;text-wrap:balance;margin:0;position:relative;z-index:2}
+  .deck-slide.cover h3{font-family:var(--s-display);font-weight:600;font-size:clamp(1.4rem,7.4cqw,3.6rem);color:#fff;text-wrap:balance;margin:0;position:relative;z-index:2;line-height:1.04;letter-spacing:-0.015em}
+  /* a short accent rule under the title: the one mark that says somebody set
+     this rather than typed it */
+  .deck-slide.cover h3::after{
+    content:"";display:block;width:8cqw;height:0.45cqw;min-height:2px;
+    background:var(--s-accent);border-radius:1cqw;margin:2.2cqw auto 0;
+  }
+  [data-deck-theme="press"] .deck-slide.cover h3::after,
+  [data-deck-theme="noir"] .deck-slide.cover h3::after{display:none}
   .deck-slide.cover p{color:rgba(255,255,255,0.78);font-size:clamp(0.72rem,2.3cqw,1.2rem);margin:0;max-width:80%;position:relative;z-index:2}
   /* shared by every full-bleed layout — cover, section and statement — not
      scoped to .cover, or the others show an unpositioned image at natural size */
   .deck-slide .cover-media{position:absolute;inset:0;z-index:0}
   .deck-slide .cover-media img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s ease}
   .deck-slide .cover-media[data-state="ready"] img{opacity:1}
+  /* The scrim used to run 0.55 to 0.86 down the whole frame, which reads as a
+     dark sheet over a murky photograph. Weighted instead: nearly clear at the
+     top so the picture is actually visible, dense where the type sits. */
   .deck-slide .cover-scrim{position:absolute;inset:0;z-index:1;
-    background:linear-gradient(180deg, rgba(var(--s-scrim),0.55) 0%, rgba(var(--s-scrim),0.86) 100%)}
+    background:
+      linear-gradient(178deg,
+        rgba(var(--s-scrim),0.18) 0%,
+        rgba(var(--s-scrim),0.42) 38%,
+        rgba(var(--s-scrim),0.82) 78%,
+        rgba(var(--s-scrim),0.92) 100%),
+      radial-gradient(120% 80% at 50% 100%, rgba(var(--s-scrim),0.5) 0%, transparent 70%)}
 
   .deck-slide.content{background:var(--s-bg);justify-content:center}
-  .deck-slide.content h3{font-family:var(--s-display);font-weight:600;font-size:clamp(0.95rem,3.6cqw,1.9rem);color:var(--s-ink);margin:0 0 1.8cqw}
+  /* was 3.6cqw. A deck reads as flat when the heading and the body are nearly
+     the same size; the contrast between them is most of what makes a slide look
+     composed rather than typed. */
+  .deck-slide.content h3{font-family:var(--s-display);font-weight:600;font-size:clamp(1rem,4.4cqw,2.4rem);color:var(--s-ink);margin:0 0 1.6cqw;line-height:1.12;letter-spacing:-0.01em}
   .deck-slide.content .slide-body{font-size:clamp(0.62rem,1.95cqw,1rem);color:var(--s-muted);line-height:1.5;margin:0 0 2cqw;max-width:62ch}
   .deck-slide.content ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.5cqw}
   .deck-slide.content li{display:flex;gap:1.4cqw;font-size:clamp(0.6rem,1.95cqw,1rem);color:var(--s-muted);line-height:1.4}
@@ -1192,14 +1226,29 @@
      looks made and one that looks typed. Same words, same edit model — the
      bullet string is "lead — detail" and the two halves are laid out. */
   .deck-slide.cards .card-grid{
-    display:grid;gap:2.2cqw;flex:1;align-content:center;
+    display:grid;gap:2.2cqw;flex:1;align-content:stretch;align-items:stretch;
     grid-template-columns:repeat(var(--cards,3),minmax(0,1fr));
   }
+  /* A card needs an edge and a shadow to read as a surface. --s-quote-bg alone
+     sits within a few percent of the page in several themes, so the boxes were
+     visible only as a faint change of tone — which is most of what "still looks
+     basic" meant. The border and the lift are derived from the theme's own ink,
+     so every palette gets its own version rather than a grey borrowed from
+     somewhere else. */
   .deck-slide .s-card{
-    background:var(--s-quote-bg);border-radius:1.5cqw;padding:2.6cqw 2.4cqw;
-    display:flex;flex-direction:column;gap:1.1cqw;min-width:0;
+    background:var(--s-quote-bg);
+    border:1px solid color-mix(in srgb, var(--s-ink) 11%, transparent);
+    border-radius:1.5cqw;padding:2.8cqw 2.5cqw;
+    display:flex;flex-direction:column;gap:1.2cqw;min-width:0;
+    box-shadow:0 1px 1px color-mix(in srgb, var(--s-ink) 5%, transparent),
+               0 2cqw 4cqw -2.4cqw color-mix(in srgb, var(--s-ink) 26%, transparent);
   }
-  .deck-slide .s-icon{width:4.4cqw;height:4.4cqw;color:var(--s-accent);flex:none}
+  /* the icon in a tinted chip: the one place a slide of text gets some colour */
+  .deck-slide .s-icon{
+    width:6.6cqw;height:6.6cqw;flex:none;color:var(--s-accent);
+    background:color-mix(in srgb, var(--s-accent) 15%, transparent);
+    border-radius:1.1cqw;padding:1.3cqw;margin-bottom:0.4cqw;
+  }
   .deck-slide .s-icon svg{width:100%;height:100%;display:block}
   .deck-slide .s-lead{
     font-family:var(--s-display);font-weight:600;line-height:1.2;color:var(--s-ink);
@@ -1256,9 +1305,16 @@
   }
 
   /* the themes with the strongest opinions get their own take on a card */
+  /* Press is a newspaper: no lifted surfaces, and its own rule for an edge. */
   [data-deck-theme="press"] .deck-slide .s-card{
-    background:none;border:1px solid var(--s-rule);border-radius:0;
+    background:none;border:1px solid var(--s-rule);border-radius:0;box-shadow:none;
   }
+  [data-deck-theme="press"] .deck-slide .s-icon{background:none;padding:0;border-radius:0}
+  [data-deck-theme="press"] .deck-slide.content::after{display:none}
+  /* Amber has no rules at all, by design */
+  [data-deck-theme="amber"] .deck-slide .s-card{box-shadow:none}
+  [data-deck-theme="noir"] .deck-slide .s-card{box-shadow:none;border-color:rgba(255,255,255,0.1)}
+  [data-deck-theme="noir"] .deck-slide.content::after{display:none}
   [data-deck-theme="graphite"] .deck-slide .s-card{border-radius:0.4cqw}
   [data-deck-theme="amber"] .deck-slide .s-card{
     background:none;border-radius:0;border-left:2px solid var(--s-accent);
@@ -1696,7 +1752,7 @@
     width:100%;max-width:1600px;display:flex;flex-direction:column;
     min-height:520px;
   }
-  .app-body .deck-body{flex:1;min-height:0;grid-template-columns:186px 1fr}
+  .app-body .deck-body{flex:1;min-height:0;grid-template-columns:186px minmax(0,1fr)}
   .app-body .deck-rail{max-height:none}
   /* The slide takes the room the screen actually has. Sized from the available
      HEIGHT as well as width — width alone gives a 16:9 box taller than the
@@ -5332,10 +5388,10 @@ Q4,4390"></textarea>
         if (layout === 'cards' || layout === 'figures') {
           slide.background = { color: theme.bg };
           slide.addText(String(s.heading || ''), {
-            x: 0.7, y: 0.62, w: 8.6, h: 0.6, fontSize: 26, bold: true,
+            x: 0.7, y: 0.58, w: 8.6, h: 0.7, fontSize: 32, bold: true,
             color: theme.ink, fontFace: display
           });
-          var topY = 1.45;
+          var topY = 1.5;
           if (s.body && layout === 'cards') {
             slide.addText(String(s.body), {
               x: 0.7, y: topY, w: 8.6, h: 0.6, fontSize: 12,
@@ -5363,10 +5419,12 @@ Q4,4390"></textarea>
             var y = topY + row * (cardH + gap);
 
             if (layout === 'cards') {
+              // an edge, so the card reads as a surface rather than a tint —
+              // the same reason the on-screen card gained a border
               slide.addShape(pptx.ShapeType.roundRect, {
                 x: x, y: y, w: cardW, h: cardH,
                 fill: { color: theme.quote },
-                line: { color: theme.quote, width: 0 },
+                line: { color: theme.muted, width: 0.5, transparency: 72 },
                 rectRadius: 0.06
               });
               slide.addShape(pptx.ShapeType.rect, {
@@ -5374,8 +5432,8 @@ Q4,4390"></textarea>
                 fill: { color: theme.accent }, line: { width: 0 }
               });
               slide.addText(lead, {
-                x: x + 0.24, y: y + 0.5, w: cardW - 0.48, h: 0.5,
-                fontSize: 15, bold: true, color: theme.ink, fontFace: display, valign: 'top'
+                x: x + 0.24, y: y + 0.5, w: cardW - 0.48, h: 0.55,
+                fontSize: 16, bold: true, color: theme.ink, fontFace: display, valign: 'top'
               });
               if (detail) {
                 slide.addText(detail, {
