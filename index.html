@@ -1525,15 +1525,10 @@
     flex:1;min-height:0;display:flex;align-items:stretch;justify-content:center;
     padding:18px 22px;overflow:auto;
   }
-  /* A real floor, not min-height:0. The panels below are a flex sibling, so an
-     open panel took its height straight out of the deck — opening the image
-     picker shrank the slide from 945x532 to 395x222, which is most of what
-     "I can't see the slides" meant. The deck keeps its size now and .app-body
-     scrolls instead.
-
-     And a plain pixel floor, not min(520px,100%): that 100% resolves against
-     the already-squeezed parent, so the floor collapsed to exactly the height
-     it existed to prevent. */
+  /* A floor for the stacked layout, where the panels are a flex sibling below
+     the deck and an open one takes its height straight out of it. On a wide
+     screen the panels move to a column of their own and this stops applying —
+     see the two-column rule further down. */
   .app-body .deck-mock{
     width:100%;max-width:1600px;display:flex;flex-direction:column;
     min-height:520px;
@@ -1556,6 +1551,37 @@
   }
   .app-panels .deck-extras{margin-top:0;padding-top:14px}
   .app-panels .editor-note{margin-top:12px}
+
+  /* ---------- wide screens: the panels sit beside the deck ----------
+     Stacked, a panel and the deck compete for height, which is the scarce
+     axis — a 16:9 slide is limited by height long before width, so every
+     pixel a panel takes comes straight off the slide, and pinning the deck
+     open instead pushed its own toolbar off the top. Sideways they compete
+     for width, which at this size there is plenty of. */
+  @media (min-width:1100px){
+    #appScreen{
+      display:grid;
+      grid-template-columns:1fr minmax(340px, 26vw);
+      grid-template-rows:auto 1fr;
+    }
+    .app-bar{grid-column:1 / -1}
+    .app-body{grid-column:1;grid-row:2;min-height:0}
+    .app-panels{
+      grid-column:2;grid-row:2;
+      max-height:none;height:100%;min-height:0;overflow:auto;
+      border-left:1px solid var(--line);padding:18px 20px;
+    }
+    /* nothing is stealing the deck's height any more */
+    .app-body .deck-mock{min-height:0}
+    .app-panels .deck-extras{margin-top:0;padding-top:0}
+    /* the action row becomes a column of actions, which is what it always was */
+    .app-panels .extras-actions{flex-direction:column;align-items:stretch}
+    .app-panels .extras-actions .btn{width:100%}
+    .app-panels .variant-row{flex-wrap:wrap}
+    .app-panels .critique-panel{max-height:none}
+    .app-panels .img-results{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+    .app-panels .brand-grid{grid-template-columns:1fr}
+  }
 
   /* ---------- phones and small tablets ----------
      The editor stops trying to fit a fixed viewport and becomes one scrolling
