@@ -183,6 +183,19 @@ listed. On a real generation the mix went from four bullets slides to zero.
 makes for itself and a list throws away. `steps` runs across the slide as a
 timeline when there are two to four of them, and stacks when there are more.
 
+`showcase` is a photograph filling the slide with the words on a solid panel
+over it, the panel alternating sides down the deck. It exists because pictures
+were the thing most obviously missing: only the cover, section, statement and
+bullets layouts could carry one, so a generated deck had images on three slides
+out of eight and read as mostly text. `stat`, `figures` and `quote` can sit on a
+photograph now too — a number or a line of speech over a picture is one of the
+strongest slides there is — and on those the type goes white with a scrim behind
+it rather than keeping an ink colour that would vanish into the image.
+
+Split slides alternate which side the photograph is on. Every one of them put it
+on the right before, so a run of them read as the same slide repeated with
+different words.
+
 A card is stored as one bullet string, `lead — detail`, so everything that
 already edits, rewrites, undoes and exports a bullet keeps working. Two things
 tidy themselves after generation: card-shaped content written onto a `bullets`

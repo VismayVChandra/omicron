@@ -10,7 +10,7 @@
 export const config = { runtime: 'edge' };
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const LAYOUTS = ['bullets', 'cards', 'figures', 'stat', 'quote', 'steps', 'compare', 'section', 'statement'];
+const LAYOUTS = ['bullets', 'cards', 'showcase', 'figures', 'stat', 'quote', 'steps', 'compare', 'section', 'statement'];
 
 // Kept deliberately short and layout-specific: a longer, rule-heavy prompt
 // makes this model reason for hundreds of tokens before writing anything.
@@ -97,6 +97,11 @@ function slideToLines(slide) {
 
 function buildPrompt({ topic, title, heading, layout, audience, tone, source, voice, instruction, current }) {
   const shape = {
+    showcase:
+      'LAYOUT: showcase\nHEADING: <heading, under 6 words>\n' +
+      'BULLET: <point, under 14 words>\n' +
+      'BULLET: <point, under 14 words>\n' +
+      'IMAGE: <2 to 5 plain searchable words naming a photographable subject>',
     cards:
       'LAYOUT: cards\nHEADING: <heading, under 6 words>\n' +
       'BODY: <one sentence, 15 to 30 words>\n' +
@@ -189,13 +194,13 @@ function json(obj, status) {
   });
 }
 
-const MAX_BULLETS = { bullets: 5, cards: 4, figures: 4, stat: 2, quote: 1, steps: 5, compare: 6, section: 0, statement: 1 };
+const MAX_BULLETS = { bullets: 5, cards: 4, showcase: 4, figures: 4, stat: 2, quote: 1, steps: 5, compare: 6, section: 0, statement: 1 };
 
 // Which layouts legitimately carry which fields — a section slide has no
 // bullets and a statement has no heading, so a blanket "strip everything that
 // isn't bullets" throws away valid output.
 const KEEPS_BODY = ['bullets', 'cards', 'figures', 'steps'];
-const KEEPS_IMAGE = ['bullets', 'section', 'statement'];
+const KEEPS_IMAGE = ['bullets', 'showcase', 'section', 'statement', 'stat', 'figures', 'quote'];
 
 function parseSlide(text, wantCover) {
   const out = { layout: 'bullets', heading: '', body: '', image: '', bullets: [] };

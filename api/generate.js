@@ -149,13 +149,15 @@ IMAGE: <2 to 5 plain words naming a photographable subject>
 
 Rules:
 - Begin every slide with a line of exactly ===
-- LAYOUT is one of: cards, bullets, figures, stat, quote, steps, compare,
-  section, statement
+- LAYOUT is one of: cards, bullets, showcase, figures, stat, quote, steps,
+  compare, section, statement
 - Vary the layouts. A deck where every slide is "bullets" is a wall of text, and
   one that cycles through every layout for its own sake is a circus. Pick the
   layout the content actually wants:
     cards     — two to four points that stand on their own and read better
                 side by side than stacked. This is the workhorse.
+    showcase  — a point that a photograph carries: the picture fills the slide
+                and two or three short lines sit on a panel over it
     figures   — two to four numbers that belong together and invite comparison
     steps     — a real sequence or process, where order matters
     compare   — two things genuinely set against each other (before/after,
@@ -168,7 +170,7 @@ Rules:
     quote     — one memorable line someone said
     bullets   — a list that is genuinely a list: points that only make sense
                 read in order, or too many to sit side by side
-- Use stat, quote, statement, figures and compare at most once each. Use section
+- Use stat, quote, statement, figures, showcase and compare at most once each. Use section
   only in a deck of 7 or more slides, at most twice, and never as the last slide.
   Skip any of them entirely when the subject does not call for it.
 - cards is the default for ordinary content, not bullets. Reach for bullets only
@@ -186,9 +188,12 @@ Rules:
   5 BULLET lines in order. compare: a LEFT label then its BULLET lines, then a
   RIGHT label then its BULLET lines, 2 to 3 each. section: a HEADING and an IMAGE
   only. statement: exactly 1 BULLET line and an IMAGE, no HEADING.
-- IMAGE: give one to the cover, to every bullets slide, and to every section and
-  statement slide (they are shown full-bleed behind the text, so they matter
-  most there). Never on stat, quote, steps or compare slides. It is used to search a photo library, so write plain searchable nouns
+- showcase: a HEADING, then 2 to 3 BULLET lines under 14 words each, and an
+  IMAGE. No BODY.
+- IMAGE: give one to the cover, and to every bullets, showcase, section,
+  statement, stat, figures and quote slide. On all but bullets it is shown
+  full-bleed behind the words, so it carries the slide. Never on cards, steps or
+  compare — those are already full of their own structure. It is used to search a photo library, so write plain searchable nouns
   for a thing that can be photographed — "coral reef underwater", "marathon
   runners road", "hospital waiting room". No adjectives about mood or lighting,
   no abstractions ("growth", "success"), no diagrams, charts or logos.

@@ -1336,6 +1336,58 @@
   [data-deck-theme="dune"] .deck-slide .s-card{text-align:center;align-items:center}
   [data-deck-theme="plum"] .deck-slide .s-card{border-radius:1.5cqw 1.5cqw 4cqw 4cqw}
 
+  /* ---------- a slide that sits on its photograph ----------
+     A number or a line of speech over a picture is one of the strongest slides
+     there is, and until now only the cover, section and statement layouts could
+     carry an image at all — which is why a generated deck had pictures on three
+     slides out of eight and read as mostly text. */
+  .deck-slide.on-image{color:#fff}
+  .deck-slide.on-image h3,
+  .deck-slide.on-image .stat-value,
+  .deck-slide.on-image .fig-value,
+  .deck-slide.on-image .quote-text{color:#fff}
+  .deck-slide.on-image .stat-support,
+  .deck-slide.on-image .fig-caption,
+  .deck-slide.on-image .quote-attr,
+  .deck-slide.on-image .slide-body{color:rgba(255,255,255,0.82)}
+  .deck-slide.on-image .s-fig:nth-child(even) .fig-value{color:#fff}
+  /* the accent wash is for a flat slide; over a photograph it is mud */
+  .deck-slide.on-image::after{display:none}
+  .deck-slide.on-image > *{position:relative;z-index:2}
+  .deck-slide.on-image .wave-accent{display:none}
+  /* a rule under the heading keeps the accent present without tinting the photo */
+  .deck-slide.on-image h3::after{
+    content:"";display:block;width:9cqw;height:0.5cqw;min-height:2px;
+    background:var(--s-accent);border-radius:99px;margin:1.6cqw 0 0;
+  }
+
+  /* ---------- showcase: the picture is the slide, the words sit on it ----
+     Full bleed behind, with the text on a solid panel over it. The panel is
+     what makes it readable, and the offset is what makes it look composed
+     rather than centred. */
+  .deck-slide.showcase{padding:0;display:block;position:relative}
+  .deck-slide.showcase .show-panel{
+    position:absolute;top:9%;bottom:9%;left:6%;width:46%;z-index:2;
+    background:var(--s-bg);border-radius:2cqw;padding:4.6cqw;
+    display:flex;flex-direction:column;justify-content:center;gap:1.4cqw;
+    box-shadow:0 3cqw 7cqw -2.5cqw rgba(0,0,0,0.45);
+  }
+  .deck-slide.showcase.flip .show-panel{left:auto;right:6%}
+  .deck-slide.showcase .show-panel h3{margin:0 0 0.6cqw}
+  .deck-slide.showcase .show-panel ul{gap:1.3cqw}
+  /* the panel carries the contrast, so the photograph is barely veiled */
+  .deck-slide.showcase .cover-scrim{
+    background:linear-gradient(90deg,
+      rgba(var(--s-scrim),0.42) 0%, rgba(var(--s-scrim),0.12) 55%, rgba(var(--s-scrim),0.3) 100%);
+  }
+  .deck-slide.showcase.flip .cover-scrim{
+    background:linear-gradient(270deg,
+      rgba(var(--s-scrim),0.42) 0%, rgba(var(--s-scrim),0.12) 55%, rgba(var(--s-scrim),0.3) 100%);
+  }
+  [data-deck-theme="press"] .deck-slide.showcase .show-panel{border-radius:0;box-shadow:none;border:1px solid var(--s-rule)}
+  [data-deck-theme="graphite"] .deck-slide.showcase .show-panel{border-radius:0.5cqw}
+  [data-deck-theme="noir"] .deck-slide.showcase .show-panel{border-radius:0;box-shadow:none}
+
   /* split: copy on the left, photograph on the right */
   /* the photograph bleeds to the slide edges — floating it in padding leaves
      dead space and reads like a placeholder */
@@ -2900,7 +2952,7 @@ Q4,4390"></textarea>
   }
 
   // 'chart' is never produced by the model — only by pasting your own data
-  var LAYOUTS = ['bullets','cards','figures','stat','quote','chart','steps','compare','section','statement'];
+  var LAYOUTS = ['bullets','cards','showcase','figures','stat','quote','chart','steps','compare','section','statement'];
   function normalizeLayout(v){
     v = String(v || '').trim().toLowerCase();
     return LAYOUTS.indexOf(v) === -1 ? 'bullets' : v;
@@ -3123,7 +3175,34 @@ Q4,4390"></textarea>
         '</div>';
     }
 
+    // showcase: the photograph is the slide and the words sit on a panel over it
+    if (layout === 'showcase') {
+      var showFlip = seed % 2 === 1;
+      var showItems = bullets.slice(0, 4).map(function(b, i){
+        return '<li data-field="bullet" data-index="' + i + '" data-ph="A point"' + ed + '>' +
+          escapeHtml(b) + '</li>';
+      }).join('');
+      return '<div class="deck-slide content showcase' + (showFlip ? ' flip' : '') +
+        (hasImage(slide) ? ' has-image' : '') + '">' +
+        (hasImage(slide) ? mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
+        '<div class="show-panel">' +
+          '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+          (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' +
+            escapeHtml(slide.body) + '</p>' : '') +
+          (showItems ? '<ul>' + showItems + '</ul>' : '') +
+        '</div>' + foot +
+        '</div>';
+    }
+
     if (layout === 'stat') {
+      if (hasImage(slide)) {
+        return '<div class="deck-slide content stat on-image has-image">' +
+          mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' +
+          '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
+          '<p class="stat-value" data-field="bullet" data-index="0" data-ph="42%"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
+          '<p class="stat-support" data-field="bullet" data-index="1" data-ph="What the number means"' + ed + '>' + escapeHtml(bullets[1] || '') + '</p>' +
+          foot + '</div>';
+      }
       return '<div class="deck-slide content stat">' + waveAccentSvg(seed) +
         '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
         '<p class="stat-value" data-field="bullet" data-index="0" data-ph="42%"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
@@ -3132,6 +3211,14 @@ Q4,4390"></textarea>
     }
 
     if (layout === 'quote') {
+      if (hasImage(slide)) {
+        return '<div class="deck-slide content quote on-image has-image">' +
+          mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' +
+          '<p class="quote-text" data-field="bullet" data-index="0" data-ph="The quotation"' + ed + '>' +
+            escapeHtml(bullets[0] || '') + '</p>' +
+          '<p class="quote-attr" data-field="heading" data-ph="Who said it"' + ed + '>' +
+            escapeHtml(slide.heading || '') + '</p>' + foot + '</div>';
+      }
       return '<div class="deck-slide content quote">' + waveAccentSvg(seed) +
         '<p class="quote-text" data-field="bullet" data-index="0" data-ph="The quotation"' + ed + '>' + escapeHtml(bullets[0] || '') + '</p>' +
         '<p class="quote-attr" data-field="heading" data-ph="Who said it"' + ed + '>' + escapeHtml(slide.heading || '') + '</p>' + foot +
@@ -3167,7 +3254,8 @@ Q4,4390"></textarea>
             escapeHtml(part.detail) + '</div>' +
           '</div>';
       }).join('');
-      return '<div class="deck-slide content figures">' +
+      return '<div class="deck-slide content figures' + (hasImage(slide) ? ' on-image has-image' : '') + '">' +
+        (hasImage(slide) ? mediaMarkup(slide, 'cover-media') + '<div class="cover-scrim"></div>' : '') +
         '<h3 data-field="heading" data-ph="Heading"' + ed + '>' + escapeHtml(slide.heading || '') + '</h3>' +
         (slide.body ? '<p class="slide-body" data-field="body" data-ph="A sentence of context"' + ed + '>' + escapeHtml(slide.body) + '</p>' : '') +
         '<div class="fig-row" style="--figs:' + Math.max(2, Math.min(4, bullets.length || 2)) + '">' +
@@ -5084,7 +5172,8 @@ Q4,4390"></textarea>
       // full-bleed layouts become slide backgrounds, which PptxGenJS files as
       // .png whatever the bytes are — so they must actually be PNG
       var lay = normalizeLayout(s.layout);
-      var isBackground = s.type === 'cover' || lay === 'section' || lay === 'statement';
+      var isBackground = s.type === 'cover' || lay === 'section' || lay === 'statement' ||
+        lay === 'showcase' || lay === 'stat' || lay === 'quote' || lay === 'figures';
       return slideImage(s).then(function(found){
         if (!found || !found.url) return null;
         return fetchImageData(found.url, theme.accent, isBackground ? 'image/png' : 'image/jpeg');
@@ -5370,30 +5459,73 @@ Q4,4390"></textarea>
           return;
         }
 
+        // showcase: the picture fills the slide, the words sit on a panel
+        if (layout === 'showcase') {
+          slide.background = pic ? { data: pic } : { color: theme.cover };
+          if (pic) {
+            slide.addShape(pptx.ShapeType.rect, {
+              x: 0, y: 0, w: '100%', h: '100%',
+              fill: { color: '061A1C', transparency: 74 }, line: { width: 0 }
+            });
+          }
+          var panelLeft = (i % 2 === 1) ? 5.2 : 0.6;
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: panelLeft, y: 0.5, w: 4.2, h: 4.6,
+            fill: { color: theme.bg }, line: { width: 0 }, rectRadius: 0.05
+          });
+          slide.addText(String(s.heading || ''), {
+            x: panelLeft + 0.35, y: 1.0, w: 3.5, h: 0.9, fontSize: 24, bold: true,
+            color: theme.ink, fontFace: display, valign: 'top'
+          });
+          if (bullets.length) {
+            slide.addText(bullets.map(function(b){
+              return { text: String(b), options: { bullet: { code: '2022' }, breakLine: true } };
+            }), {
+              x: panelLeft + 0.35, y: 2.05, w: 3.5, h: 2.6, fontSize: 12,
+              color: theme.muted, fontFace: 'Calibri', lineSpacingMultiple: 1.35, valign: 'top'
+            });
+          }
+          return;
+        }
+
+        // A number or a line of speech over a photograph: the picture becomes
+        // the background, a scrim carries the contrast, and the type goes white
+        // rather than staying the theme's ink, which would vanish into it.
+        var onImage = !!pic && (layout === 'stat' || layout === 'quote' || layout === 'figures');
+        if (onImage) {
+          slide.background = { data: pic };
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: '100%', h: '100%',
+            fill: { color: '061A1C', transparency: 32 }, line: { width: 0 }
+          });
+        }
+
         if (layout === 'stat') {
-          slide.background = { color: theme.bg };
+          if (!onImage) slide.background = { color: theme.bg };
           slide.addText(String(s.heading || '').toUpperCase(), {
             x: 0.8, y: 1.5, w: 8.4, h: 0.4, fontSize: 12, color: theme.accent,
             fontFace: 'Consolas', charSpacing: 2
           });
           slide.addText(String(bullets[0] || ''), {
             x: 0.8, y: 2.0, w: 8.4, h: 1.3, fontSize: 48, bold: true,
-            color: theme.ink, fontFace: display
+            color: onImage ? 'FFFFFF' : theme.ink, fontFace: display
           });
           slide.addText(String(bullets[1] || ''), {
-            x: 0.8, y: 3.4, w: 8.4, h: 0.8, fontSize: 15, color: theme.muted, fontFace: 'Calibri'
+            x: 0.8, y: 3.4, w: 8.4, h: 0.8, fontSize: 15,
+            color: onImage ? 'E8EEEC' : theme.muted, fontFace: 'Calibri'
           });
           return;
         }
 
         if (layout === 'quote') {
-          slide.background = { color: theme.quote };
+          if (!onImage) slide.background = { color: theme.quote };
           slide.addText(String(bullets[0] || ''), {
             x: 1.0, y: 1.7, w: 8.0, h: 1.8, fontSize: 26, italic: true,
-            color: theme.ink, fontFace: display, align: 'center'
+            color: onImage ? 'FFFFFF' : theme.ink, fontFace: display, align: 'center'
           });
           slide.addText('— ' + String(s.heading || ''), {
-            x: 1.0, y: 3.6, w: 8.0, h: 0.5, fontSize: 12, color: theme.muted,
+            x: 1.0, y: 3.6, w: 8.0, h: 0.5, fontSize: 12,
+            color: onImage ? 'E8EEEC' : theme.muted,
             fontFace: 'Consolas', align: 'center'
           });
           return;
@@ -5404,10 +5536,10 @@ Q4,4390"></textarea>
         // with a round marker, which is the look this whole change exists to
         // get away from.
         if (layout === 'cards' || layout === 'figures') {
-          slide.background = { color: theme.bg };
+          if (!onImage) slide.background = { color: theme.bg };
           slide.addText(String(s.heading || ''), {
             x: 0.7, y: 0.58, w: 8.6, h: 0.7, fontSize: 32, bold: true,
-            color: theme.ink, fontFace: display
+            color: onImage ? 'FFFFFF' : theme.ink, fontFace: display
           });
           var topY = 1.5;
           if (s.body && layout === 'cards') {
@@ -5461,13 +5593,13 @@ Q4,4390"></textarea>
               }
             } else {
               slide.addText(lead, {
-                x: x, y: y + 0.15, w: cardW, h: 1.1,
-                fontSize: 40, bold: true, color: theme.accent, fontFace: display, valign: 'bottom'
+                x: x, y: y + 0.15, w: cardW, h: 1.1, fontSize: 40, bold: true,
+                color: onImage ? 'FFFFFF' : theme.accent, fontFace: display, valign: 'bottom'
               });
               if (detail) {
                 slide.addText(detail, {
-                  x: x, y: y + 1.32, w: cardW, h: 0.9,
-                  fontSize: 11, color: theme.muted, fontFace: 'Calibri', valign: 'top'
+                  x: x, y: y + 1.32, w: cardW, h: 0.9, fontSize: 11,
+                  color: onImage ? 'E8EEEC' : theme.muted, fontFace: 'Calibri', valign: 'top'
                 });
               }
             }
@@ -6398,6 +6530,7 @@ Q4,4390"></textarea>
           return seam[1].trim() + ' — ' + detail.charAt(0).toUpperCase() + detail.slice(1);
         });
       }
+      else if (to === 'showcase') slide.bullets = pool.length ? pool.slice(0, 4) : [''];
       else if (to === 'stat') slide.bullets = [pool[0] || '', pool[1] || (slide.body || '')];
       else if (to === 'quote' || to === 'statement') slide.bullets = [longest];
       else if (to === 'section') slide.bullets = [];
@@ -6412,6 +6545,7 @@ Q4,4390"></textarea>
 
   var LAYOUT_INFO = [
     ['cards',     'Cards',     'each point in a box of its own, with an icon'],
+    ['showcase',  'Showcase',  'a photograph, with the words on a panel over it'],
     ['figures',   'Figures',   'two to four numbers side by side'],
     ['bullets',   'Bullets',   'points, with a photograph beside them'],
     ['steps',     'Steps',     'a numbered sequence'],
