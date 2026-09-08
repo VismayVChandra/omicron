@@ -1244,11 +1244,21 @@
                0 2cqw 4cqw -2.4cqw color-mix(in srgb, var(--s-ink) 26%, transparent);
   }
   /* the icon in a tinted chip: the one place a slide of text gets some colour */
+  /* One accent across a whole deck is what makes a theme read as a filter. A
+     companion is derived from the theme's own accent and ink rather than picked
+     by hand ten times, so every palette gets one that belongs to it, and the
+     cards alternate between the two. */
+  .deck-slide{--s-accent-2:color-mix(in srgb, var(--s-accent) 62%, var(--s-ink))}
   .deck-slide .s-icon{
     width:6.6cqw;height:6.6cqw;flex:none;color:var(--s-accent);
     background:color-mix(in srgb, var(--s-accent) 15%, transparent);
     border-radius:1.1cqw;padding:1.3cqw;margin-bottom:0.4cqw;
   }
+  .deck-slide .s-card:nth-child(even) .s-icon{
+    color:var(--s-accent-2);
+    background:color-mix(in srgb, var(--s-accent-2) 16%, transparent);
+  }
+  .deck-slide .s-fig:nth-child(even) .fig-value{color:var(--s-accent-2)}
   .deck-slide .s-icon svg{width:100%;height:100%;display:block}
   .deck-slide .s-lead{
     font-family:var(--s-display);font-weight:600;line-height:1.2;color:var(--s-ink);
@@ -1330,6 +1340,10 @@
   /* the photograph bleeds to the slide edges — floating it in padding leaves
      dead space and reads like a placeholder */
   .deck-slide.split{display:grid;grid-template-columns:1.1fr 0.9fr;gap:0;align-items:stretch;padding:0}
+  /* the flipped one swaps the order rather than the markup, so the text is
+     still first for anything reading the page rather than looking at it */
+  .deck-slide.split.flip .slide-text{order:2}
+  .deck-slide.split.flip .slide-media{order:1}
   .deck-slide.split .slide-text{min-width:0;overflow:hidden;padding:5cqw;display:flex;flex-direction:column;justify-content:center}
   .deck-slide.split .wave-accent{display:none}
   .slide-media{position:relative;overflow:hidden;background:var(--s-quote-bg);width:100%;height:100%}
@@ -3170,7 +3184,11 @@ Q4,4390"></textarea>
       '<ul>' + items + '</ul>';
 
     if (hasImage(slide)) {
-      return '<div class="deck-slide content bullets split">' +
+      // Every split slide put the picture on the right, so a deck of them read
+      // as one slide repeated. Alternating by position is the cheapest thing
+      // that makes a run of slides look composed rather than stamped out.
+      var flip = seed % 2 === 0;
+      return '<div class="deck-slide content bullets split' + (flip ? ' flip' : '') + '">' +
         '<div class="slide-text">' + text + '</div>' +
         mediaMarkup(slide, 'slide-media') + foot +
         '</div>';
