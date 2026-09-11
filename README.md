@@ -1,59 +1,121 @@
-# omicron
+# Swell
 
-**Swell** — a wave-themed AI drafting landing page. The "Generate" button in
-the hero drafts a real slide deck, streamed live into an editable deck viewer,
-via Vercel Edge Functions backed by Groq.
+**Type a topic. Get a finished, editable slide deck.** Swell drafts an
+outline, writes the slides once you approve it, picks a layout for each one,
+and hands you a real deck — themed, illustrated and exportable — that you
+reshape in place instead of building from a blank canvas.
 
-Drafting is two steps, as in Gamma: a topic produces an editable outline, and
-only once that outline is approved are the slides written.
+**[Try the live demo →](https://omicron-beta.vercel.app/)** — no account
+needed, works on your phone, installable as an app ([details](#installable)).
 
-You can optionally give it your own material — notes, a report, a transcript, a
-PDF, a Word file, a deck, or a link — and the deck is built from that instead of
-from the model's own knowledge, with every figure required to come from what you
-gave it. With nothing pasted the
-model is explicitly told not to invent statistics, market sizes or dated
-forecasts, because it has no source to draw them from. Audience, tone and
-length are selectable and feed every request.
+![Swell — every deck starts as a ripple](screenshots/hero.png)
 
-- `index.html` — the landing page plus a full-screen editor (slides, thumbnail
-  rail, present mode, in-place editing, undo and redo, adding and deleting
-  slides, changing a slide's layout, choosing its photograph, rewriting a
-  selection with AI, speaker notes, drag-to-reorder, ten deck themes, saved
-  drafts, PDF export via the browser's print, `.pptx` export, and share links). Generating switches to the editor rather than
-  scrolling; the shared elements are moved between the two rather than
-  duplicated.
-- `api/outline.js` — step one: plans the deck, returns `{title, tagline, sections}`
-- `api/generate.js` — step two: streams the slides. Returns a line-based format
-  (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BODY` / `BULLET` /
-  `IMAGE`) rather than JSON so the client can render each slide as it arrives.
-  Accepts an approved outline and follows it exactly.
-- `api/slide.js` — regenerates a single slide, returns JSON. Given an
-  instruction it revises the slide it is handed instead of redrawing it, so
-  "cut this to two points" edits what is there rather than starting again.
-- `api/rewrite.js` — rewrites one piece of text: a whole line, or just the words
-  you highlighted inside one. Shorter, longer, plainer, punchier, or whatever
-  you type. It may not introduce facts.
-- `api/notes.js` — writes speaker notes for the whole deck in one request.
-- `api/fetch.js` — reads a web page and returns its prose, so a deck can be
-  built from a link. The interesting part is what it refuses.
-- `api/critique.js` — reads a finished deck back as its toughest audience and
-  returns what will get challenged, tied to the slides it is about.
-- `api/voice.js` — reads samples of your own writing and returns your habits as
-  instructions the slide writer follows, in place of the generic tone setting.
-  Stored per browser, not per deck, and it never sees the samples again.
-- `api/verify.js` — pulls the externally checkable claims out of a deck, looks
-  each up on Wikipedia (no API key needed) and reports whether the source backs
-  it, contradicts it, or does not settle it. It deliberately skips your own
-  metrics and plans, and "no source found" never means "false".
-- `api/image.js` — finds a slide photograph on Wikimedia Commons, filtering out
-  diagrams and NC/ND-licensed files and widening the query if nothing matches.
-  `?n=8` returns a set to choose from instead of a single verdict, which is what
-  the editor's image picker shows.
-- `api/imagegen.js` — draws a slide photograph instead of finding one, in the
-  deck theme's own light and colour. Optional: without a key the button is
-  hidden and nothing else changes.
+## What this actually is
 
-All run on the Edge runtime and use `openai/gpt-oss-120b` with
+Swell is a single `index.html` file (no framework, no build step, no
+bundler) plus a handful of small serverless functions. Point a browser at it
+and you get a landing page whose "Generate" button is not a mockup: typing a
+topic and pressing it runs a real two-step pipeline — an AI plans an outline,
+you approve or edit it, then the slides are written and streamed onto the
+page one at a time, in an editor you can immediately start rewriting.
+
+Everything downstream of that first draft is built to be **taken apart and
+put back together**: undo and redo on every action, layouts you can switch
+after the fact, photographs you can swap or generate, text you can highlight
+and ask the model to rework, and an export that carries all of it — theme,
+brand, charts, speaker notes — into a real `.pptx` file.
+
+It is deliberately honest about what it doesn't do. See
+[Not built](#not-built) for the list, and the rest of this document for how
+the parts that *are* built actually work.
+
+## See it
+
+<table>
+<tr><td width="55%">
+
+**Every layout picks its own shape.** A `split` slide puts the photograph
+beside the text; when there is no photograph, a themed gradient fills the
+space rather than leaving a hole.
+
+</td><td>
+
+![The editor, split layout](screenshots/editor-split.png)
+
+</td></tr>
+<tr><td>
+
+**A number gets a slide of its own.** `stat` sets it in enormous type instead
+of burying it in a sentence — this is what "the model picks the layout"
+looks like on a deck about market size.
+
+</td><td>
+
+![The editor, stat layout](screenshots/editor-stat.png)
+
+</td></tr>
+</table>
+
+**Ten themes, and they're not just ten palettes** — each one repaints the
+geometry of the slide, not just its colours:
+
+![Six of the ten built-in themes, same slide](screenshots/theme-gallery.png)
+
+<table>
+<tr><td width="55%">
+
+**The same deck reads as a page, not only as slides.** A link opens this way
+automatically on a phone, because someone who was sent a link is reading,
+not presenting.
+
+</td><td>
+
+![Reading a deck as a page on a phone](screenshots/page-mobile.png)
+
+</td></tr>
+</table>
+
+## Contents
+
+- [What this actually is](#what-this-actually-is)
+- [See it](#see-it)
+- [How it's built](#how-its-built)
+- [Bringing your own material](#bringing-your-own-material)
+- [Editing a deck](#editing-a-deck)
+- [Editing with the model](#editing-with-the-model)
+- [Slide layouts](#slide-layouts)
+- [Generated pictures](#generated-pictures)
+- [Slides, or a page](#slides-or-a-page)
+- [Charts](#charts)
+- [Sharing and export](#sharing-and-export)
+- [Accounts (optional)](#accounts-optional)
+- [Not built](#not-built)
+- [Deploy on Vercel](#deploy-on-vercel)
+- [Installable on your phone](#installable)
+- [Run locally](#run-locally)
+
+## How it's built
+
+No React, no build step, no `node_modules` in production — `index.html` is
+the entire client, and each `api/*.js` file is one Vercel Edge Function. That
+is the whole architecture; there is nothing else running.
+
+| Piece | What it does |
+|---|---|
+| [`index.html`](index.html) | The landing page **and** a full-screen editor: thumbnail rail, present mode, in-place editing, undo/redo, adding/deleting/reordering slides, layout switching, photo picking, AI rewriting, speaker notes, ten themes, saved drafts, PDF export, `.pptx` export, share links. Generating switches to the editor rather than scrolling to it; the two views share elements instead of duplicating them. |
+| [`api/outline.js`](api/outline.js) | Step one: plans the deck, returns `{title, tagline, sections}`. |
+| [`api/generate.js`](api/generate.js) | Step two: streams the slides as a line-based format (`TITLE` / `TAGLINE` / `===` / `LAYOUT` / `HEADING` / `BODY` / `BULLET` / `IMAGE`) rather than JSON, so the client renders each slide as it arrives. Follows an approved outline exactly. |
+| [`api/slide.js`](api/slide.js) | Regenerates one slide from an instruction — "cut this to two points" revises what's there instead of starting over. |
+| [`api/rewrite.js`](api/rewrite.js) | Rewrites one piece of text: a whole line, or just the words you highlighted. Shorter, longer, plainer, punchier, or whatever you type. May not introduce facts. |
+| [`api/notes.js`](api/notes.js) | Writes speaker notes for the whole deck in one request, so they don't repeat each other slide to slide. |
+| [`api/fetch.js`](api/fetch.js) | Reads a web page and returns its prose, so a deck can be built from a link. The interesting part is what it refuses — see [below](#bringing-your-own-material). |
+| [`api/critique.js`](api/critique.js) | Reads a finished deck back as its toughest audience and returns what will get challenged. |
+| [`api/voice.js`](api/voice.js) | Reads samples of your own writing and turns them into instructions the slide writer follows, instead of a generic tone setting. |
+| [`api/verify.js`](api/verify.js) | Pulls the checkable claims out of a deck and checks each against Wikipedia — supports, contradicts, or unsettled. Never checks your own metrics or plans. |
+| [`api/image.js`](api/image.js) | Finds a slide photograph on Wikimedia Commons, filtered for real photos under an open licence. |
+| [`api/imagegen.js`](api/imagegen.js) | Draws a slide photograph instead of finding one, in the deck theme's own light. Optional — the button is hidden without a key. |
+
+All of it runs on the Edge runtime and uses `openai/gpt-oss-120b` with
 `reasoning_effort: 'low'` — that model reasons silently before answering, and
 without that setting it spends its whole token budget thinking and returns
 nothing.
@@ -213,6 +275,8 @@ cards before that.
 
 Ten deck themes, and they are not all the same kind of thing.
 
+![Six of the ten built-in themes, same slide, six different shapes](screenshots/theme-gallery.png)
+
 All ten are designed themes — their own geometry, not just their own colours —
 and each carries its furniture into the PowerPoint export, so the design
 survives the file rather than living only on screen. Each was given a motif of
@@ -325,6 +389,8 @@ the day's allowance; it is not a serious access control, and a determined
 person can forge a header.
 
 ## Slides, or a page
+
+![The same deck, read as a scrolling page on a phone](screenshots/page-mobile.png)
 
 The same deck, read two ways. **Slides** is the fixed 16:9 view you click
 through and present from. **Page** is the whole deck as one scrolling column,
@@ -481,6 +547,18 @@ API**. The token template grants Workers AI *Read* and *Edit* and the REST API
 needs both, so keep both rows; set **Account Resources** to your account or the
 token will not authorise anything. See [Generated
 pictures](#generated-pictures) for the alternatives.
+
+## Installable
+
+Swell is a [PWA](https://web.dev/explore/progressive-web-apps): open the live
+site on a phone and the browser offers **Add to Home Screen** (iOS Safari) or
+an **Install** prompt (Android Chrome). Installed, it launches full-screen
+with its own icon and no browser chrome — the icon is drawn from the same
+wave mark as the logo, at every size iOS and Android ask for.
+
+A service worker caches the app shell only, and checks the network first on
+every navigation, so an install can never show a stale version behind a
+"works offline" claim it doesn't make.
 
 ## Run locally
 
